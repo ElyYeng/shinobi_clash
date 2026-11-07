@@ -1,0 +1,4 @@
+Shinobi Clash - Notes
+
+This file was added to test pushing to the repository.
+Use it for quick notes, to-dos or ideas for the game.
