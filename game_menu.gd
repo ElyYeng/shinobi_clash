@@ -407,22 +407,22 @@ func _refresh_header() -> void:
 	header.add_child(c1)
 	_hlabel(str(GameData.spins), Vector2(712, 50), 34, Color(0.85, 0.12, 0.05))
 	_rect_h(Rect2(650, 92, 210, 3))
-	# row 2: owned bloodlines | kills
-	var owned_ids: Array = []
-	for id in Bloodline.DEFS:
-		if id != "none" and GameData.owned.has(id):
-			owned_ids.append(id)
-	for i in 5:
+	# row 2: bloodline slots | kills
+	for i in GameData.SLOT_COUNT:
 		var o2 := Octagon.new()
 		o2.position = Vector2(46 + i * 50, 100)
-		if i < owned_ids.size():
-			var bd := Bloodline.get_def(owned_ids[i])
+		var sid := str(GameData.slots[i])
+		if not GameData.slot_unlocked[i]:
+			o2.kind = "lock"
+		elif sid == "none":
+			o2.kind = "empty"
+			o2.ring = i == GameData.active_slot
+		else:
+			var bd := Bloodline.get_def(sid)
 			o2.kind = "letter"
 			o2.letter = str(bd["name"]).substr(0, 1)
 			o2.fill = bd["color"].darkened(0.25)
-			o2.ring = owned_ids[i] == GameData.equipped
-		else:
-			o2.kind = "lock"
+			o2.ring = i == GameData.active_slot
 		header.add_child(o2)
 	_hlabel(def["name"] if GameData.equipped != "none" else "N/A", Vector2(304, 98), 34, INK)
 	_rect_h(Rect2(304, 140, 330, 3))
@@ -695,18 +695,21 @@ func _page_elements() -> Array:
 
 func _page_bloodlines() -> Array:
 	var out: Array = []
-	for id in Bloodline.DEFS:
-		var d := Bloodline.get_def(id)
-		var owned: bool = GameData.owned.has(id)
-		var is_eq: bool = GameData.equipped == id
-		if not owned:
-			out.append(_locked("???", "Spin to discover this bloodline."))
+	for i in GameData.SLOT_COUNT:
+		if not GameData.slot_unlocked[i]:
+			out.append(_locked("Slot #%d" % (i + 1),
+				"Locked. Open it in the spin menu (B) for %d spins." % GameData.SLOT_UNLOCK_COST[i]))
 			continue
+		var id := str(GameData.slots[i])
+		var d := Bloodline.get_def(id)
+		var is_eq: bool = GameData.active_slot == i
 		var acts: Array = []
 		if not is_eq:
-			acts.append(_act("EQUIP", _equip.bind(id)))
-		out.append(_item(d["name"], "%s%s" % [d["rarity"], "  -  EQUIPPED" if is_eq else ""], d["color"],
-			str(d["name"]).substr(0, 1), d["desc"], {"actions": acts}))
+			acts.append(_act("EQUIP", _equip_slot.bind(i)))
+		var title := "Slot #%d: %s" % [i + 1, "Empty" if id == "none" else str(d["name"])]
+		var sub := "%s%s" % ["Spin to awaken" if id == "none" else str(d["rarity"]), "  -  EQUIPPED" if is_eq else ""]
+		out.append(_item(title, sub, d["color"], "?" if id == "none" else str(d["name"]).substr(0, 1),
+			d["desc"], {"actions": acts}))
 	extras = [_act("OPEN SPIN", _open_spin, "[Awakening - %d spins]" % GameData.spins)]
 	return out
 
@@ -805,8 +808,8 @@ func _page_cheats() -> Array:
 			{"actions": [_act("UNLOCK", _unlock_kurama, "", GameData.kurama_defeated)]}),
 		_item("Add 5 Spins", "Instant", Color(0.8, 0.3, 0.9), "+",
 			"Gives 5 bloodline spins." + note, {"actions": [_act("ADD", _add_spins)]}),
-		_item("Unlock Bloodlines", "Instant", Color(0.9, 0.5, 0.2), "U",
-			"Adds every bloodline to your collection." + note, {"actions": [_act("UNLOCK", _unlock_all)]}),
+		_item("Unlock Slots", "Instant", Color(0.9, 0.5, 0.2), "U",
+			"Opens all 4 bloodline slots and marks every bloodline as discovered." + note, {"actions": [_act("UNLOCK", _unlock_all)]}),
 		_item("Defeat Enemies", "Instant", Color(0.85, 0.2, 0.2), "X",
 			"Knocks out every enemy on the map, bosses too." + note, {"actions": [_act("DEFEAT", _kill_all)]}),
 	]
@@ -847,9 +850,9 @@ func _page_controls() -> Array:
 	]
 
 # ------------------------------------------------------------------ actions
-func _equip(id: String) -> void:
-	GameData.equipped = id
-	GameData.save()
+func _equip_slot(i: int) -> void:
+	if not GameData.set_active_slot(i):
+		return
 	p.apply_bloodline()
 	_refresh_header()
 	_reload_page()
@@ -940,6 +943,8 @@ func _unlock_all() -> void:
 	for id in Bloodline.DEFS:
 		if not GameData.owned.has(id):
 			GameData.owned.append(id)
+	for i in GameData.SLOT_COUNT:
+		GameData.slot_unlocked[i] = true
 	GameData.save()
 	_refresh_header()
 

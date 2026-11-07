@@ -15,6 +15,14 @@ E talk | M menu | B spin menu | L quest tracker | Tab / N / MMB lock-on | Esc mo
 
 ## Spins and elements
 Bloodline spins: start with 3; earn 1 per 8 kills, per quest and for beating Kurama. A Legendary is guaranteed within 20 spins.
+
+Bloodline slots (press B): 4 slots, Shinobi Life style. Slots 1-2 are open; slot 3 costs 10 spins and slot 4 costs 25 to open.
+- [CLICK TO SPIN] rolls that slot only and REPLACES its bloodline. Epic/Legendary slots ask for a second click first.
+- EQUIP picks which slot's bloodline you fight with (also in the M menu, Bloodline tab).
+- AUTO SPIN rerolls the active slot until it hits the rarity you pick (Rare+, Epic+ or Legendary), or press STOP.
+- [ODDS] shows the chance of every rarity and bloodline. Pity is shared by all slots.
+- Old saves are migrated: your equipped bloodline goes to slot 1 and your best other one to slot 2.
+Slot unlock costs: SLOT_UNLOCK_COST in gamedata.gd.
 Element spins: start with 3; use the B menu to unlock and equip Fire, Earth, Lightning, Water or Wind. Equipped elements recolour elemental jutsu effects; the current jutsu behaviour is shared across elements.
 Progress is saved in user://save.json. Edit bloodline stats/abilities in bloodline.gd.
 
