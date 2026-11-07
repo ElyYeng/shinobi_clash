@@ -498,7 +498,14 @@ func _refresh() -> void:
 	var ad := Bloodline.get_def(a)
 	info_name.text = "Slot #%d  -  %s" % [GameData.active_slot + 1, "No Bloodline" if a == "none" else str(ad["name"])]
 	info_name.add_theme_color_override("font_color", Color.WHITE if a == "none" else _rarity_color(a))
-	info_desc.text = ad["desc"] if a == "none" else "[%s]  %s" % [ad["rarity"], ad["desc"]]
+	if a == "none":
+		info_desc.text = ad["desc"]
+	else:
+		var names: Array[String] = []
+		for k in 3:
+			names.append(str(Bloodline.ability(a, k)["name"]))
+		info_desc.text = "[%s]  %s  -  LV %d\n1-2-3: %s   -   C: %s (LV %d)" % [ad["rarity"], ad["desc"], GameData.mastery_level(a),
+			" / ".join(PackedStringArray(names)), Bloodline.mode(a)["name"], Bloodline.MODE_LEVEL]
 	element_label.text = "[ ELEMENTS ]   Equipped: %s   •   Owned: %s" % [
 		GameData.equipped_element, ", ".join(PackedStringArray(GameData.owned_elements))]
 	element_btn.text = "SPIN ELEMENT (%d)" % GameData.element_spins

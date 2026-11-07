@@ -4,6 +4,7 @@ extends Control
 ## HP / MD / CHI / STM bars and a MENU / QUEST strip. HUD creates it and calls update_from(player) every frame.
 ## What each key shows comes from Player.slot_info(key).
 
+## Keys 1 2 3 (bloodline abilities) sit in a row above Z / C.
 const LEFT := ["R", "T", "Y", "F", "G", "H"]
 const RIGHT := ["Q", "RMB+E", "E", "V", "B", "N"]
 const PITCH := 52.0
@@ -15,6 +16,8 @@ var ck: StatBar
 var st: StatBar
 var strip_mid: Label
 var strip_right: Label
+var xp_bar: StatBar
+var bl_label: Label
 var world_mode := false
 
 # ------------------------------------------------------------------ inner widgets
@@ -149,6 +152,11 @@ func _ready() -> void:
 		_slot(RIGHT[i], Vector2(50.0 + i * PITCH, -160.0))
 	_slot("Z", Vector2(-25.0, -176.0))
 	_slot("C", Vector2(-25.0, -118.0))
+	# bloodline abilities on keys 1 2 3, above Z / C
+	for i in 3:
+		_slot(str(i + 1), Vector2(-103.0 + i * PITCH * 1.5, -240.0))
+	bl_label = _strip_label("", Vector2(-200, -268), 400.0, HORIZONTAL_ALIGNMENT_CENTER)
+	bl_label.add_theme_font_size_override("font_size", 15)
 	hp = _bar(Vector2(-352, -90), 306.0, 22.0, Color(0.25, 0.8, 0.2))
 	md = _bar(Vector2(-330, -64), 290.0, 20.0, Color(0.55, 0.15, 0.85))
 	ck = _bar(Vector2(46, -90), 306.0, 22.0, Color(0.2, 0.5, 1.0))
@@ -171,6 +179,8 @@ func _ready() -> void:
 	strip_mid = _strip_label("", Vector2(-352, -36), 704.0, HORIZONTAL_ALIGNMENT_CENTER)
 	strip_right = _strip_label("", Vector2(-352, -36), 704.0, HORIZONTAL_ALIGNMENT_RIGHT)
 	strip_right.offset_right -= 14.0
+	xp_bar = _bar(Vector2(-352, -7), 704.0, 7.0, Color(0.95, 0.75, 0.2))
+	xp_bar.use_ghost = false
 
 func _slot(key: String, pos: Vector2) -> void:
 	var s := KeySlot.new()
@@ -229,5 +239,13 @@ func update_from(p: Player) -> void:
 		s.not_ready = info["not_ready"]
 		s.chakra = p.chakra
 		s.queue_redraw()
-	strip_mid.text = "SPINS %d [B]     KILLS %d" % [GameData.spins, p.kills]
+	var pts := "  (+%d pts)" % GameData.stat_points if GameData.stat_points > 0 else ""
+	strip_mid.text = "LV %d%s     SPINS %d [B]     KILLS %d" % [GameData.level, pts, GameData.spins, p.kills]
+	xp_bar.max_value = float(GameData.xp_needed())
+	xp_bar.value = float(GameData.xp)
+	if GameData.equipped == "none":
+		bl_label.text = ""
+	else:
+		var bname: String = Bloodline.get_def(GameData.equipped)["name"]
+		bl_label.text = "%s  LV %d%s" % [bname, GameData.mastery_level(GameData.equipped), "   -   POWERED UP" if p.powered else ""]
 	strip_right.text = "[ L ] QUEST" if world_mode else ""

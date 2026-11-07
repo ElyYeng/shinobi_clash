@@ -38,6 +38,28 @@ static var quest_state := ""        # "active" | "ready"
 static var quest_progress := 0
 static var _loaded := false
 
+# ---- Shinobi level + stat points (Stats tab in the M menu)
+const MAX_LEVEL := 500
+const POINTS_PER_LEVEL := 3
+const STAT_CAP := 200                   # max points in one stat
+const STAT_KEYS := ["health", "chakra", "md", "stamina", "bloodline"]
+## What one point in each stat gives (used by player.gd and shown in the menu).
+const STAT_PER_POINT := {"health": 3.0, "chakra": 3.0, "md": 0.015, "stamina": 2.0, "bloodline": 0.01}
+const XP_KILL := 100
+const XP_BOSS := 1000
+const XP_QUEST := 300
+static var level := 1
+static var xp := 0
+static var stat_points := 0
+static var stats := {"health": 0, "chakra": 0, "md": 0, "stamina": 0, "bloodline": 0}
+
+# ---- Bloodline mastery: every bloodline levels up on its own, to LV 1000
+const MASTERY_MAX := 1000
+const MASTERY_KILL := 100              # mastery XP per kill with that bloodline active
+const MASTERY_BOSS := 1000
+const MASTERY_HIT := 3                 # per enemy hit by one of its abilities
+static var mastery := {}               # bloodline id -> total mastery XP
+
 static func load_data() -> void:
 	if _loaded:
 		return
@@ -72,6 +94,18 @@ static func load_data() -> void:
 		quest_state = str(d.get("quest_state", ""))
 		quest_progress = int(d.get("quest_progress", 0))
 		total_spins_used = maxi(int(d.get("total_spins_used", 0)), 0)
+		level = clampi(int(d.get("level", 1)), 1, MAX_LEVEL)
+		xp = maxi(int(d.get("xp", 0)), 0)
+		stat_points = maxi(int(d.get("stat_points", 0)), 0)
+		var st = d.get("stats", {})
+		for k in STAT_KEYS:
+			stats[k] = clampi(int(st.get(k, 0)), 0, STAT_CAP) if st is Dictionary else 0
+		var m = d.get("mastery", {})
+		mastery = {}
+		if m is Dictionary:
+			for k in m:
+				if Bloodline.DEFS.has(str(k)):
+					mastery[str(k)] = maxi(int(m[k]), 0)
 		if d.has("slots"):
 			_load_slots(d)
 		else:
@@ -121,7 +155,102 @@ static func save() -> void:
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
-			"total_spins_used": total_spins_used}))
+			"total_spins_used": total_spins_used,
+			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery}))
+
+# ------------------------------------------------------------------ shinobi level
+static func xp_needed(lv: int = -1) -> int:
+	var l := level if lv < 0 else lv
+	return 100 + 25 * (l - 1)
+
+## Adds XP and returns how many levels were gained (each gives POINTS_PER_LEVEL stat points).
+static func add_xp(n: int) -> int:
+	if level >= MAX_LEVEL:
+		return 0
+	xp += n
+	var gained := 0
+	while level < MAX_LEVEL and xp >= xp_needed():
+		xp -= xp_needed()
+		level += 1
+		stat_points += POINTS_PER_LEVEL
+		gained += 1
+	if level >= MAX_LEVEL:
+		xp = 0
+	return gained
+
+## Spends up to `n` stat points on `key`. Returns how many were spent.
+static func add_stat(key: String, n: int = 1) -> int:
+	if not stats.has(key):
+		return 0
+	var k := mini(mini(n, stat_points), STAT_CAP - int(stats[key]))
+	if k <= 0:
+		return 0
+	stats[key] = int(stats[key]) + k
+	stat_points -= k
+	save()
+	return k
+
+static func reset_stats() -> void:
+	for k in STAT_KEYS:
+		stat_points += int(stats[k])
+		stats[k] = 0
+	save()
+
+## Bonus from the points in a stat (e.g. stat_bonus("health") = extra max HP).
+static func stat_bonus(key: String) -> float:
+	return float(stats.get(key, 0)) * float(STAT_PER_POINT.get(key, 0.0))
+
+# ------------------------------------------------------------------ bloodline mastery
+## Mastery XP needed to go from level `lv` to `lv + 1` (about 35k XP to reach LV 1000).
+static func mastery_needed(lv: int) -> int:
+	return 10 + lv / 20
+
+static var _mastery_table: PackedInt32Array = PackedInt32Array()
+
+## Total XP needed to reach each level, built once.
+static func _table() -> PackedInt32Array:
+	if _mastery_table.is_empty():
+		_mastery_table.resize(MASTERY_MAX + 1)
+		var total := 0
+		for lv in MASTERY_MAX + 1:
+			_mastery_table[lv] = total
+			total += mastery_needed(lv)
+	return _mastery_table
+
+static func mastery_level(id: String) -> int:
+	if id == "none" or id == "":
+		return 0
+	var x := int(mastery.get(id, 0))
+	var t := _table()
+	var lo := 0
+	var hi := MASTERY_MAX
+	while lo < hi:   # highest level whose total is <= x
+		var mid := (lo + hi + 1) / 2
+		if t[mid] <= x:
+			lo = mid
+		else:
+			hi = mid - 1
+	return lo
+
+## [xp into the current level, xp needed for the next level] (both 0 at max).
+static func mastery_progress(id: String) -> Array:
+	var lv := mastery_level(id)
+	if lv >= MASTERY_MAX:
+		return [0, 0]
+	return [int(mastery.get(id, 0)) - _table()[lv], mastery_needed(lv)]
+
+## Adds mastery XP; returns [old level, new level].
+static func add_mastery(id: String, n: int) -> Array:
+	if id == "none" or id == "" or n <= 0:
+		return [0, 0]
+	var old := mastery_level(id)
+	mastery[id] = mini(int(mastery.get(id, 0)) + n, _table()[MASTERY_MAX])
+	return [old, mastery_level(id)]
+
+## Sets a bloodline straight to a mastery level (cheats / testing).
+static func set_mastery_level(id: String, lv: int) -> void:
+	mastery[id] = _table()[clampi(lv, 0, MASTERY_MAX)]
+	save()
 
 static func rarity_rank(id: String) -> int:
 	if id == "none" or id == "":

@@ -458,6 +458,7 @@ func _die() -> void:
 	var p := _player()
 	if p != null:
 		p.kills += 1
+		p.on_kill(true)
 		p.add_mode(25.0)
 		p.chakra = p.max_chakra
 		p.health = minf(p.max_health, p.health + 50.0)

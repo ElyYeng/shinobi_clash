@@ -140,6 +140,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 		var p := get_tree().get_first_node_in_group("player") as Player
 		if p:
 			p.kills += 1
+			p.on_kill(is_boss)
 			p.add_mode(10.0)
 			p.chakra = minf(p.max_chakra, p.chakra + 10.0)
 			if is_boss:

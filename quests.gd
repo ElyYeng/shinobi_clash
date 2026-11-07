@@ -114,6 +114,8 @@ func turn_in() -> void:
 		return
 	var reward := int(d["reward"])
 	GameData.spins += reward
+	if player != null:
+		player.gain_xp(GameData.XP_QUEST)
 	GameData.quests_done.append(GameData.quest_active)
 	GameData.quest_active = ""
 	GameData.quest_state = ""

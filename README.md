@@ -10,7 +10,7 @@ to assets/ . Tweak size/orientation/animation names at the top of hero.gd.
 ## Controls
 WASD move | Shift sprint (stamina) | Space jump x2 | Q dash | LMB combo | RMB kunai | RMB+E kunai volley | V substitution
 Fire jutsu: R fireball | T phoenix flowers | Y flame wave | F clones | G dragon flame | H flame armor
-C tap = bloodline power-up (Sharingan etc.), C hold = charge chakra | Z Kurama Mode (after beating Kurama, MD bar full)
+1 / 2 / 3 bloodline abilities | C tap = bloodline power-up on/off, C hold = charge chakra | Z Kurama Mode (after beating Kurama, MD bar full)
 E talk | M menu | B spin menu | L quest tracker | Tab / N / MMB lock-on | Esc mouse
 
 ## Spins and elements
@@ -76,3 +76,17 @@ camera distance, FOV, volume), Controls. Add a tab: put its name in `TABS` and a
 Shindo-Life style: octagon key slots with cooldown pies, HP / MD / CHI / STM bars and a MENU strip. Each slot reads Player.slot_info(key).
 MD = mode meter (fills 1/s and +10 per kill, +25 for Kurama); Kurama Mode (Z) needs it full. STM = stamina, used by sprinting.
 New jutsu live in player.gd (_phoenix, _flame_wave, _dragon_flame, _flame_armor, _substitute, _kunai_volley, _kurama_mode).
+
+## Levels, stats and bloodline mastery (Shindo Life style)
+- **Shinobi level** (max 500): XP from kills (100), bosses (1000) and quests (300). Each level gives 3 stat points.
+  Spend them in M > Stats on Health (+3 HP), Chakra (+3), MD (+1.5% MD gain), Stamina (+2) or Bloodline (+1% ability damage).
+  Max 200 points per stat; Reset Stats gives them all back. The HUD strip shows your level and XP bar.
+- **Bloodline mastery** (max LV 1000): each bloodline levels on its own while equipped (100 per kill, 1000 per boss, 3 per ability hit).
+- **3 abilities per bloodline** on keys 1 / 2 / 3, unlocked at bloodline LV 0 / 250 / 600 (per-ability "lvl" in bloodline.gd).
+- **Power-up mode** at bloodline LV 1000 (Uchiha = Sharingan, Uzumaki = Kurama Ink Mode, ...). Tap C to turn it on and again to
+  turn it off. No timer: it drains MD (a full bar lasts 30 s) and ends when MD runs out. Needs at least 10 MD to start.
+- **M > Bloodline** shows both slots like Shindo Life: bloodline LV, the 3 abilities + power-up with their unlock levels,
+  EQUIP and the mastery EXP bar. Click an icon for its details. M > Sub-Ability lists the equipped bloodline's moves.
+- Cheats tab: +100 / MAX bloodline LV and +5 shinobi levels for testing.
+- Tuning: abilities and modes in bloodline.gd (format documented at the top), XP / stat values in gamedata.gd,
+  MD drain (POWER_DRAIN_TIME) in player.gd.

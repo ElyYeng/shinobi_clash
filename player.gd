@@ -43,10 +43,12 @@ var dash_cost := 15.0
 var clone_count := 2
 var clone_time := 8.0
 var hp_regen := 0.0
-var ability_cd := 0.0
-var ability_time := 0.0
-var active_ability := ""
-var ability_tick := 0.0
+var bl_cd: Array[float] = [0.0, 0.0, 0.0]   # cooldowns of bloodline abilities 1 2 3
+var buffs: Array[Dictionary] = []           # active bloodline buffs / auras
+var powered := false                        # bloodline power-up (C) is on
+var pmode: Dictionary = {}                  # Bloodline.mode() while powered
+var pmode_fx: Node3D = null
+var mode_tick := 0.0
 
 var yaw := 0.0
 var pitch := -0.25
@@ -111,13 +113,16 @@ func _ready() -> void:
 	health = max_health
 	chakra = max_chakra
 
-func apply_bloodline() -> void:
+## Recomputes max health / chakra / stamina and bloodline passives (bloodline + stat points).
+func refresh_stats() -> void:
 	var def := Bloodline.get_def(GameData.equipped)
 	var s: Dictionary = def["stats"]
 	var old_hp := max_health
 	var old_ck := max_chakra
-	max_health = 100.0 + float(s.get("hp", 0.0))
-	max_chakra = 100.0 + float(s.get("chakra", 0.0))
+	max_health = 100.0 + float(s.get("hp", 0.0)) + GameData.stat_bonus("health")
+	max_chakra = 100.0 + float(s.get("chakra", 0.0)) + GameData.stat_bonus("chakra")
+	max_stamina = 100.0 + GameData.stat_bonus("stamina")
+	stamina = minf(stamina, max_stamina)
 	speed_mult = float(s.get("speed", 1.0))
 	regen_mult = float(s.get("regen", 1.0))
 	dmg_mult = float(s.get("dmg", 1.0))
@@ -132,8 +137,14 @@ func apply_bloodline() -> void:
 		chakra += max_chakra - old_ck
 	health = minf(health, max_health)
 	chakra = minf(chakra, max_chakra)
-	_end_ability()
-	ability_cd = 0.0
+
+## Called when the equipped bloodline changes.
+func apply_bloodline() -> void:
+	var def := Bloodline.get_def(GameData.equipped)
+	refresh_stats()
+	_clear_buffs()
+	bl_cd = [0.0, 0.0, 0.0]
+	_power_off()
 	aura.visible = GameData.equipped != "none"
 	aura.light_color = def["color"]
 	aura.light_energy = 1.2
@@ -142,12 +153,7 @@ func _dmg() -> float:
 	var m := dmg_mult
 	if mode_time > 0.0:
 		m *= 2.0
-	if active_ability == "chakra_surge":
-		m *= 1.5
-	elif active_ability == "sharingan":
-		m *= 1.25
-	elif active_ability == "blood_rage":
-		m *= 1.4
+	m *= _bmul("dmg")
 	return m
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -202,7 +208,9 @@ func _physics_process(delta: float) -> void:
 	kunai_cd = maxf(0.0, kunai_cd - delta)
 	fire_cd = maxf(0.0, fire_cd - delta)
 	clone_cd = maxf(0.0, clone_cd - delta)
-	ability_cd = maxf(0.0, ability_cd - delta)
+	var cd_rate := 1.0 / maxf(_bmul("cd"), 0.1)
+	for i in 3:
+		bl_cd[i] = maxf(0.0, bl_cd[i] - delta * cd_rate)
 	t_cd = maxf(0.0, t_cd - delta)
 	y_cd = maxf(0.0, y_cd - delta)
 	g_cd = maxf(0.0, g_cd - delta)
@@ -221,16 +229,16 @@ func _physics_process(delta: float) -> void:
 		aura.light_energy = 5.0
 		if mode_time <= 0.0:
 			_end_mode()
+	elif powered:   # bloodline power-up drains MD; no timer
+		mode_meter = maxf(0.0, mode_meter - MODE_MAX / POWER_DRAIN_TIME * delta)
+		if mode_meter <= 0.0:
+			_power_off()
+			_toast("Out of MD - power-up ended")
 	elif mode_meter < MODE_MAX:
-		mode_meter = minf(MODE_MAX, mode_meter + 1.0 * delta)
+		mode_meter = minf(MODE_MAX, mode_meter + 1.0 * delta * _md_mult())
 	invuln = maxf(0.0, invuln - delta)
-	if ability_time > 0.0:
-		ability_time -= delta
-		if ability_time <= 0.0:
-			_end_ability()
-		else:
-			_ability_tick(delta)
-	var hpr := hp_regen + (8.0 if active_ability == "regen" else 0.0) + (6.0 if mode_time > 0.0 else 0.0)
+	_update_buffs(delta)
+	var hpr := hp_regen + _badd("hp") + (6.0 if mode_time > 0.0 else 0.0)
 	if hpr > 0.0:
 		health = minf(max_health, health + hpr * delta)
 
@@ -273,7 +281,7 @@ func _physics_process(delta: float) -> void:
 		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.6, 0.85, 1.0), 26, 8.0, 0.25, 0.5, 0.0)
 
 	var charging := Input.is_action_pressed("charge") and is_on_floor() and not moving
-	var surge := 1.25 if active_ability == "chakra_surge" else 1.0
+	var surge := _bmul("speed")
 	if mode_time > 0.0:
 		surge *= 1.3
 
@@ -294,8 +302,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, dir.z * speed, 70.0 * delta)
 
 	var regen := (40.0 if charging else 5.0) * regen_mult
-	if active_ability == "chakra_surge":
-		regen += 30.0
+	regen += _badd("ck")
 	chakra = clampf(chakra + regen * delta, 0.0, max_chakra)
 	if stam_delay <= 0.0:
 		stamina = minf(max_stamina, stamina + 30.0 * delta)
@@ -324,7 +331,10 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("clone"):
 		_clones()
 	if Input.is_action_just_pressed("ability"):
-		_use_ability()
+		_toggle_power()
+	for i in 3:
+		if Input.is_action_just_pressed("bl_%d" % (i + 1)):
+			_cast(i)
 	if Input.is_action_just_pressed("jutsu_t"):
 		_phoenix()
 	if Input.is_action_just_pressed("jutsu_y"):
@@ -339,12 +349,12 @@ func _physics_process(delta: float) -> void:
 		_kurama_mode()
 	if Input.is_action_just_pressed("volley") and Input.is_action_pressed("kunai"):
 		_kunai_volley()
-	# C: tap = bloodline power-up (Sharingan etc.), hold = charge chakra
+	# C: tap = bloodline power-up on / off (needs bloodline LV 1000, drains MD), hold = charge chakra
 	if Input.is_action_pressed("charge"):
 		c_hold += delta
 	else:
 		if c_hold > 0.0 and c_hold < 0.25:
-			_use_ability()
+			_toggle_power()
 		c_hold = 0.0
 
 	move_and_slide()
@@ -473,101 +483,283 @@ func _clones() -> void:
 		get_parent().add_child(c)
 	_play_once("jutsu", 0.6)
 
-func _use_ability() -> void:
-	var def := Bloodline.get_def(GameData.equipped)
-	var ab: String = def["ability"]
-	if ab == "" or ability_cd > 0.0 or active_ability != "":
+## ---- Bloodline abilities (keys 1 2 3) and power-up mode (C) ----
+## Abilities come from Bloodline.ability(); each unlocks at a bloodline (mastery) level.
+## The power-up (C, unlocked at bloodline LV 1000) has no timer: it drains MD and ends
+## when MD runs out or C is pressed again.
+const POWER_DRAIN_TIME := 30.0   # seconds a full MD bar lasts while powered up
+const POWER_MIN_MD := 10.0       # MD needed to power up
+
+func _bl_level() -> int:
+	return GameData.mastery_level(GameData.equipped)
+
+func _bl_name() -> String:
+	return str(Bloodline.get_def(GameData.equipped)["name"])
+
+## Damage multiplier from points in the Bloodline stat.
+func _bl_mult() -> float:
+	return 1.0 + GameData.stat_bonus("bloodline")
+
+## MD gain multiplier from points in the MD stat.
+func _md_mult() -> float:
+	return 1.0 + GameData.stat_bonus("md")
+
+## Product of a multiplier over active buffs and the power-up mode (dmg, speed, def, cd).
+func _bmul(key: String) -> float:
+	var m := 1.0
+	for b in buffs:
+		m *= float(b[key])
+	if powered:
+		m *= float(pmode[key])
+	return m
+
+## Sum of an additive bonus over active buffs and the power-up mode (hp, ck).
+func _badd(key: String) -> float:
+	var s := 0.0
+	for b in buffs:
+		s += float(b[key])
+	if powered:
+		s += float(pmode[key])
+	return s
+
+func _immune() -> bool:
+	for b in buffs:
+		if b["immune"]:
+			return true
+	return false
+
+## Speed multiplier applied to every enemy (Sharingan, Shadow Domain...).
+func enemy_slow() -> float:
+	var s := 1.0
+	for b in buffs:
+		s = minf(s, float(b["slow"]))
+	if powered:
+		s = minf(s, float(pmode["slow"]))
+	return s
+
+## True while an Uchiha eye effect is up (HUD red tint).
+func eye_overlay() -> bool:
+	if GameData.equipped != "uchiha":
+		return false
+	if powered:
+		return true
+	for b in buffs:
+		if float(b["slow"]) < 0.5:
+			return true
+	return false
+
+func _cast(i: int) -> void:
+	if is_dead:
 		return
-	var cost: float = def["ability_cost"]
+	var id := GameData.equipped
+	var a := Bloodline.ability(id, i)
+	if a.is_empty():
+		_toast("No bloodline equipped - press B to spin one")
+		return
+	var lv := _bl_level()
+	if lv < int(a["lvl"]):
+		_toast("%s unlocks at %s LV %d  (you are LV %d)" % [a["name"], _bl_name(), int(a["lvl"]), lv])
+		return
+	if bl_cd[i] > 0.0:
+		return
+	var cost := float(a["cost"])
 	if chakra < cost:
+		_toast("Not enough chakra for %s" % a["name"])
 		return
+	var kind := str(a["kind"])
+	var target: Enemy = null
+	if kind == "target":
+		target = lock_target if is_instance_valid(lock_target) and lock_target.health > 0.0 \
+			and lock_target.global_position.distance_to(global_position) <= float(a["r"]) else _nearest_enemy(float(a["r"]))
+		if target == null:
+			_toast("No enemy in range (%dm)" % int(a["r"]))
+			return
 	chakra -= cost
-	Sfx.play(self, "power")
-	ability_cd = def["ability_cd"]
-	var col: Color = def["color"]
-	match ab:
-		"sharingan":
-			active_ability = ab
-			ability_time = 6.0
-			Enemy.time_scale = 0.35
-		"chakra_surge":
-			active_ability = ab
-			ability_time = 8.0
-		"regen":
-			active_ability = ab
-			ability_time = 5.0
-		"gentle_burst":
-			for e: Enemy in get_tree().get_nodes_in_group("enemies"):
-				var to := e.global_position - global_position
-				to.y = 0.0
-				if to.length() < 7.0:
-					e.take_damage(40.0 * _dmg(), to.normalized() * 15.0)
-		"shadow_bind":
-			for e: Enemy in get_tree().get_nodes_in_group("enemies"):
-				if e.global_position.distance_to(global_position) < 14.0:
-					e.stun = maxf(e.stun, 2.0 if e.is_boss else 4.0)
-					e.windup = 0.0
-					Fx.puff(get_parent(), e.global_position + Vector3.UP, Color(0.25, 0.1, 0.4, 0.8), 2.0)
-		# ---- new clans ----
-		"staff_sweep":       # Sarutobi: cone in front, big knockback
-			for e in _enemies_in(9.0):
-				var to := e.global_position - global_position
-				to.y = 0.0
-				if to.normalized().dot(facing) > 0.45:
-					_hit(e, 45.0 * _dmg(), to.normalized() * 18.0)
-			Vfx.shockwave(get_parent(), global_position + facing * 3.0 + Vector3.UP * 0.2, col, 5.0, 0.35)
-			_play_once("attack", 0.4)
-		"insect_swarm", "blood_rage":   # damage aura, ticks in _ability_tick()
-			active_ability = ab
-			ability_time = 5.0 if ab == "insect_swarm" else 7.0
-			ability_tick = 0.0
-		"mind_burst":        # Yamanaka: nearest enemy, heavy hit + stun
-			var t := _nearest_enemy(18.0)
-			if t != null:
-				t.stun = maxf(t.stun, 1.5 if t.is_boss else 4.0)
-				t.windup = 0.0
-				Vfx.shockwave(get_parent(), t.global_position + Vector3.UP, col, 3.0, 0.4)
-				_hit(t, 70.0 * _dmg(), Vector3.ZERO)
-		"hydrify":           # Hozuki: immune (see take_damage) + heal
-			active_ability = ab
-			ability_time = 4.0
-			health = minf(max_health, health + 30.0)
-		"bone_spikes":       # Kaguya: ring of bone spears
-			_fan(12, 30.0, 26.0, 30.0, 0.0, 0.2, Color(0.95, 0.93, 0.85), true)
-		"shark_bombs":       # Hoshigaki: homing water sharks
-			_homing(4, 50.0, 2.5, Color(0.2, 0.5, 1.0), 0.4)
-		"ice_prison":        # Yuki: freeze everything nearby
-			for e in _enemies_in(12.0):
-				e.stun = maxf(e.stun, 1.5 if e.is_boss else 4.0)
-				e.windup = 0.0
-				Fx.puff(get_parent(), e.global_position + Vector3.UP, Color(0.75, 0.95, 1.0, 0.9), 2.2)
-				_hit(e, 25.0 * _dmg(), Vector3.ZERO)
-			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 12.0, 0.5)
-		"lightning_blade":   # Hatake: invulnerable dash, hits everything on the line
+	bl_cd[i] = float(a["cd"])
+	var raw: Dictionary = Bloodline.get_def(id)["abilities"][i]
+	var col: Color = a["col"]
+	var dmg := float(a["dmg"]) * _dmg() * _bl_mult()
+	Sfx.play(self, "power", -3.0)
+	match kind:
+		"burst":
+			for e in _enemies_in(float(a["r"])):
+				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
+				_stun(e, float(a["stun"]))
+				_hit(e, dmg, to.normalized() * float(a["knock"]))
+			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, float(a["r"]), 0.45)
+		"cone":
+			for e in _enemies_in(float(a["r"])):
+				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
+				if to.normalized().dot(facing) > float(a["dot"]):
+					_stun(e, float(a["stun"]))
+					_hit(e, dmg, to.normalized() * float(a["knock"]))
+			Vfx.shockwave(get_parent(), global_position + facing * float(a["r"]) * 0.4 + Vector3.UP * 0.2, col, float(a["r"]) * 0.6, 0.35)
+		"target":
+			_stun(target, float(a["stun"]))
+			Vfx.shockwave(get_parent(), target.global_position + Vector3.UP, col, 3.0, 0.4)
+			Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
+			_hit(target, dmg, Vector3.ZERO)
+		"fan":
+			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * _bl_mult(),
+				float(a["aoe"]), float(a["size"]), col, bool(a["long"]))
+		"homing":
+			_homing(int(a["n"]), float(a["dmg"]) * _bl_mult(), float(a["aoe"]), col, float(a["size"]))
+		"dash":
 			var dir := facing
-			if lock_target != null and is_instance_valid(lock_target):
-				dir = (lock_target.global_position - global_position) * Vector3(1, 0, 1)
-				dir = dir.normalized() if dir.length() > 0.1 else facing
-			var reach := DASH_SPEED * 0.4
+			if is_instance_valid(lock_target):
+				var d := (lock_target.global_position - global_position) * Vector3(1, 0, 1)
+				if d.length() > 0.1:
+					dir = d.normalized()
+			var reach := float(a["dist"])
 			for e in _enemies_in(reach + 1.0):
-				var to := e.global_position - global_position
-				to.y = 0.0
+				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
 				var along := to.dot(dir)
 				if along > -0.5 and along < reach + 1.0 and (to - dir * along).length() < 2.5:
-					_hit(e, 80.0 * _dmg(), dir * 12.0)
+					_hit(e, dmg, dir * 12.0)
 			facing = dir
 			dash_dir = dir
-			dash_time = 0.4
-			invuln = maxf(invuln, 0.6)
+			dash_time = reach / DASH_SPEED
+			invuln = maxf(invuln, dash_time + 0.2)
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 40, 10.0, 0.25, 0.4, 0.0)
 			Vfx.trail(self, col, 0.35, 40, 0.5)
-		"truth_orbs":        # Otsutsuki: homing orbs
-			_homing(6, 70.0, 2.0, Color(0.06, 0.04, 0.1), 0.35)
-			Vfx.flash(get_parent(), global_position + Vector3.UP * 2.0, Color(0.8, 0.75, 1.0), 6.0, 10.0, 0.4)
-	if ab != "":
+		"buff", "aura":
+			_add_buff(str(a["name"]), raw, col)
+	if float(a["heal"]) > 0.0:
+		health = minf(max_health, health + float(a["heal"]))
+	if not powered:
 		aura.light_energy = 4.0
-	Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 4.0 if ab != "gentle_burst" else 14.0)
+	Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 3.0)
+	_play_once("jutsu", 0.5)
+
+func _stun(e: Enemy, secs: float) -> void:
+	if secs <= 0.0 or not is_instance_valid(e):
+		return
+	e.stun = maxf(e.stun, secs * (0.4 if e.is_boss else 1.0))   # bosses shrug most of it off
+	e.windup = 0.0
+
+## Buff/aura entry. `raw` is the ability's own data, so unset fields mean "no change".
+func _add_buff(bname: String, raw: Dictionary, col: Color) -> void:
+	buffs = buffs.filter(func(b: Dictionary) -> bool: return b["name"] != bname)
+	buffs.append({"name": bname, "t": float(raw.get("t", 5.0)),
+		"dmg": float(raw.get("dmg", 1.0)) if raw.get("kind", "") == "buff" else 1.0,
+		"speed": float(raw.get("speed", 1.0)), "def": float(raw.get("def", 1.0)), "cd": 1.0,
+		"hp": float(raw.get("hp", 0.0)), "ck": float(raw.get("ck", 0.0)),
+		"immune": bool(raw.get("immune", false)), "slow": float(raw.get("slow", 1.0)),
+		"r": float(raw.get("r", 0.0)), "dps": float(raw.get("dps", 0.0)), "col": col, "tick": 0.0})
+
+## Ticks buffs, damage auras and the power-up drain. Called every physics frame.
+func _update_buffs(delta: float) -> void:
+	for b in buffs:
+		b["t"] = float(b["t"]) - delta
+		if float(b["dps"]) > 0.0:
+			b["tick"] = float(b["tick"]) - delta
+			if float(b["tick"]) <= 0.0:
+				b["tick"] = 0.5
+				_aura_tick(float(b["r"]), float(b["dps"]), b["col"])
+	buffs = buffs.filter(func(b: Dictionary) -> bool: return float(b["t"]) > 0.0)
+	if powered and float(pmode["dps"]) > 0.0:
+		mode_tick -= delta
+		if mode_tick <= 0.0:
+			mode_tick = 0.5
+			_aura_tick(float(pmode["r"]), float(pmode["dps"]), pmode["col"])
+	Enemy.time_scale = enemy_slow()
+	if buffs.is_empty() and not powered and armor_time <= 0.0 and mode_time <= 0.0 and aura.light_energy > 1.2:
+		aura.light_energy = move_toward(aura.light_energy, 1.2, 6.0 * delta)
+
+func _aura_tick(radius: float, dps: float, col: Color) -> void:
+	for e in _enemies_in(radius):
+		_hit(e, dps * 0.5 * _dmg() * _bl_mult(), Vector3.ZERO)
+		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
+
+func _clear_buffs() -> void:
+	buffs.clear()
+	Enemy.time_scale = 1.0
+
+## C (tap) / X: turn the bloodline power-up on or off.
+func _toggle_power() -> void:
+	if is_dead:
+		return
+	if powered:
+		_power_off()
+		_toast("Power-up released")
+		return
+	var id := GameData.equipped
+	if id == "none":
+		_toast("No bloodline equipped - press B to spin one")
+		return
+	var m := Bloodline.mode(id)
+	var lv := _bl_level()
+	if lv < Bloodline.MODE_LEVEL:
+		_toast("%s unlocks at %s LV %d  (you are LV %d)" % [m["name"], _bl_name(), Bloodline.MODE_LEVEL, lv])
+		return
+	if mode_time > 0.0:
+		_toast("Already in Kurama Mode")
+		return
+	if mode_meter < POWER_MIN_MD:
+		_toast("Not enough MD to power up  (%d / %d)" % [int(mode_meter), int(POWER_MIN_MD)])
+		return
+	powered = true
+	pmode = m
+	mode_tick = 0.0
+	var col: Color = m["col"]
+	pmode_fx = Node3D.new()
+	add_child(pmode_fx)
+	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 1.25, col, 55)
+	aura.visible = true
+	aura.light_color = col
+	aura.light_energy = 4.5
+	Sfx.play(self, "power")
+	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 70, 12.0, 0.45, 0.8, 0.0)
+	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 6.0, 0.4)
+	Vfx.shake(cam, 0.2, 0.35)
+	_toast("%s!" % str(m["name"]).to_upper())
 	_play_once("jutsu", 0.6)
+
+func _power_off() -> void:
+	if not powered:
+		return
+	powered = false
+	pmode = {}
+	if pmode_fx != null and is_instance_valid(pmode_fx):
+		pmode_fx.queue_free()
+	pmode_fx = null
+	Enemy.time_scale = enemy_slow()
+	if aura:
+		_reset_aura()
+
+# ---- XP / mastery ----
+func on_kill(boss: bool) -> void:
+	gain_xp(GameData.XP_BOSS if boss else GameData.XP_KILL)
+	_gain_mastery(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
+	GameData.save()
+
+func gain_xp(n: int) -> void:
+	var gained := GameData.add_xp(n)
+	if gained > 0:
+		Sfx.play(self, "power", -2.0)
+		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.85, 0.3), 50, 9.0, 0.3, 0.8, 0.0)
+		_toast("LEVEL UP!  LV %d   (+%d stat points - M > Stats)" % [GameData.level, gained * GameData.POINTS_PER_LEVEL])
+
+func _gain_mastery(n: int) -> void:
+	var id := GameData.equipped
+	if id == "none":
+		return
+	var r := GameData.add_mastery(id, n)
+	var old: int = r[0]
+	var now: int = r[1]
+	if now <= old:
+		return
+	for i in 3:
+		var a := Bloodline.ability(id, i)
+		if not a.is_empty() and old < int(a["lvl"]) and now >= int(a["lvl"]):
+			_toast("NEW ABILITY: %s  [%d]" % [a["name"], i + 1])
+			return
+	if old < Bloodline.MODE_LEVEL and now >= Bloodline.MODE_LEVEL:
+		_toast("POWER-UP UNLOCKED: %s  - tap C!" % Bloodline.mode(id)["name"])
+		Sfx.play(self, "power")
+	elif now / 100 > old / 100:
+		_toast("%s mastery LV %d" % [_bl_name(), now])
 
 ## Enemies still alive within `radius` metres (flat distance).
 func _enemies_in(radius: float) -> Array[Enemy]:
@@ -580,10 +772,11 @@ func _enemies_in(radius: float) -> Array[Enemy]:
 				out.append(e)
 	return out
 
-## Damages an enemy only if it is still alive (stops double kills in one frame).
+## Damages an enemy only if it is still alive (stops double kills in one frame). Gives mastery XP.
 func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 	if is_instance_valid(e) and e.health > 0.0:
 		e.take_damage(amount, knock)
+		GameData.add_mastery(GameData.equipped, GameData.MASTERY_HIT)
 
 ## Fires `count` homing projectiles, spread over the nearest enemies.
 func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> void:
@@ -605,29 +798,6 @@ func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> v
 			pr.target = targets[i % targets.size()]
 		get_parent().add_child(pr)
 
-## Per-frame part of lasting abilities (damage auras).
-func _ability_tick(delta: float) -> void:
-	if active_ability != "insect_swarm" and active_ability != "blood_rage":
-		return
-	ability_tick -= delta
-	if ability_tick > 0.0:
-		return
-	ability_tick = 0.5
-	var swarm := active_ability == "insect_swarm"
-	var col := Color(0.15, 0.2, 0.1, 0.8) if swarm else Color(0.6, 0.02, 0.08, 0.8)
-	for e in _enemies_in(6.0 if swarm else 8.0):
-		_hit(e, (10.0 if swarm else 12.0) * 0.5 * _dmg(), Vector3.ZERO)
-		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, col, 0.9)
-	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
-
-func _end_ability() -> void:
-	if active_ability == "sharingan":
-		Enemy.time_scale = 1.0
-	active_ability = ""
-	ability_time = 0.0
-	if aura:
-		aura.light_energy = 1.2
-
 ## ---- Fire Style jutsu + Kurama Mode (keys: T Y G H, V, RMB+E, Z) ----
 func _toast(t: String) -> void:
 	var h = get_parent().get("hud")
@@ -636,12 +806,17 @@ func _toast(t: String) -> void:
 
 func add_mode(amount: float) -> void:
 	if mode_time <= 0.0:
-		mode_meter = minf(MODE_MAX, mode_meter + amount)
+		mode_meter = minf(MODE_MAX, mode_meter + amount * _md_mult())
 
 func _element_color() -> Color:
 	return GameData.get_element_color()
 
 func _reset_aura() -> void:
+	if powered:
+		aura.visible = true
+		aura.light_color = pmode["col"]
+		aura.light_energy = 4.5
+		return
 	var def := Bloodline.get_def(GameData.equipped)
 	aura.visible = GameData.equipped != "none"
 	aura.light_color = def["color"]
@@ -760,6 +935,9 @@ func _substitute() -> void:   # V - swap with a log; lands behind the nearest en
 func _kurama_mode() -> void:  # Z - needs Kurama defeated and the MD bar full
 	if is_dead or mode_time > 0.0:
 		return
+	if powered:
+		_toast("Release your bloodline power-up (C) first")
+		return
 	if not GameData.kurama_defeated:
 		_toast("Defeat Kurama in the Kurama Boss Fight to unlock Kurama Mode")
 		return
@@ -819,25 +997,39 @@ func slot_info(key: String) -> Dictionary:
 		"Z":
 			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated, "active": mode_time > 0.0,
 				"timer": mode_time, "not_ready": mode_meter < MODE_MAX and mode_time <= 0.0}, true)
-		"C":
-			var bd := Bloodline.get_def(GameData.equipped)
-			if bd["ability"] == "":
-				d["name"] = "Charge"
+		"C":   # power-up: no timer, drains MD
+			var m := Bloodline.mode(GameData.equipped)
+			if powered:
+				d.merge({"name": pmode["name"], "active": true}, true)
+			elif not m.is_empty() and _bl_level() >= Bloodline.MODE_LEVEL:
+				d.merge({"name": m["name"], "not_ready": mode_meter < POWER_MIN_MD or mode_time > 0.0}, true)
 			else:
-				d.merge({"name": bd["ability_name"], "cd": ability_cd, "max": bd["ability_cd"], "cost": bd["ability_cost"],
-					"active": active_ability != "", "timer": ability_time if active_ability != "" else 0.0}, true)
+				d["name"] = "Charge"
+		"1", "2", "3":
+			var i := int(key) - 1
+			var a := Bloodline.ability(GameData.equipped, i)
+			if a.is_empty():
+				d.merge({"name": "-", "locked": true}, true)
+			else:
+				var left := 0.0
+				for b in buffs:
+					if b["name"] == a["name"]:
+						left = float(b["t"])
+				d.merge({"name": a["name"], "cd": bl_cd[i], "max": float(a["cd"]), "cost": float(a["cost"]),
+					"locked": _bl_level() < int(a["lvl"]), "active": left > 0.0, "timer": left}, true)
 	return d
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	if invuln > 0.0 or is_dead or god_mode:
 		return
-	if active_ability == "hydrify":   # Hozuki: body is water
+	if _immune():   # e.g. Hozuki Hydrification
 		Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.4, 0.75, 0.95, 0.7), 1.2)
 		return
 	if armor_time > 0.0:
 		amount *= 0.4
 	if mode_time > 0.0:
 		amount *= 0.5
+	amount *= _bmul("def")
 	health -= amount
 	invuln = 0.4
 	velocity.x += knock.x
@@ -848,7 +1040,8 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 		health = 0.0
 		is_dead = true
 		lock_target = null
-		_end_ability()
+		_clear_buffs()
+		_power_off()
 		_end_mode()
 		armor_time = 0.0
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

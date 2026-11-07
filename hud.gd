@@ -243,7 +243,7 @@ func _process(delta: float) -> void:
 	var end_target := 0.55 if (p.is_dead or victory) else 0.0
 	end_alpha = move_toward(end_alpha, end_target, delta * 0.8)
 	end_overlay.color = Color(0.0, 0.0, 0.0, end_alpha)
-	sharingan_overlay.visible = p.active_ability == "sharingan"
+	sharingan_overlay.visible = p.eye_overlay()
 	# boss bar
 	var show_boss := is_instance_valid(boss) and boss.health > 0.0
 	boss_bar.visible = show_boss

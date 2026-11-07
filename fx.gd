@@ -13,6 +13,7 @@ static func setup_inputs() -> void:
 	_key("ability", [KEY_X]); _key("spin_menu", [KEY_B])
 	_key("to_menu", [KEY_M]); _key("interact", [KEY_E])
 	_key("jutsu_t", [KEY_T]); _key("jutsu_y", [KEY_Y]); _key("jutsu_g", [KEY_G]); _key("jutsu_h", [KEY_H])
+	_key("bl_1", [KEY_1]); _key("bl_2", [KEY_2]); _key("bl_3", [KEY_3])
 	_key("biju", [KEY_Z]); _key("substitute", [KEY_V]); _key("volley", [KEY_E]); _key("quest_log", [KEY_L])
 	_mouse("attack", MOUSE_BUTTON_LEFT)
 	_mouse("kunai", MOUSE_BUTTON_RIGHT)
