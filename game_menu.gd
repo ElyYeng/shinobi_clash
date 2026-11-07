@@ -718,7 +718,7 @@ func _page_sub() -> Array:
 	var out: Array = []
 	if d["ability"] == "":
 		out.append(_item("No Sub-Ability", "Equip a Rare+ bloodline", Color(0.5, 0.5, 0.5), "-",
-			"Your current bloodline has no active ability. Rare, Epic and Legendary bloodlines unlock one on [C] (tap)."))
+			"Your current bloodline has no active ability. Most bloodlines (and every Rare or better one) unlock one on [C] (tap)."))
 	else:
 		var st := "ACTIVE %.0fs" % p.ability_time if p.active_ability != "" else _cd(p.ability_cd)
 		out.append(_item(d["ability_name"], "[C] - %d chakra, %ds cooldown" % [int(d["ability_cost"]), int(d["ability_cd"])],
@@ -788,7 +788,7 @@ func _page_mastery() -> Array:
 		_item("Beast Slayer", "Kurama: %s" % ("defeated" if GameData.kurama_defeated else "undefeated"), Color(1.0, 0.45, 0.1), "K",
 			"Defeat the Nine-Tailed Beast for 5 spins.", {"progress": 1.0 if GameData.kurama_defeated else 0.0}),
 		_item("Bloodline Collector", "%d / %d bloodlines" % [bl, bt], Color(0.6, 0.4, 0.9), "B",
-			"Spin for new bloodlines. A Legendary is guaranteed within %d spins." % maxi(GameData.PITY_LIMIT - GameData.pity, 0),
+			"Spin for new bloodlines. A Legendary or Mythic is guaranteed within %d spins." % maxi(GameData.PITY_LIMIT - GameData.pity, 0),
 			{"progress": float(bl) / float(bt)}),
 	]
 

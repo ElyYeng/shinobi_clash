@@ -23,6 +23,14 @@ Bloodline slots (press B): 4 slots, Shinobi Life style. Slots 1-2 are open; slot
 - [ODDS] shows the chance of every rarity and bloodline. Pity is shared by all slots.
 - Old saves are migrated: your equipped bloodline goes to slot 1 and your best other one to slot 2.
 Slot unlock costs: SLOT_UNLOCK_COST in gamedata.gd.
+
+## Bloodlines (17)
+Common: Inuzuka (speed), Akimichi (health), Sarutobi (C: Staff Sweep)
+Rare: Nara (Shadow Bind), Hyuga (Gentle Burst), Aburame (Insect Swarm), Yamanaka (Mind Burst), Hozuki (Hydrification)
+Epic: Senju (Regeneration), Kaguya (Bone Spikes), Hoshigaki (Shark Bombs), Yuki (Ice Prison)
+Legendary: Uzumaki (Chakra Surge), Uchiha (Sharingan), Hatake (Lightning Blade), Chinoike (Blood Rage)
+Mythic: Otsutsuki (Truth-Seeking Orbs)
+Odds: Common 45% / Rare 30% / Epic 15% / Legendary 8.5% / Mythic 1.5% (weights in bloodline.gd; powers in player.gd _use_ability).
 Element spins: start with 3; use the B menu to unlock and equip Fire, Earth, Lightning, Water or Wind. Equipped elements recolour elemental jutsu effects; the current jutsu behaviour is shared across elements.
 Progress is saved in user://save.json. Edit bloodline stats/abilities in bloodline.gd.
 

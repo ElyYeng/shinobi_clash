@@ -46,6 +46,7 @@ var hp_regen := 0.0
 var ability_cd := 0.0
 var ability_time := 0.0
 var active_ability := ""
+var ability_tick := 0.0
 
 var yaw := 0.0
 var pitch := -0.25
@@ -145,6 +146,8 @@ func _dmg() -> float:
 		m *= 1.5
 	elif active_ability == "sharingan":
 		m *= 1.25
+	elif active_ability == "blood_rage":
+		m *= 1.4
 	return m
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -225,6 +228,8 @@ func _physics_process(delta: float) -> void:
 		ability_time -= delta
 		if ability_time <= 0.0:
 			_end_ability()
+		else:
+			_ability_tick(delta)
 	var hpr := hp_regen + (8.0 if active_ability == "regen" else 0.0) + (6.0 if mode_time > 0.0 else 0.0)
 	if hpr > 0.0:
 		health = minf(max_health, health + hpr * delta)
@@ -503,10 +508,117 @@ func _use_ability() -> void:
 					e.stun = maxf(e.stun, 2.0 if e.is_boss else 4.0)
 					e.windup = 0.0
 					Fx.puff(get_parent(), e.global_position + Vector3.UP, Color(0.25, 0.1, 0.4, 0.8), 2.0)
+		# ---- new clans ----
+		"staff_sweep":       # Sarutobi: cone in front, big knockback
+			for e in _enemies_in(9.0):
+				var to := e.global_position - global_position
+				to.y = 0.0
+				if to.normalized().dot(facing) > 0.45:
+					_hit(e, 45.0 * _dmg(), to.normalized() * 18.0)
+			Vfx.shockwave(get_parent(), global_position + facing * 3.0 + Vector3.UP * 0.2, col, 5.0, 0.35)
+			_play_once("attack", 0.4)
+		"insect_swarm", "blood_rage":   # damage aura, ticks in _ability_tick()
+			active_ability = ab
+			ability_time = 5.0 if ab == "insect_swarm" else 7.0
+			ability_tick = 0.0
+		"mind_burst":        # Yamanaka: nearest enemy, heavy hit + stun
+			var t := _nearest_enemy(18.0)
+			if t != null:
+				t.stun = maxf(t.stun, 1.5 if t.is_boss else 4.0)
+				t.windup = 0.0
+				Vfx.shockwave(get_parent(), t.global_position + Vector3.UP, col, 3.0, 0.4)
+				_hit(t, 70.0 * _dmg(), Vector3.ZERO)
+		"hydrify":           # Hozuki: immune (see take_damage) + heal
+			active_ability = ab
+			ability_time = 4.0
+			health = minf(max_health, health + 30.0)
+		"bone_spikes":       # Kaguya: ring of bone spears
+			_fan(12, 30.0, 26.0, 30.0, 0.0, 0.2, Color(0.95, 0.93, 0.85), true)
+		"shark_bombs":       # Hoshigaki: homing water sharks
+			_homing(4, 50.0, 2.5, Color(0.2, 0.5, 1.0), 0.4)
+		"ice_prison":        # Yuki: freeze everything nearby
+			for e in _enemies_in(12.0):
+				e.stun = maxf(e.stun, 1.5 if e.is_boss else 4.0)
+				e.windup = 0.0
+				Fx.puff(get_parent(), e.global_position + Vector3.UP, Color(0.75, 0.95, 1.0, 0.9), 2.2)
+				_hit(e, 25.0 * _dmg(), Vector3.ZERO)
+			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 12.0, 0.5)
+		"lightning_blade":   # Hatake: invulnerable dash, hits everything on the line
+			var dir := facing
+			if lock_target != null and is_instance_valid(lock_target):
+				dir = (lock_target.global_position - global_position) * Vector3(1, 0, 1)
+				dir = dir.normalized() if dir.length() > 0.1 else facing
+			var reach := DASH_SPEED * 0.4
+			for e in _enemies_in(reach + 1.0):
+				var to := e.global_position - global_position
+				to.y = 0.0
+				var along := to.dot(dir)
+				if along > -0.5 and along < reach + 1.0 and (to - dir * along).length() < 2.5:
+					_hit(e, 80.0 * _dmg(), dir * 12.0)
+			facing = dir
+			dash_dir = dir
+			dash_time = 0.4
+			invuln = maxf(invuln, 0.6)
+			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 40, 10.0, 0.25, 0.4, 0.0)
+			Vfx.trail(self, col, 0.35, 40, 0.5)
+		"truth_orbs":        # Otsutsuki: homing orbs
+			_homing(6, 70.0, 2.0, Color(0.06, 0.04, 0.1), 0.35)
+			Vfx.flash(get_parent(), global_position + Vector3.UP * 2.0, Color(0.8, 0.75, 1.0), 6.0, 10.0, 0.4)
 	if ab != "":
 		aura.light_energy = 4.0
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 4.0 if ab != "gentle_burst" else 14.0)
 	_play_once("jutsu", 0.6)
+
+## Enemies still alive within `radius` metres (flat distance).
+func _enemies_in(radius: float) -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	for e: Enemy in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and e.health > 0.0:
+			var to := e.global_position - global_position
+			to.y = 0.0
+			if to.length() <= radius:
+				out.append(e)
+	return out
+
+## Damages an enemy only if it is still alive (stops double kills in one frame).
+func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
+	if is_instance_valid(e) and e.health > 0.0:
+		e.take_damage(amount, knock)
+
+## Fires `count` homing projectiles, spread over the nearest enemies.
+func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> void:
+	var targets := _enemies_in(40.0)
+	targets.sort_custom(func(a: Enemy, b: Enemy): return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
+	var origin := global_position + Vector3.UP * 1.6
+	for i in count:
+		var ang := TAU * float(i) / float(count)
+		var pr := Projectile.new()
+		pr.position = origin + Vector3(cos(ang), 0.3, sin(ang)) * 0.8
+		pr.speed = 18.0
+		pr.velocity = (Vector3(cos(ang), 0.6, sin(ang)).normalized() + facing).normalized() * pr.speed
+		pr.damage = dmg * _dmg()
+		pr.aoe = aoe
+		pr.size = size
+		pr.color = color
+		pr.life = 4.0
+		if not targets.is_empty():
+			pr.target = targets[i % targets.size()]
+		get_parent().add_child(pr)
+
+## Per-frame part of lasting abilities (damage auras).
+func _ability_tick(delta: float) -> void:
+	if active_ability != "insect_swarm" and active_ability != "blood_rage":
+		return
+	ability_tick -= delta
+	if ability_tick > 0.0:
+		return
+	ability_tick = 0.5
+	var swarm := active_ability == "insect_swarm"
+	var col := Color(0.15, 0.2, 0.1, 0.8) if swarm else Color(0.6, 0.02, 0.08, 0.8)
+	for e in _enemies_in(6.0 if swarm else 8.0):
+		_hit(e, (10.0 if swarm else 12.0) * 0.5 * _dmg(), Vector3.ZERO)
+		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, col, 0.9)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
 func _end_ability() -> void:
 	if active_ability == "sharingan":
@@ -718,6 +830,9 @@ func slot_info(key: String) -> Dictionary:
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	if invuln > 0.0 or is_dead or god_mode:
+		return
+	if active_ability == "hydrify":   # Hozuki: body is water
+		Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.4, 0.75, 0.95, 0.7), 1.2)
 		return
 	if armor_time > 0.0:
 		amount *= 0.4

@@ -10,14 +10,15 @@ extends CanvasLayer
 const INK := Color(0.12, 0.1, 0.07)
 const PAPER := Color(0.86, 0.82, 0.66)
 const GREEN := Color(0.05, 0.5, 0.24)
-const AUTO_TARGETS := ["Rare", "Epic", "Legendary"]
+const AUTO_TARGETS := ["Rare", "Epic", "Legendary", "Mythic"]
 const SLOT_TITLES := ["BLOODLINE SLOT #1", "BLOODLINE SLOT #2", "BLOODLINE SLOT #3", "BLOODLINE SLOT #4"]
 
 ## Octagon badge for a bloodline (or a red padlock for a locked slot).
 class Emblem extends Control:
 	const RARITY_COLORS := {
 		"Common": Color(0.78, 0.78, 0.78), "Rare": Color(0.35, 0.62, 1.0),
-		"Epic": Color(0.72, 0.4, 1.0), "Legendary": Color(1.0, 0.8, 0.2)}
+		"Epic": Color(0.72, 0.4, 1.0), "Legendary": Color(1.0, 0.8, 0.2),
+		"Mythic": Color(1.0, 0.3, 0.45)}
 	var id := "none":
 		set(v):
 			id = v
@@ -184,8 +185,8 @@ func _ready() -> void:
 	element_btn.pressed.connect(_on_element_spin)
 	auto_pick = OptionButton.new()
 	for t in AUTO_TARGETS:
-		auto_pick.add_item("Stop at %s%s" % [t, "" if t == "Legendary" else "+"])
-	auto_pick.select(AUTO_TARGETS.size() - 1)
+		auto_pick.add_item("Stop at %s%s" % [t, "" if t == "Mythic" else "+"])
+	auto_pick.select(AUTO_TARGETS.find("Legendary"))
 	auto_pick.add_theme_font_size_override("font_size", 13)
 	root.add_child(auto_pick)
 	_center_h(auto_pick, 170, 604, 0)
@@ -280,7 +281,7 @@ func _build_odds_panel() -> void:
 	root.add_child(odds_panel)
 	odds_panel.anchor_left = 1
 	odds_panel.anchor_right = 1
-	odds_panel.offset_left = -560
+	odds_panel.offset_left = -590
 	odds_panel.offset_right = -260
 	odds_panel.offset_top = 12
 	var total := 0.0
@@ -299,11 +300,11 @@ func _build_odds_panel() -> void:
 		if w2 > 0.0:
 			lines.append("%s  (%s)  %.1f%%" % [Bloodline.DEFS[id]["name"], Bloodline.DEFS[id]["rarity"], 100.0 * w2 / total])
 	lines.append("")
-	lines.append("Guaranteed Legendary within %d spins." % GameData.PITY_LIMIT)
+	lines.append("Guaranteed Legendary or Mythic within %d spins." % GameData.PITY_LIMIT)
 	lines.append("Pity is shared by all slots.")
 	var l := _label(odds_panel, "\n".join(PackedStringArray(lines)), 13, Color(0.95, 0.9, 0.78))
 	l.position = Vector2(14, 10)
-	l.size = Vector2(272, 20)
+	l.size = Vector2(302, 20)
 	odds_panel.offset_bottom = 12 + 24 + lines.size() * 21
 	odds_panel.visible = false
 
@@ -456,6 +457,7 @@ func _paper_color(id: String) -> Color:
 		"Rare": return Color(0.1, 0.3, 0.78)
 		"Epic": return Color(0.45, 0.14, 0.72)
 		"Legendary": return Color(0.72, 0.48, 0.0)
+		"Mythic": return Color(0.78, 0.06, 0.22)
 	return INK
 
 func _refresh() -> void:
@@ -599,12 +601,12 @@ func _reveal(i: int, id: String, is_new: bool, fast: bool) -> void:
 	tw.tween_property(em, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sfx.play(self, "power" if rank >= 2 else "poof", 0.0 if rank >= 2 else -6.0)
 	if rank >= 2:
-		flash.color = Color(col.r, col.g, col.b, 0.55 if rank == 3 else 0.35)
+		flash.color = Color(col.r, col.g, col.b, 0.7 if rank >= 4 else (0.55 if rank == 3 else 0.35))
 		var ft := create_tween()
-		ft.tween_property(flash, "color:a", 0.0, 0.6 if rank == 3 else 0.4)
+		ft.tween_property(flash, "color:a", 0.0, 0.9 if rank >= 4 else (0.6 if rank == 3 else 0.4))
 	if rank >= 1 and not fast:
-		var head := "LEGENDARY!" if rank == 3 else ("EPIC!" if rank == 2 else "RARE")
-		_show_banner("%s\n%s%s" % [head, d["name"], "  (NEW)" if is_new else ""], col, rank == 3)
+		var head := "MYTHIC!!" if rank >= 4 else ("LEGENDARY!" if rank == 3 else ("EPIC!" if rank == 2 else "RARE"))
+		_show_banner("%s\n%s%s" % [head, d["name"], "  (NEW)" if is_new else ""], col, rank >= 3)
 
 func _show_banner(text: String, col: Color, big: bool) -> void:
 	banner.text = text
@@ -644,7 +646,7 @@ func _on_auto() -> void:
 	_refresh()
 	if got != "" and GameData.rarity_rank(got) >= target:
 		var d := Bloodline.get_def(got)
-		_show_banner("%s!\n%s" % [str(d["rarity"]).to_upper(), d["name"]], _rarity_color(got), d["rarity"] == "Legendary")
+		_show_banner("%s!\n%s" % [str(d["rarity"]).to_upper(), d["name"]], _rarity_color(got), GameData.rarity_rank(got) >= 3)
 	elif GameData.spins <= 0:
 		_show_banner("OUT OF SPINS", Color(0.9, 0.3, 0.25), false)
 

@@ -8,7 +8,7 @@ const PITY_LIMIT := 20
 ## Spinning a slot REPLACES whatever it held. Slots 1-2 start open; 3-4 are bought with spins.
 const SLOT_COUNT := 4
 const SLOT_UNLOCK_COST := [0, 0, 10, 25]
-const RARITY_ORDER := ["Common", "Rare", "Epic", "Legendary"]
+const RARITY_ORDER := ["Common", "Rare", "Epic", "Legendary", "Mythic"]
 const ELEMENTS := ["Fire", "Earth", "Lightning", "Water", "Wind"]
 const ELEMENT_COLORS := {
 	"Fire": Color(1.0, 0.38, 0.10),
@@ -137,7 +137,7 @@ static func roll_slot(i: int) -> String:
 	total_spins_used += 1
 	pity += 1
 	var id := Bloodline.roll(pity >= PITY_LIMIT)
-	if Bloodline.get_def(id)["rarity"] == "Legendary":
+	if rarity_rank(id) >= 3:   # Legendary or Mythic resets pity
 		pity = 0
 	last_new = not owned.has(id)
 	if last_new:
