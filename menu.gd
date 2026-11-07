@@ -1,0 +1,122 @@
+extends Control
+## Main menu: pick what you want to play. (1 / 2 / 3 also work.)
+
+func _ready() -> void:
+	Fx.setup_inputs()
+	GameData.load_data()
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var bg := MenuBG.new()
+	add_child(bg)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var center := CenterContainer.new()
+	add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 14)
+	center.add_child(vb)
+
+	var title := _label(vb, "SHINOBI CLASH", 84, Color(1.0, 0.62, 0.16))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_shadow_color", Color(0.9, 0.15, 0.05, 0.75))
+	title.add_theme_constant_override("shadow_offset_x", 0)
+	title.add_theme_constant_override("shadow_offset_y", 6)
+	title.add_theme_constant_override("outline_size", 16)
+	var tw := title.create_tween().set_loops()
+	tw.tween_property(title, "modulate", Color(1.2, 1.05, 0.85), 1.5).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(title, "modulate", Color(1, 1, 1), 1.5).set_trans(Tween.TRANS_SINE)
+	var sub := _label(vb, "~  choose your path  ~", 22, Color(1.0, 0.85, 0.75))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var line := ColorRect.new()
+	line.color = Color(1.0, 0.55, 0.2, 0.7)
+	line.custom_minimum_size = Vector2(0, 2)
+	vb.add_child(line)
+	_spacer(vb, 8)
+
+	var b1 := _button(vb, "1   KURAMA BOSS FIGHT\nFace the Nine-Tailed Beast", "kurama", Color(1.0, 0.3, 0.1))
+	_button(vb, "2   FIGHT\nArena battle against shinobi in the village", "fight", Color(0.3, 0.6, 1.0))
+	_button(vb, "3   MAIN GAME\nOpen world - talk to villagers and take on quests", "world", Color(0.35, 0.85, 0.4))
+	_spacer(vb, 6)
+	var quit := Button.new()
+	quit.text = "Quit"
+	quit.custom_minimum_size = Vector2(0, 44)
+	quit.add_theme_font_size_override("font_size", 20)
+	_style_button(quit, Color(0.7, 0.7, 0.78))
+	quit.pressed.connect(get_tree().quit)
+	vb.add_child(quit)
+	vb.modulate.a = 0.0   # fade the whole menu in
+	var fade := vb.create_tween()
+	fade.tween_property(vb, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_spacer(vb, 6)
+
+	var done := GameData.quests_done.size()
+	var stat := _label(vb, "Spins: %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
+		GameData.spins, Bloodline.get_def(GameData.equipped)["name"], done, Quests.DEFS.size(),
+		"DEFEATED" if GameData.kurama_defeated else "undefeated"], 16, Color(0.8, 0.8, 0.85))
+	stat.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var cred := _label(vb, Hero.CREDIT + "\n" + Kurama.CREDIT, 12, Color(0.6, 0.6, 0.65))
+	cred.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b1.grab_focus()
+
+func _label(parent: Node, text: String, size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", color)
+	l.add_theme_color_override("font_outline_color", Color.BLACK)
+	l.add_theme_constant_override("outline_size", 8)
+	parent.add_child(l)
+	return l
+
+func _spacer(parent: Node, h: float) -> void:
+	var s := Control.new()
+	s.custom_minimum_size = Vector2(0, h)
+	parent.add_child(s)
+
+func _style_button(b: Button, accent: Color) -> void:
+	for st in ["normal", "hover", "pressed", "focus"]:
+		var sb := StyleBoxFlat.new()
+		var lit: bool = st != "normal"
+		sb.bg_color = Color(0.2, 0.07, 0.05, 0.92) if lit else Color(0.05, 0.03, 0.07, 0.8)
+		sb.set_corner_radius_all(12)
+		sb.set_border_width_all(2)
+		sb.border_width_left = 8
+		sb.border_color = accent if lit else accent.darkened(0.45)
+		sb.content_margin_left = 26
+		sb.content_margin_right = 20
+		sb.content_margin_top = 8
+		sb.content_margin_bottom = 8
+		sb.shadow_color = Color(accent.r, accent.g, accent.b, 0.35 if lit else 0.0)
+		sb.shadow_size = 12 if lit else 0
+		b.add_theme_stylebox_override(st, sb)
+	b.add_theme_color_override("font_color", Color(0.95, 0.9, 0.88))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.8))
+	b.add_theme_color_override("font_focus_color", Color(1.0, 0.95, 0.8))
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+func _button(parent: Node, text: String, mode: String, accent := Color(1.0, 0.5, 0.2)) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(580, 88)
+	b.add_theme_font_size_override("font_size", 24)
+	_style_button(b, accent)
+	b.pressed.connect(_play.bind(mode))
+	parent.add_child(b)
+	return b
+
+func _play(mode: String) -> void:
+	GameData.mode = mode
+	get_tree().change_scene_to_file("res://main.tscn")
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_1:
+				_play("kurama")
+			KEY_2:
+				_play("fight")
+			KEY_3:
+				_play("world")

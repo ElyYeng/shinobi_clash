@@ -1,0 +1,4 @@
+Put your downloaded character model in this folder (.glb or .gltf).
+Any file name works. Subfolders (1 level) are fine, e.g. assets/naruto/scene.gltf
+Godot imports it automatically; the game finds it and auto-scales it to ~1.9m tall.
+Check the Output panel when you press F5: it prints the animation names found.

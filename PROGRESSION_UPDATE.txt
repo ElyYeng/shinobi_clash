@@ -1,0 +1,17 @@
+SHINOBI CLASH - PROGRESSION UPDATE
+
+- Persistent shinobi level and XP. Normal enemy: 100 XP; boss: 500 XP.
+- Every level grants 3 stat points. Every 10 levels grants 1 element spin.
+- Stats tab lets you allocate points: Health (+5 max HP), Chakra (+5 max Chakra),
+  MD (+5% faster MD charge), Stamina (+5 max stamina).
+- Equipped bloodline gains mastery XP from kills (25 per enemy, 125 per boss).
+- Bloodline mastery is tracked separately per bloodline, up to level 1000.
+  The Bloodline tab shows mastery gates at levels 100, 500 and 1000.
+- Element spins can roll Fire, Earth, Lightning, Water or Wind and save ownership/equipped element.
+- Progress is saved in user://save.json.
+
+NOTE: This update adds the element collection/spin and mastery unlock progression.
+The project currently only contains the Fire Style jutsu set, and each existing
+bloodline currently has one implemented active ability. The level 500 / 1000
+power entries are progression unlock gates/placeholders; they do not create new
+combat moves until those additional moves are authored.
