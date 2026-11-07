@@ -8,17 +8,18 @@ The character is assets/naruto/scene.gltf (auto-detected). To use another .glb/.
 to assets/ . Tweak size/orientation/animation names at the top of hero.gd.
 
 ## Controls
-WASD move | Shift sprint (stamina) | Space jump x2 | Q dash | LMB combo | RMB kunai | RMB+E kunai volley | V substitution
-Fire jutsu: R fireball | T phoenix flowers | Y flame wave | F clones | G dragon flame | H flame armor
-1 / 2 / 3 bloodline abilities | C tap = bloodline power-up on/off, C hold = charge chakra | Z Kurama Mode (after beating Kurama, MD bar full)
-E talk | M menu | B spin menu | L quest tracker | Tab / N / MMB lock-on | Esc mouse
+WASD move | Shift sprint (stamina) | Space jump x2 | Q dash | LMB combo | RMB kunai | RMB+E kunai volley
+**Hotbar R T Y F G H V B N**: each key runs the move you put on it (M > Bloodline / M > Element: click an ability, then a key).
+Defaults: R Fireball, T Phoenix Flowers, Y Flame Wave, F Shadow Clones, G Dragon Flame, H Element Armor, V Substitution, B / N empty.
+C tap = bloodline power-up on/off, C hold = charge chakra | Z Kurama Mode | E talk | M menu | L quest tracker | Tab / MMB lock-on | Esc mouse
 
 ## Spins and elements
 Bloodline spins: start with 3; earn 1 per 8 kills, per quest and for beating Kurama. A Legendary is guaranteed within 20 spins.
 
-Bloodline slots (press B): 4 slots, Shinobi Life style. Slots 1-2 are open; slot 3 costs 10 spins and slot 4 costs 25 to open.
+Bloodline slots (main menu > 4 CUSTOMIZE): 4 slots, Shinobi Life style. Slots 1-2 are open; slot 3 costs 10 spins and slot 4 costs 25 to open.
 - [CLICK TO SPIN] rolls that slot only and REPLACES its bloodline. Epic/Legendary slots ask for a second click first.
 - EQUIP picks which slot's bloodline you fight with (also in the M menu, Bloodline tab).
+- Spins are only on the main menu now. "Open spin" in the M menu takes you there.
 - AUTO SPIN rerolls the active slot until it hits the rarity you pick (Rare+, Epic+ or Legendary), or press STOP.
 - [ODDS] shows the chance of every rarity and bloodline. Pity is shared by all slots.
 - Old saves are migrated: your equipped bloodline goes to slot 1 and your best other one to slot 2.
@@ -82,11 +83,24 @@ New jutsu live in player.gd (_phoenix, _flame_wave, _dragon_flame, _flame_armor,
   Spend them in M > Stats on Health (+3 HP), Chakra (+3), MD (+1.5% MD gain), Stamina (+2) or Bloodline (+1% ability damage).
   Max 200 points per stat; Reset Stats gives them all back. The HUD strip shows your level and XP bar.
 - **Bloodline mastery** (max LV 1000): each bloodline levels on its own while equipped (100 per kill, 1000 per boss, 3 per ability hit).
-- **3 abilities per bloodline** on keys 1 / 2 / 3, unlocked at bloodline LV 0 / 250 / 600 (per-ability "lvl" in bloodline.gd).
+- **3 abilities per bloodline**, unlocked at bloodline LV 0 / 250 / 600 (per-ability "lvl" in bloodline.gd). Put them on any hotbar key
+  in M > Bloodline. Only the equipped bloodline's moves work (others show a lock on the hotbar).
 - **Power-up mode** at bloodline LV 1000 (Uchiha = Sharingan, Uzumaki = Kurama Ink Mode, ...). Tap C to turn it on and again to
   turn it off. No timer: it drains MD (a full bar lasts 30 s) and ends when MD runs out. Needs at least 10 MD to start.
-- **M > Bloodline** shows both slots like Shindo Life: bloodline LV, the 3 abilities + power-up with their unlock levels,
+- **M > Bloodline** shows two slots at a time like Shindo Life: bloodline LV, the 3 abilities + power-up with their unlock levels,
   EQUIP and the mastery EXP bar. Click an icon for its details. M > Sub-Ability lists the equipped bloodline's moves.
 - Cheats tab: +100 / MAX bloodline LV and +5 shinobi levels for testing.
 - Tuning: abilities and modes in bloodline.gd (format documented at the top), XP / stat values in gamedata.gd,
   MD drain (POWER_DRAIN_TIME) in player.gd.
+
+## Elements
+Each element (Fire, Earth, Lightning, Water, Wind) has 4 jutsu that unlock at element LV 0 / 20 / 60 / 120 (element_data.gd).
+Element LV goes up from kills (your equipped element) and from hits with that element's jutsu. M > Element looks like the
+Bloodline tab (no power-up): click a jutsu, then a key. You can use the jutsu of every element you own. Roll new elements
+with Element Spins in Customize on the main menu.
+
+## Ability images
+Every move shows a picture on the hotbar and in the menus: `assets/icons/<move>.png`, e.g. `bl_uchiha_2.png` (Uchiha ability 3),
+`el_fire_0.png`, `base_clones.png`, and `mode_uchiha.png` for a power-up. To use your own art, replace the PNG with the same
+name (square, transparent corners look best), or set `"icon": "res://path/to/image.png"` on an ability in bloodline.gd /
+element_data.gd. Godot imports new images when you open the project.

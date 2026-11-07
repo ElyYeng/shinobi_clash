@@ -1,6 +1,8 @@
 class_name SpinMenu
 extends CanvasLayer
-## Shinobi Life style bloodline customization (press B).
+
+signal closed
+## Shinobi Life style bloodline customization. Opened from the main menu (CUSTOMIZE).
 ## - 4 bloodline slots on two scrolls (1 & 3 left, 2 & 4 right). Slots 1-2 are open, 3-4 cost spins.
 ## - "CLICK TO SPIN" rolls THAT slot only and replaces what it held (Epic+ asks for a second click).
 ## - EQUIP picks which slot's bloodline you use in combat.
@@ -420,10 +422,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var gm = get_parent().get("gmenu")
 	if gm != null and gm.is_open:
 		return
-	if event.is_action_pressed("spin_menu"):
-		toggle()
-		get_viewport().set_input_as_handled()
-	elif root.visible and event.is_action_pressed("pause"):
+	if root.visible and event.is_action_pressed("pause"):
 		if odds_panel.visible:
 			odds_panel.visible = false
 		else:
@@ -443,6 +442,7 @@ func toggle() -> void:
 	else:
 		if p and not p.is_dead:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		closed.emit()
 
 # ------------------------------------------------------------------ refresh
 func _rarity_color(id: String) -> Color:

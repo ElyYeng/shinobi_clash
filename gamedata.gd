@@ -58,12 +58,17 @@ const MASTERY_MAX := 1000
 const MASTERY_KILL := 100              # mastery XP per kill with that bloodline active
 const MASTERY_BOSS := 1000
 const MASTERY_HIT := 3                 # per enemy hit by one of its abilities
-static var mastery := {}               # bloodline id -> total mastery XP
+static var mastery := {}               # bloodline id (or "el:<Element>" for elements) -> total mastery XP
+
+# ---- Hotbar keybinds: key -> move id (see moves.gd). Set in M > Bloodline / M > Element.
+static var keybinds := {}
+static var open_customize := false     # main menu opens the spin screen straight away (from the M menu)
 
 static func load_data() -> void:
 	if _loaded:
 		return
 	_loaded = true
+	_default_binds()
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -104,8 +109,15 @@ static func load_data() -> void:
 		mastery = {}
 		if m is Dictionary:
 			for k in m:
-				if Bloodline.DEFS.has(str(k)):
-					mastery[str(k)] = maxi(int(m[k]), 0)
+				var mk := str(k)
+				if Bloodline.DEFS.has(mk) or (mk.begins_with("el:") and ELEMENTS.has(mk.substr(3))):
+					mastery[mk] = maxi(int(m[k]), 0)
+		var kb = d.get("keybinds", {})
+		if kb is Dictionary:
+			for k in Moves.BIND_KEYS:
+				if kb.has(k):
+					var mv := str(kb[k])
+					keybinds[k] = mv if mv == "" or not Moves.spec(mv).is_empty() else ""
 		if d.has("slots"):
 			_load_slots(d)
 		else:
@@ -113,6 +125,7 @@ static func load_data() -> void:
 	if not owned.has("none"):
 		owned.append("none")
 	_sync_equipped()
+	_default_binds()
 
 static func _load_slots(d: Dictionary) -> void:
 	var s = d.get("slots", [])
@@ -156,7 +169,38 @@ static func save() -> void:
 			"quest_progress": quest_progress,
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
-			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery}))
+			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
+			"keybinds": keybinds}))
+
+# ------------------------------------------------------------------ keybinds
+## Fills any missing hotbar key with its default move.
+static func _default_binds() -> void:
+	for k in Moves.BIND_KEYS:
+		if not keybinds.has(k):
+			keybinds[k] = Moves.DEFAULT_BINDS.get(k, "")
+
+## Puts `move` on `key` (a move can only be on one key, so it leaves its old key).
+static func bind_move(key: String, move: String) -> void:
+	if not Moves.BIND_KEYS.has(key):
+		return
+	for k in keybinds:
+		if keybinds[k] == move:
+			keybinds[k] = ""
+	keybinds[key] = move
+	save()
+
+static func unbind_move(move: String) -> void:
+	for k in keybinds:
+		if keybinds[k] == move:
+			keybinds[k] = ""
+	save()
+
+## The key a move is on, or "".
+static func key_of(move: String) -> String:
+	for k in Moves.BIND_KEYS:
+		if keybinds.get(k, "") == move:
+			return k
+	return ""
 
 # ------------------------------------------------------------------ shinobi level
 static func xp_needed(lv: int = -1) -> int:

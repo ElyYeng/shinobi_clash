@@ -1,5 +1,9 @@
 extends Control
-## Main menu: pick what you want to play. (1 / 2 / 3 also work.)
+## Main menu: pick what you want to play (1 / 2 / 3 also work), or CUSTOMIZE to spin bloodlines and elements.
+
+var spin: SpinMenu
+var stat: Label
+var custom_btn: Button
 
 func _ready() -> void:
 	Fx.setup_inputs()
@@ -39,6 +43,9 @@ func _ready() -> void:
 	var b1 := _button(vb, "1   KURAMA BOSS FIGHT\nFace the Nine-Tailed Beast", "kurama", Color(1.0, 0.3, 0.1))
 	_button(vb, "2   FIGHT\nArena battle against shinobi in the village", "fight", Color(0.3, 0.6, 1.0))
 	_button(vb, "3   MAIN GAME\nOpen world - talk to villagers and take on quests", "world", Color(0.35, 0.85, 0.4))
+	custom_btn = _button(vb, "", "", Color(0.85, 0.3, 0.9))
+	custom_btn.pressed.disconnect(_play.bind(""))
+	custom_btn.pressed.connect(_open_customize)
 	_spacer(vb, 6)
 	var quit := Button.new()
 	quit.text = "Quit"
@@ -52,14 +59,28 @@ func _ready() -> void:
 	fade.tween_property(vb, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_spacer(vb, 6)
 
-	var done := GameData.quests_done.size()
-	var stat := _label(vb, "Spins: %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
-		GameData.spins, Bloodline.get_def(GameData.equipped)["name"], done, Quests.DEFS.size(),
-		"DEFEATED" if GameData.kurama_defeated else "undefeated"], 16, Color(0.8, 0.8, 0.85))
+	stat = _label(vb, "", 16, Color(0.8, 0.8, 0.85))
 	stat.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_refresh_info()
+	spin = SpinMenu.new()   # bloodline + element spins live here, not in-game
+	add_child(spin)
+	spin.closed.connect(_refresh_info)
+	if GameData.open_customize:   # came from "OPEN SPIN" in the in-game menu
+		GameData.open_customize = false
+		_open_customize.call_deferred()
 	var cred := _label(vb, Hero.CREDIT + "\n" + Kurama.CREDIT, 12, Color(0.6, 0.6, 0.65))
 	cred.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b1.grab_focus()
+
+func _refresh_info() -> void:
+	custom_btn.text = "4   CUSTOMIZE\nSpin bloodlines and elements   [ %d spins  /  %d element spins ]" % [GameData.spins, GameData.element_spins]
+	stat.text = "Shinobi LV %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
+		GameData.level, Bloodline.get_def(GameData.equipped)["name"], GameData.quests_done.size(), Quests.DEFS.size(),
+		"DEFEATED" if GameData.kurama_defeated else "undefeated"]
+
+func _open_customize() -> void:
+	if spin != null and not spin.root.visible:
+		spin.toggle()
 
 func _label(parent: Node, text: String, size: int, color: Color) -> Label:
 	var l := Label.new()
@@ -112,6 +133,8 @@ func _play(mode: String) -> void:
 	get_tree().change_scene_to_file("res://main.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
+	if spin != null and spin.root.visible:
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_1:
@@ -120,3 +143,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_play("fight")
 			KEY_3:
 				_play("world")
+			KEY_4:
+				_open_customize()

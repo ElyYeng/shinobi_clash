@@ -265,6 +265,6 @@ func _process(delta: float) -> void:
 	if p.is_dead:
 		msg_label.text = "DEFEATED\nKills %d\nEnter = retry   M = menu   B = bloodline spin" % p.kills
 	elif victory:
-		msg_label.text = "VICTORY!\nThe Nine-Tailed Beast has fallen\n+5 spins   (press B)\nEnter = fight again   M = menu"
+		msg_label.text = "VICTORY!\nThe Nine-Tailed Beast has fallen\n+5 spins   (spin at the main menu)\nEnter = fight again   M = menu"
 	else:
 		msg_label.text = ""

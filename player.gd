@@ -43,7 +43,8 @@ var dash_cost := 15.0
 var clone_count := 2
 var clone_time := 8.0
 var hp_regen := 0.0
-var bl_cd: Array[float] = [0.0, 0.0, 0.0]   # cooldowns of bloodline abilities 1 2 3
+var move_cd := {}                           # move id -> cooldown left (see moves.gd)
+var cur_mkey := ""                          # mastery key of the move being cast (for hit XP)
 var buffs: Array[Dictionary] = []           # active bloodline buffs / auras
 var powered := false                        # bloodline power-up (C) is on
 var pmode: Dictionary = {}                  # Bloodline.mode() while powered
@@ -143,7 +144,6 @@ func apply_bloodline() -> void:
 	var def := Bloodline.get_def(GameData.equipped)
 	refresh_stats()
 	_clear_buffs()
-	bl_cd = [0.0, 0.0, 0.0]
 	_power_off()
 	aura.visible = GameData.equipped != "none"
 	aura.light_color = def["color"]
@@ -209,8 +209,10 @@ func _physics_process(delta: float) -> void:
 	fire_cd = maxf(0.0, fire_cd - delta)
 	clone_cd = maxf(0.0, clone_cd - delta)
 	var cd_rate := 1.0 / maxf(_bmul("cd"), 0.1)
-	for i in 3:
-		bl_cd[i] = maxf(0.0, bl_cd[i] - delta * cd_rate)
+	for k in move_cd.keys():
+		move_cd[k] = float(move_cd[k]) - delta * cd_rate
+		if float(move_cd[k]) <= 0.0:
+			move_cd.erase(k)
 	t_cd = maxf(0.0, t_cd - delta)
 	y_cd = maxf(0.0, y_cd - delta)
 	g_cd = maxf(0.0, g_cd - delta)
@@ -326,25 +328,11 @@ func _physics_process(delta: float) -> void:
 		_melee()
 	if Input.is_action_pressed("kunai"):
 		_throw_kunai()
-	if Input.is_action_just_pressed("fire"):
-		_fireball()
-	if Input.is_action_just_pressed("clone"):
-		_clones()
 	if Input.is_action_just_pressed("ability"):
 		_toggle_power()
-	for i in 3:
-		if Input.is_action_just_pressed("bl_%d" % (i + 1)):
-			_cast(i)
-	if Input.is_action_just_pressed("jutsu_t"):
-		_phoenix()
-	if Input.is_action_just_pressed("jutsu_y"):
-		_flame_wave()
-	if Input.is_action_just_pressed("jutsu_g"):
-		_dragon_flame()
-	if Input.is_action_just_pressed("jutsu_h"):
-		_flame_armor()
-	if Input.is_action_just_pressed("substitute"):
-		_substitute()
+	for k in Moves.BIND_KEYS:   # hotbar keys run whatever move is bound to them (M > Bloodline / Element)
+		if Input.is_action_just_pressed("slot_" + k):
+			use_key(k)
 	if Input.is_action_just_pressed("biju"):
 		_kurama_mode()
 	if Input.is_action_just_pressed("volley") and Input.is_action_pressed("kunai"):
@@ -458,21 +446,15 @@ func _throw_kunai() -> void:
 	if not _play_once("throw", 0.2):
 		Fx.swing(arm)
 
-func _fireball() -> void:
-	if fire_cd > 0.0 or chakra < fire_cost:
-		return
-	fire_cd = 1.0
-	chakra -= fire_cost
-	Sfx.play(self, "fire" if GameData.equipped_element == "Fire" else "power")
-	_shoot(22.0, 45.0, 5.0, 0.6, _element_color(), false, false)
+# ---- hand-made jutsu used by moves.gd / element_data.gd ("custom" moves). Cost and cooldown
+# are handled by _use_move(); these only do the effect. `col` = the move's colour.
+func _fx_fireball(col: Color) -> void:
+	Sfx.play(self, "fire")
+	_shoot(22.0, 45.0, 5.0, 0.6, col, false, false)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 
-func _clones() -> void:
-	if clone_cd > 0.0 or chakra < 40.0:
-		return
-	clone_cd = 6.0
-	chakra -= 40.0
+func _fx_clones(_col: Color) -> void:
 	Sfx.play(self, "poof")
 	var side := Basis(Vector3.UP, yaw) * Vector3.RIGHT
 	for i in clone_count:
@@ -548,21 +530,29 @@ func eye_overlay() -> bool:
 			return true
 	return false
 
-func _cast(i: int) -> void:
+## Runs the move on a hotbar key.
+func use_key(k: String) -> void:
+	var mv := str(GameData.keybinds.get(k, ""))
+	if mv == "":
+		_toast("Nothing on [%s] - assign a move in M > Bloodline or M > Element" % k)
+		return
+	_use_move(mv)
+
+func _use_move(id: String) -> void:
 	if is_dead:
 		return
-	var id := GameData.equipped
-	var a := Bloodline.ability(id, i)
+	var a := Moves.spec(id)
 	if a.is_empty():
-		_toast("No bloodline equipped - press B to spin one")
 		return
-	var lv := _bl_level()
-	if lv < int(a["lvl"]):
-		_toast("%s unlocks at %s LV %d  (you are LV %d)" % [a["name"], _bl_name(), int(a["lvl"]), lv])
+	var why := Moves.block(id)
+	if why != "":
+		_toast("%s: %s" % [a["name"], why])
 		return
-	if bl_cd[i] > 0.0:
+	if float(move_cd.get(id, 0.0)) > 0.0:
 		return
 	var cost := float(a["cost"])
+	if bool(a["fire_cost"]):
+		cost *= fire_cost / 30.0
 	if chakra < cost:
 		_toast("Not enough chakra for %s" % a["name"])
 		return
@@ -575,12 +565,17 @@ func _cast(i: int) -> void:
 			_toast("No enemy in range (%dm)" % int(a["r"]))
 			return
 	chakra -= cost
-	bl_cd[i] = float(a["cd"])
-	var raw: Dictionary = Bloodline.get_def(id)["abilities"][i]
+	move_cd[id] = float(a["cd"])
+	cur_mkey = str(a["mkey"])
+	var raw := Moves.raw(id)
 	var col: Color = a["col"]
-	var dmg := float(a["dmg"]) * _dmg() * _bl_mult()
-	Sfx.play(self, "power", -3.0)
+	var mult := _bl_mult() if a["src"] == "bl" else 1.0
+	var dmg := float(a["dmg"]) * _dmg() * mult
+	if kind != "custom":
+		Sfx.play(self, "power", -3.0)
 	match kind:
+		"custom":   # hand-made jutsu (original Fire Style, clones, substitution, armor)
+			call(str(a["fn"]), col)
 		"burst":
 			for e in _enemies_in(float(a["r"])):
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
@@ -600,10 +595,10 @@ func _cast(i: int) -> void:
 			Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
 			_hit(target, dmg, Vector3.ZERO)
 		"fan":
-			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * _bl_mult(),
+			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * mult,
 				float(a["aoe"]), float(a["size"]), col, bool(a["long"]))
 		"homing":
-			_homing(int(a["n"]), float(a["dmg"]) * _bl_mult(), float(a["aoe"]), col, float(a["size"]))
+			_homing(int(a["n"]), float(a["dmg"]) * mult, float(a["aoe"]), col, float(a["size"]))
 		"dash":
 			var dir := facing
 			if is_instance_valid(lock_target):
@@ -623,13 +618,15 @@ func _cast(i: int) -> void:
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 40, 10.0, 0.25, 0.4, 0.0)
 			Vfx.trail(self, col, 0.35, 40, 0.5)
 		"buff", "aura":
-			_add_buff(str(a["name"]), raw, col)
+			_add_buff(str(a["name"]), raw, col, cur_mkey)
 	if float(a["heal"]) > 0.0:
 		health = minf(max_health, health + float(a["heal"]))
 	if not powered:
 		aura.light_energy = 4.0
-	Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 3.0)
-	_play_once("jutsu", 0.5)
+	if kind != "custom":
+		Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 3.0)
+		_play_once("jutsu", 0.5)
+	cur_mkey = ""
 
 func _stun(e: Enemy, secs: float) -> void:
 	if secs <= 0.0 or not is_instance_valid(e):
@@ -638,14 +635,14 @@ func _stun(e: Enemy, secs: float) -> void:
 	e.windup = 0.0
 
 ## Buff/aura entry. `raw` is the ability's own data, so unset fields mean "no change".
-func _add_buff(bname: String, raw: Dictionary, col: Color) -> void:
+func _add_buff(bname: String, raw: Dictionary, col: Color, mkey := "") -> void:
 	buffs = buffs.filter(func(b: Dictionary) -> bool: return b["name"] != bname)
 	buffs.append({"name": bname, "t": float(raw.get("t", 5.0)),
 		"dmg": float(raw.get("dmg", 1.0)) if raw.get("kind", "") == "buff" else 1.0,
 		"speed": float(raw.get("speed", 1.0)), "def": float(raw.get("def", 1.0)), "cd": 1.0,
 		"hp": float(raw.get("hp", 0.0)), "ck": float(raw.get("ck", 0.0)),
 		"immune": bool(raw.get("immune", false)), "slow": float(raw.get("slow", 1.0)),
-		"r": float(raw.get("r", 0.0)), "dps": float(raw.get("dps", 0.0)), "col": col, "tick": 0.0})
+		"r": float(raw.get("r", 0.0)), "dps": float(raw.get("dps", 0.0)), "col": col, "tick": 0.0, "mkey": mkey})
 
 ## Ticks buffs, damage auras and the power-up drain. Called every physics frame.
 func _update_buffs(delta: float) -> void:
@@ -655,20 +652,24 @@ func _update_buffs(delta: float) -> void:
 			b["tick"] = float(b["tick"]) - delta
 			if float(b["tick"]) <= 0.0:
 				b["tick"] = 0.5
+				cur_mkey = str(b["mkey"])
 				_aura_tick(float(b["r"]), float(b["dps"]), b["col"])
+				cur_mkey = ""
 	buffs = buffs.filter(func(b: Dictionary) -> bool: return float(b["t"]) > 0.0)
 	if powered and float(pmode["dps"]) > 0.0:
 		mode_tick -= delta
 		if mode_tick <= 0.0:
 			mode_tick = 0.5
+			cur_mkey = GameData.equipped
 			_aura_tick(float(pmode["r"]), float(pmode["dps"]), pmode["col"])
+			cur_mkey = ""
 	Enemy.time_scale = enemy_slow()
 	if buffs.is_empty() and not powered and armor_time <= 0.0 and mode_time <= 0.0 and aura.light_energy > 1.2:
 		aura.light_energy = move_toward(aura.light_energy, 1.2, 6.0 * delta)
 
 func _aura_tick(radius: float, dps: float, col: Color) -> void:
 	for e in _enemies_in(radius):
-		_hit(e, dps * 0.5 * _dmg() * _bl_mult(), Vector3.ZERO)
+		_hit(e, dps * 0.5 * _dmg() * (_bl_mult() if not cur_mkey.begins_with("el:") else 1.0), Vector3.ZERO)
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
@@ -686,7 +687,7 @@ func _toggle_power() -> void:
 		return
 	var id := GameData.equipped
 	if id == "none":
-		_toast("No bloodline equipped - press B to spin one")
+		_toast("No bloodline equipped - spin one at the main menu")
 		return
 	var m := Bloodline.mode(id)
 	var lv := _bl_level()
@@ -732,6 +733,7 @@ func _power_off() -> void:
 func on_kill(boss: bool) -> void:
 	gain_xp(GameData.XP_BOSS if boss else GameData.XP_KILL)
 	_gain_mastery(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
+	_gain_element(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
 	GameData.save()
 
 func gain_xp(n: int) -> void:
@@ -753,13 +755,26 @@ func _gain_mastery(n: int) -> void:
 	for i in 3:
 		var a := Bloodline.ability(id, i)
 		if not a.is_empty() and old < int(a["lvl"]) and now >= int(a["lvl"]):
-			_toast("NEW ABILITY: %s  [%d]" % [a["name"], i + 1])
+			_toast("NEW ABILITY: %s  - assign it to a key in M > Bloodline" % a["name"])
 			return
 	if old < Bloodline.MODE_LEVEL and now >= Bloodline.MODE_LEVEL:
 		_toast("POWER-UP UNLOCKED: %s  - tap C!" % Bloodline.mode(id)["name"])
 		Sfx.play(self, "power")
 	elif now / 100 > old / 100:
 		_toast("%s mastery LV %d" % [_bl_name(), now])
+
+## Element mastery from kills goes to your main (equipped) element.
+func _gain_element(n: int) -> void:
+	var el := GameData.equipped_element
+	var key := "el:" + el
+	var r := GameData.add_mastery(key, n)
+	var old: int = r[0]
+	var now: int = r[1]
+	for i in ElementData.count(el):
+		var a := ElementData.ability(el, i)
+		if old < int(a["lvl"]) and now >= int(a["lvl"]):
+			_toast("NEW %s JUTSU: %s  - assign it in M > Element" % [el.to_upper(), a["name"]])
+			return
 
 ## Enemies still alive within `radius` metres (flat distance).
 func _enemies_in(radius: float) -> Array[Enemy]:
@@ -776,7 +791,8 @@ func _enemies_in(radius: float) -> Array[Enemy]:
 func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 	if is_instance_valid(e) and e.health > 0.0:
 		e.take_damage(amount, knock)
-		GameData.add_mastery(GameData.equipped, GameData.MASTERY_HIT)
+		if cur_mkey != "":
+			GameData.add_mastery(cur_mkey, GameData.MASTERY_HIT)
 
 ## Fires `count` homing projectiles, spread over the nearest enemies.
 func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> void:
@@ -840,47 +856,31 @@ func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size:
 		pr.long_shape = long
 		get_parent().add_child(pr)
 
-func _phoenix() -> void:      # T
-	if t_cd > 0.0 or chakra < 35.0:
-		return
-	t_cd = 5.0
-	chakra -= 35.0
-	Sfx.play(self, "fire" if GameData.equipped_element == "Fire" else "power", -2.0)
-	_fan(5, 14.0, 26.0, 18.0, 2.5, 0.35, _element_color(), false)
+func _fx_phoenix(col: Color) -> void:
+	Sfx.play(self, "fire", -2.0)
+	_fan(5, 14.0, 26.0, 18.0, 2.5, 0.35, col, false)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 
-func _flame_wave() -> void:   # Y
-	if y_cd > 0.0 or chakra < 45.0:
-		return
-	y_cd = 8.0
-	chakra -= 45.0
+func _fx_flame_wave(col: Color) -> void:
 	Sfx.play(self, "power")
 	for e: Enemy in get_tree().get_nodes_in_group("enemies"):
 		var to := e.global_position - global_position
 		to.y = 0.0
 		if to.length() < 9.0 + e.k * 1.5:
 			e.take_damage(40.0 * _dmg(), to.normalized() * 14.0)
-	var element_col := _element_color()
+	var element_col := col
 	Vfx.burst(get_parent(), global_position + Vector3.UP, element_col, 60, 12.0, 0.5, 0.7, 0.0)
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(element_col.r, element_col.g, element_col.b, 0.7), 12.0)
 	_play_once("jutsu", 0.6)
 
-func _dragon_flame() -> void: # G
-	if g_cd > 0.0 or chakra < 60.0:
-		return
-	g_cd = 12.0
-	chakra -= 60.0
-	Sfx.play(self, "fire" if GameData.equipped_element == "Fire" else "power")
-	_shoot(32.0, 90.0, 8.0, 1.1, _element_color(), false, true)
+func _fx_dragon(col: Color) -> void:
+	Sfx.play(self, "fire")
+	_shoot(32.0, 90.0, 8.0, 1.1, col, false, true)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 
-func _flame_armor() -> void:  # H
-	if h_cd > 0.0 or chakra < 40.0 or armor_time > 0.0:
-		return
-	h_cd = 20.0
-	chakra -= 40.0
+func _fx_armor(_col: Color) -> void:   # coloured by your main element
 	armor_time = 6.0
 	Sfx.play(self, "power")
 	var element_col := _element_color()
@@ -900,11 +900,7 @@ func _kunai_volley() -> void: # RMB + E
 	if not _play_once("throw", 0.2):
 		Fx.swing(arm)
 
-func _substitute() -> void:   # V - swap with a log; lands behind the nearest enemy (or backs off)
-	if v_cd > 0.0 or chakra < 25.0:
-		return
-	v_cd = 10.0
-	chakra -= 25.0
+func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest enemy (or backs off)
 	var from := global_position
 	var tgt := _nearest_enemy(25.0)
 	var dest := from - facing * 6.0
@@ -968,55 +964,43 @@ func _end_mode() -> void:
 
 ## What the bottom HUD shows for each key slot.
 func slot_info(key: String) -> Dictionary:
-	var d := {"name": "", "cd": 0.0, "max": 1.0, "cost": 0.0, "locked": false, "active": false, "timer": 0.0, "not_ready": false}
+	var d := {"name": "", "cd": 0.0, "max": 1.0, "cost": 0.0, "locked": false, "active": false, "timer": 0.0,
+		"not_ready": false, "icon": null, "empty": false}
+	if Moves.BIND_KEYS.has(key):   # assignable key: shows the move bound to it
+		var mv := str(GameData.keybinds.get(key, ""))
+		var a := Moves.spec(mv)
+		if a.is_empty():
+			d["empty"] = true
+			return d
+		var left := 0.0
+		for b in buffs:
+			if b["name"] == a["name"]:
+				left = float(b["t"])
+		if mv == "base:armor" and armor_time > 0.0:
+			left = armor_time
+		var cost := float(a["cost"]) * (fire_cost / 30.0 if bool(a["fire_cost"]) else 1.0)
+		d.merge({"name": a["name"], "cd": float(move_cd.get(mv, 0.0)), "max": float(a["cd"]), "cost": cost,
+			"locked": Moves.block(mv) != "", "active": left > 0.0, "timer": left, "icon": Moves.icon(mv)}, true)
+		return d
 	match key:
-		"R":
-			d.merge({"name": "Fireball", "cd": fire_cd, "max": 1.0, "cost": fire_cost}, true)
-		"T":
-			d.merge({"name": "Phoenix", "cd": t_cd, "max": 5.0, "cost": 35.0}, true)
-		"Y":
-			d.merge({"name": "Flame Wave", "cd": y_cd, "max": 8.0, "cost": 45.0}, true)
-		"F":
-			d.merge({"name": "Clones", "cd": clone_cd, "max": 6.0, "cost": 40.0}, true)
-		"G":
-			d.merge({"name": "Dragon", "cd": g_cd, "max": 12.0, "cost": 60.0}, true)
-		"H":
-			d.merge({"name": "Armor", "cd": h_cd, "max": 20.0, "cost": 40.0, "active": armor_time > 0.0, "timer": armor_time}, true)
 		"Q":
 			d.merge({"name": "Dash", "cost": dash_cost}, true)
 		"RMB+E":
 			d.merge({"name": "Kunai", "cd": volley_cd, "max": 4.0, "cost": 15.0}, true)
 		"E":
 			d["name"] = "Talk"
-		"V":
-			d.merge({"name": "Swap", "cd": v_cd, "max": 10.0, "cost": 25.0}, true)
-		"B":
-			d["name"] = "Spin"
-		"N":
-			d.merge({"name": "Lock-on", "active": lock_target != null}, true)
 		"Z":
 			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated, "active": mode_time > 0.0,
 				"timer": mode_time, "not_ready": mode_meter < MODE_MAX and mode_time <= 0.0}, true)
 		"C":   # power-up: no timer, drains MD
 			var m := Bloodline.mode(GameData.equipped)
 			if powered:
-				d.merge({"name": pmode["name"], "active": true}, true)
+				d.merge({"name": pmode["name"], "active": true, "icon": Moves.mode_icon(GameData.equipped)}, true)
 			elif not m.is_empty() and _bl_level() >= Bloodline.MODE_LEVEL:
-				d.merge({"name": m["name"], "not_ready": mode_meter < POWER_MIN_MD or mode_time > 0.0}, true)
+				d.merge({"name": m["name"], "not_ready": mode_meter < POWER_MIN_MD or mode_time > 0.0,
+					"icon": Moves.mode_icon(GameData.equipped)}, true)
 			else:
 				d["name"] = "Charge"
-		"1", "2", "3":
-			var i := int(key) - 1
-			var a := Bloodline.ability(GameData.equipped, i)
-			if a.is_empty():
-				d.merge({"name": "-", "locked": true}, true)
-			else:
-				var left := 0.0
-				for b in buffs:
-					if b["name"] == a["name"]:
-						left = float(b["t"])
-				d.merge({"name": a["name"], "cd": bl_cd[i], "max": float(a["cd"]), "cost": float(a["cost"]),
-					"locked": _bl_level() < int(a["lvl"]), "active": left > 0.0, "timer": left}, true)
 	return d
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:

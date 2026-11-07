@@ -189,6 +189,8 @@ class AbilityIcon extends Control:
 	var selected := false
 	var is_mode := false
 	var hover := false
+	var tex: Texture2D = null        # ability image (drawn instead of the letter)
+	var key_text := ""               # hotbar key it is bound to
 	func _init() -> void:
 		custom_minimum_size = Vector2(64, 64)
 		size = Vector2(64, 64)
@@ -224,10 +226,16 @@ class AbilityIcon extends Control:
 		draw_polyline(loop, ring, 3.0)
 		if selected:
 			draw_polyline(loop, Color(0.85, 0.06, 0.06), 4.0)
-		var fs := 30
-		var ty := c.y + fs * 0.36 - (6.0 if locked else 0.0)
-		draw_string_outline(f, Vector2(0, ty), letter, HORIZONTAL_ALIGNMENT_CENTER, size.x, fs, 6, Color.BLACK)
-		draw_string(f, Vector2(0, ty), letter, HORIZONTAL_ALIGNMENT_CENTER, size.x, fs, Color(1, 1, 1, 0.45 if locked else 1.0))
+		if tex != null:
+			draw_texture_rect(tex, Rect2(c - Vector2(22, 22), Vector2(44, 44)), false, Color(0.5, 0.5, 0.5) if locked else Color.WHITE)
+		else:
+			var fs := 30
+			var ty := c.y + fs * 0.36 - (6.0 if locked else 0.0)
+			draw_string_outline(f, Vector2(0, ty), letter, HORIZONTAL_ALIGNMENT_CENTER, size.x, fs, 6, Color.BLACK)
+			draw_string(f, Vector2(0, ty), letter, HORIZONTAL_ALIGNMENT_CENTER, size.x, fs, Color(1, 1, 1, 0.45 if locked else 1.0))
+		if key_text != "" and not locked:   # key badge
+			draw_rect(Rect2(size.x - 20, 0, 20, 18), Color(0.05, 0.05, 0.05))
+			draw_string(f, Vector2(size.x - 20, 14), key_text, HORIZONTAL_ALIGNMENT_CENTER, 20, 13, Color(1.0, 0.85, 0.3))
 		if locked:
 			var red := Color(0.75, 0.05, 0.05)
 			draw_rect(Rect2(c.x - 9.0, c.y - 8.0, 18.0, 14.0), red)
@@ -255,8 +263,10 @@ var tab_nodes: Array = []
 var card_nodes: Array = []
 var sep_right: ColorRect                # divider between list and detail (hidden on the Bloodline page)
 var bl_page: Control                    # custom Shindo-style Bloodline page
-var bl_pair := 0                        # 0 = slots 1-2, 1 = slots 3-4
-var bl_sel := Vector2i(-1, 0)           # (slot, ability 0..2 or 3 = power-up); slot -1 = active slot
+var tree_kind := "bloodline"            # which ability page is shown: "bloodline" | "element"
+var tree_page := 0                      # which pair of columns
+var tree_sel_col := ""                  # selected column (slot index or element); "" = pick the equipped one
+var tree_sel_idx := 0                   # selected ability in that column (bloodline: 3 = power-up)
 
 func bind(player: Player, main_node: Node) -> void:
 	p = player
@@ -417,8 +427,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif is_open and event.is_action_pressed("pause"):
 		close()
 		get_viewport().set_input_as_handled()
-	elif is_open and event.is_action_pressed("spin_menu"):
-		_open_spin()
 		get_viewport().set_input_as_handled()
 
 # ------------------------------------------------------------------ header
@@ -518,13 +526,17 @@ func _select_tab(i: int) -> void:
 	_reload_page(false)
 
 func _reload_page(keep_scroll := true) -> void:
-	var custom: bool = TABS[tab] == "Bloodline" and p != null
+	var custom: bool = (TABS[tab] == "Bloodline" or TABS[tab] == "Element") and p != null
 	bl_page.visible = custom
 	list_scroll.visible = not custom
 	detail.visible = not custom
 	sep_right.visible = not custom
 	if custom:
-		_build_bloodline_page()
+		var kind := "element" if TABS[tab] == "Element" else "bloodline"
+		if kind != tree_kind:
+			tree_kind = kind
+			tree_sel_col = ""
+		_build_tree_page()
 		return
 	var keep := list_scroll.scroll_vertical
 	extras = []
@@ -777,28 +789,23 @@ func _page_tools() -> Array:
 			"Hold RMB to throw kunai. 9 damage, homes in on your lock-on target."),
 		_item("Kunai Volley", "RMB + E - 15 chakra", Color(0.7, 0.72, 0.85), "V",
 			"Hold RMB and press E: throws 5 kunai in a fan.\nStatus: %s" % _cd(p.volley_cd)),
-		_item("Fireball", "R - %d chakra" % int(p.fire_cost), Color(1.0, 0.45, 0.1), "R",
-			"Explodes on impact: 45 damage in a 5 m radius.\nStatus: %s" % _cd(p.fire_cd)),
-		_item("Phoenix Flowers", "T - 35 chakra", Color(1.0, 0.55, 0.2), "T",
-			"Fires 5 small fireballs in a fan.\nStatus: %s" % _cd(p.t_cd)),
-		_item("Flame Wave", "Y - 45 chakra", Color(1.0, 0.4, 0.1), "Y",
-			"A burst of fire around you: 40 damage and knockback.\nStatus: %s" % _cd(p.y_cd)),
-		_item("Shadow Clones", "F - 40 chakra", Color(0.3, 0.6, 1.0), "F",
-			"Summons %d clones that fight for %d seconds.\nStatus: %s" % [p.clone_count, int(p.clone_time), _cd(p.clone_cd)]),
-		_item("Dragon Flame", "G - 60 chakra", Color(0.95, 0.25, 0.05), "G",
-			"A huge homing fire dragon: 90 damage in an 8 m blast.\nStatus: %s" % _cd(p.g_cd)),
-		_item("Flame Armor", "H - 40 chakra", Color(0.95, 0.5, 0.15), "H",
-			"Take 60%% less damage for 6 seconds.\nStatus: %s" % _cd(p.h_cd)),
-		_item("Substitution", "V - 25 chakra", Color(0.7, 0.6, 0.4), "V",
-			"Swap with a log: you land behind the nearest enemy, or back off if none are near. Short invulnerability.\nStatus: %s" % _cd(p.v_cd)),
+		_item("Hotbar Keys", "R T Y F G H V B N", Color(0.9, 0.75, 0.2), "K",
+			"These keys run whatever move you put on them.\nAssign moves in the Bloodline and Element tabs: click an ability, then click a key.\nNow: %s" % _binds_text()),
 		_item("Dash", "Q - %d chakra" % int(p.dash_cost), Color(0.5, 0.85, 0.95), "Q",
 			"A short burst of speed with brief invulnerability. Sprinting uses stamina (STM)."),
 		_item("Chakra / Power-up", "C", Color(0.3, 0.45, 1.0), "C",
-			"Tap C: bloodline power-up on / off (%s). No timer - it drains MD and ends when MD runs out.\nHold C while standing still: charge chakra, 40 per second (x%.2f).\nKeys 1 / 2 / 3: bloodline abilities." % [pu, p.regen_mult]),
+			"Tap C: bloodline power-up on / off (%s). No timer - it drains MD and ends when MD runs out.\nHold C while standing still: charge chakra, 40 per second (x%.2f).\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [pu, p.regen_mult]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
 			"Unlocks when you defeat Kurama. Needs the MD bar full (fills with time and kills).\nFor %d seconds: x2 damage, x1.3 speed, half damage taken, health regen. Status: %s" % [
 				int(Player.MODE_TIME), "ACTIVE" if p.mode_time > 0.0 else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(Player.MODE_MAX)])]),
 	]
+
+func _binds_text() -> String:
+	var parts: Array[String] = []
+	for k in Moves.BIND_KEYS:
+		var a := Moves.spec(str(GameData.keybinds.get(k, "")))
+		parts.append("%s %s" % [k, "-" if a.is_empty() else a["name"]])
+	return ",  ".join(PackedStringArray(parts))
 
 func _page_elements() -> Array:
 	var out: Array = []
@@ -847,32 +854,93 @@ func _bl_label(text: String, r: Rect2, size: int, col: Color, parent: Control, a
 	parent.add_child(l)
 	return l
 
-func _build_bloodline_page() -> void:
-	_clear(bl_page)
-	if bl_sel.x < 0:
-		bl_sel = Vector2i(GameData.active_slot, 0)
-		bl_pair = GameData.active_slot / 2
-	for c in 2:
-		_build_bl_column(bl_pair * 2 + c, c * 200.0)
-	_bl_rect(Rect2(402, 0, 4, 404), INK, bl_page)
-	# slot pair switch (slots 3-4 only once one of them is open)
-	var any_34: bool = GameData.slot_unlocked[2] or GameData.slot_unlocked[3]
-	for k in 2:
-		var b := Button.new()
-		b.text = "SLOTS %d-%d" % [k * 2 + 1, k * 2 + 2]
-		b.position = Vector2(414 + k * 98, 0)
-		b.size = Vector2(94, 26)
-		_style_green(b)
-		b.add_theme_font_size_override("font_size", 13)
-		b.disabled = bl_pair == k or (k == 1 and not any_34)
-		b.pressed.connect(func() -> void:
-			bl_pair = k
-			bl_sel = Vector2i(k * 2, 0)
-			_build_bloodline_page())
-		bl_page.add_child(b)
-	_build_bl_info()
+## Shindo Life style ability pages (Bloodline and Element tabs): two columns (level, ability icons with
+## their unlock levels, EQUIP, mastery EXP bar) and an info panel where you assign the clicked move to a key.
+func _tree_pages() -> Array:
+	if tree_kind == "element":
+		return [["Fire", "Earth"], ["Lightning", "Water"], ["Wind"]]
+	return [["0", "1"], ["2", "3"]]
 
-func _build_bl_column(slot: int, x: float) -> void:
+func _tree_page_names() -> Array:
+	return ["F / E", "L / W", "WIND"] if tree_kind == "element" else ["SLOTS 1-2", "SLOTS 3-4"]
+
+## Everything a column needs. cid = slot index ("0".."3") or element name.
+func _col_data(cid: String) -> Dictionary:
+	var d := {"locked": false, "msg": "", "name": "", "color": Color.GRAY, "letter": "?", "lv": 0, "moves": [],
+		"mode": "", "equipped": false, "mkey": "", "can_equip": true}
+	if tree_kind == "element":
+		d["name"] = cid
+		d["color"] = GameData.get_element_color(cid)
+		d["letter"] = cid.substr(0, 1)
+		if not GameData.owned_elements.has(cid):
+			d["locked"] = true
+			d["msg"] = "%s\nnot owned\n\nRoll it with an\nElement Spin at the\nmain menu" % cid
+			return d
+		d["mkey"] = "el:" + cid
+		d["lv"] = GameData.mastery_level(d["mkey"])
+		d["equipped"] = GameData.equipped_element == cid
+		for i in ElementData.count(cid):
+			d["moves"].append("el:%s:%d" % [cid, i])
+		return d
+	var slot := int(cid)
+	d["name"] = "SLOT #%d" % (slot + 1)
+	if not GameData.slot_unlocked[slot]:
+		d["locked"] = true
+		d["msg"] = "Slot #%d locked\n\nOpen it in\nCustomize at the\nmain menu (%d spins)" % [slot + 1, GameData.SLOT_UNLOCK_COST[slot]]
+		return d
+	var id := str(GameData.slots[slot])
+	if id == "none":
+		d["locked"] = true
+		d["msg"] = "Slot #%d empty\n\nSpin it in\nCustomize at the\nmain menu" % (slot + 1)
+		return d
+	var bd := Bloodline.get_def(id)
+	d.merge({"name": bd["name"], "color": bd["color"], "letter": str(bd["name"]).substr(0, 1), "mkey": id,
+		"lv": GameData.mastery_level(id), "mode": id, "equipped": slot == GameData.active_slot}, true)
+	for i in 3:
+		d["moves"].append("bl:%s:%d" % [id, i])
+	return d
+
+func _equip_col(cid: String) -> void:
+	if tree_kind == "element":
+		_equip_element(cid)
+	else:
+		_equip_slot(int(cid))
+
+func _build_tree_page() -> void:
+	_clear(bl_page)
+	var pages := _tree_pages()
+	if tree_sel_col == "":   # start on the equipped column
+		var want := GameData.equipped_element if tree_kind == "element" else str(GameData.active_slot)
+		for i in pages.size():
+			if (pages[i] as Array).has(want):
+				tree_page = i
+		tree_sel_col = want
+		tree_sel_idx = 0
+	tree_page = clampi(tree_page, 0, pages.size() - 1)
+	var cols: Array = pages[tree_page]
+	for c in cols.size():
+		_build_tree_column(str(cols[c]), c * 200.0)
+	_bl_rect(Rect2(402, 0, 4, 404), INK, bl_page)
+	var names := _tree_page_names()
+	var bw := 190.0 / names.size()
+	for k in names.size():
+		var b := Button.new()
+		b.text = names[k]
+		b.position = Vector2(412 + k * (bw + 2.0), 0)
+		b.size = Vector2(bw, 24)
+		_style_green(b)
+		b.add_theme_font_size_override("font_size", 11 if names.size() < 3 else 13)
+		b.disabled = tree_page == k or (tree_kind == "bloodline" and k == 1 and not (GameData.slot_unlocked[2] or GameData.slot_unlocked[3]))
+		b.pressed.connect(func() -> void:
+			tree_page = k
+			tree_sel_col = str(pages[k][0])
+			tree_sel_idx = 0
+			_build_tree_page())
+		bl_page.add_child(b)
+	_build_tree_info()
+
+func _build_tree_column(cid: String, x: float) -> void:
+	var d := _col_data(cid)
 	var col := Control.new()
 	col.position = Vector2(x, 0)
 	col.size = Vector2(200, 404)
@@ -882,49 +950,49 @@ func _build_bl_column(slot: int, x: float) -> void:
 	badge.position = Vector2(4, 0)
 	col.add_child(badge)
 	_bl_rect(Rect2(52, 8, 144, 30), Color(0.03, 0.03, 0.03), col)
-	if not GameData.slot_unlocked[slot]:
+	if d["locked"]:
 		badge.kind = "lock"
-		_bl_label("SLOT #%d LOCKED" % (slot + 1), Rect2(52, 8, 140, 30), 15, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
-		_bl_label("Open it in the\nspin menu (B)\nfor %d spins" % GameData.SLOT_UNLOCK_COST[slot], Rect2(0, 120, 200, 90), 16, BODY_TEXT, col)
+		_bl_label(str(d["name"]).to_upper(), Rect2(52, 8, 140, 30), 15, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
+		_bl_label(d["msg"], Rect2(0, 110, 200, 140), 16, BODY_TEXT, col)
 		return
-	var id := str(GameData.slots[slot])
-	if id == "none":
-		badge.kind = "empty"
-		_bl_label("EMPTY", Rect2(52, 8, 140, 30), 17, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
-		_bl_label("Slot #%d\nSpin it in the\nspin menu (B)" % (slot + 1), Rect2(0, 120, 200, 90), 16, BODY_TEXT, col)
-		return
-	var d := Bloodline.get_def(id)
-	var lv := GameData.mastery_level(id)
+	var lv: int = d["lv"]
 	badge.kind = "letter"
-	badge.letter = str(d["name"]).substr(0, 1)
-	badge.fill = d["color"].darkened(0.25)
-	badge.ring = slot == GameData.active_slot
+	badge.letter = d["letter"]
+	badge.fill = (d["color"] as Color).darkened(0.25)
+	badge.ring = d["equipped"]
 	_bl_label("LV.%d" % lv, Rect2(52, 8, 140, 30), 19, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
-	_bl_label(str(d["name"]), Rect2(0, 40, 200, 18), 14, BODY_TEXT, col)
-	for k in 4:
+	_bl_label(d["name"], Rect2(0, 40, 200, 18), 14, BODY_TEXT, col)
+	var moves: Array = d["moves"]
+	var n := moves.size() + (1 if d["mode"] != "" else 0)
+	for k in n:
 		var ic := AbilityIcon.new()
 		ic.position = Vector2(68, 62 + k * 70)
-		if k < 3:
-			var a := Bloodline.ability(id, k)
+		if k < moves.size():
+			var a := Moves.spec(moves[k])
 			ic.fill = a["col"] if (a["col"] as Color).get_luminance() > 0.12 else d["color"]
-			ic.letter = str(k + 1)
+			ic.letter = str(a["name"]).substr(0, 1)
+			ic.tex = Moves.icon(moves[k])
 			ic.locked = lv < int(a["lvl"])
 			ic.lvl_text = "LVL [%d]" % int(a["lvl"])
+			ic.key_text = GameData.key_of(moves[k])
 		else:
-			var m := Bloodline.mode(id)
+			var m := Bloodline.mode(d["mode"])
 			ic.fill = m["col"]
 			ic.letter = "C"
+			ic.tex = Moves.mode_icon(d["mode"])
 			ic.is_mode = true
+			ic.key_text = "C"
 			ic.locked = lv < Bloodline.MODE_LEVEL
 			ic.lvl_text = "LVL [%d]" % Bloodline.MODE_LEVEL
-		ic.selected = bl_sel == Vector2i(slot, k)
+		ic.selected = tree_sel_col == cid and tree_sel_idx == k
 		ic.pressed.connect(func() -> void:
-			bl_sel = Vector2i(slot, k)
-			_build_bloodline_page())
+			tree_sel_col = cid
+			tree_sel_idx = k
+			_build_tree_page())
 		col.add_child(ic)
 	var eq := Button.new()
 	eq.flat = true
-	eq.text = "[EQUIPPED]" if slot == GameData.active_slot else "[EQUIP]"
+	eq.text = "[EQUIPPED]" if d["equipped"] else "[EQUIP]"
 	eq.position = Vector2(30, 344)
 	eq.size = Vector2(140, 28)
 	eq.add_theme_font_override("font", font())
@@ -934,12 +1002,11 @@ func _build_bl_column(slot: int, x: float) -> void:
 	eq.add_theme_color_override("font_disabled_color", Color(0.15, 0.45, 0.15))
 	eq.add_theme_color_override("font_outline_color", Color.BLACK)
 	eq.add_theme_constant_override("outline_size", 4)
-	eq.disabled = slot == GameData.active_slot
+	eq.disabled = d["equipped"]
 	eq.pressed.connect(func() -> void:
-		_equip_slot(slot))
+		_equip_col(cid))
 	col.add_child(eq)
-	# mastery EXP bar
-	var pr := GameData.mastery_progress(id)
+	var pr := GameData.mastery_progress(d["mkey"])
 	var bar := Rect2(10, 378, 180, 20)
 	_bl_rect(bar, Color(0.05, 0.05, 0.05), col)
 	if lv < GameData.MASTERY_MAX:
@@ -947,52 +1014,75 @@ func _build_bl_column(slot: int, x: float) -> void:
 			Color(0.75, 0.6, 0.15), col)
 	_bl_label("EXP: %s/%s" % [_k(pr[0]), _k(pr[1])] if lv < GameData.MASTERY_MAX else "MAX MASTERY", bar, 12, Color.WHITE, col, HORIZONTAL_ALIGNMENT_CENTER, 4)
 
-func _build_bl_info() -> void:
+func _build_tree_info() -> void:
 	var box := Control.new()
-	box.position = Vector2(412, 34)
-	box.size = Vector2(196, 370)
+	box.position = Vector2(412, 30)
+	box.size = Vector2(196, 374)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bl_page.add_child(box)
-	var slot := bl_sel.x
-	var id := str(GameData.slots[slot]) if GameData.slot_unlocked[slot] else "none"
-	if id == "none":
-		_bl_label("Spin bloodlines in the\nspin menu (B).\n\nEach bloodline has 3\nabilities (keys 1 2 3)\nthat unlock as it levels,\nand a power-up (C) at\nLV %d." % Bloodline.MODE_LEVEL,
-			Rect2(0, 10, 196, 220), 15, BODY_TEXT, box)
+	var d := _col_data(tree_sel_col)
+	if d["locked"]:
+		_bl_label("Click an ability, then\nclick a key to put it\non your hotbar.\n\nAbilities unlock as\nthis %s levels up." % ("element" if tree_kind == "element" else "bloodline"),
+			Rect2(0, 10, 196, 200), 15, BODY_TEXT, box)
 		return
-	var d := Bloodline.get_def(id)
-	var lv := GameData.mastery_level(id)
-	var title := ""
-	var sub := ""
-	var body := ""
-	var need := 0
-	if bl_sel.y < 3:
-		var a := Bloodline.ability(id, bl_sel.y)
-		title = a["name"]
-		need = int(a["lvl"])
-		sub = "KEY [%d]   %d chakra   %ds" % [bl_sel.y + 1, int(a["cost"]), int(a["cd"])]
-		body = a["desc"]
-	else:
-		var m := Bloodline.mode(id)
-		title = m["name"]
-		need = Bloodline.MODE_LEVEL
-		sub = "POWER-UP  -  tap [C]"
-		body = "%s\n\nNo timer: drains MD while on. Tap C again to release; it ends when MD runs out." % m["desc"]
-	_bl_label(title, Rect2(0, 0, 196, 30), 21, INK, box)
-	_bl_label(sub, Rect2(0, 30, 196, 20), 13, Color(0.4, 0.15, 0.1), box)
-	var unlocked := lv >= need
-	_bl_label("UNLOCKED" if unlocked else "Needs LV %d  (now %d)" % [need, lv], Rect2(0, 52, 196, 20), 14,
-		Color(0.1, 0.45, 0.12) if unlocked else Color(0.7, 0.08, 0.06), box)
-	_bl_label(body, Rect2(2, 78, 192, 128), 14, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
-	_bl_rect(Rect2(0, 210, 196, 3), INK, box)
-	_bl_label("%s  [%s]\n%s" % [d["name"], d["rarity"], d["desc"]], Rect2(2, 216, 192, 116), 13, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
-	var spin := Button.new()
-	spin.text = "OPEN SPIN  (%d)" % GameData.spins
-	spin.position = Vector2(0, 336)
-	spin.size = Vector2(196, 30)
-	_style_green(spin)
-	spin.add_theme_font_size_override("font_size", 15)
-	spin.pressed.connect(_open_spin)
-	box.add_child(spin)
+	var moves: Array = d["moves"]
+	var lv: int = d["lv"]
+	if tree_sel_idx >= moves.size():   # bloodline power-up
+		var m := Bloodline.mode(d["mode"])
+		_bl_label(m["name"], Rect2(0, 0, 196, 30), 21, INK, box)
+		_bl_label("POWER-UP  -  tap [C]", Rect2(0, 30, 196, 20), 13, Color(0.4, 0.15, 0.1), box)
+		var ok := lv >= Bloodline.MODE_LEVEL
+		_bl_label("UNLOCKED" if ok else "Needs LV %d  (now %d)" % [Bloodline.MODE_LEVEL, lv], Rect2(0, 52, 196, 20), 14,
+			Color(0.1, 0.45, 0.12) if ok else Color(0.7, 0.08, 0.06), box)
+		_bl_label("%s\n\nAlways on C. No timer: drains MD while on. Tap C again to release; it ends when MD runs out." % m["desc"],
+			Rect2(2, 78, 192, 200), 14, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
+		return
+	var mv: String = moves[tree_sel_idx]
+	var a := Moves.spec(mv)
+	var cur_key := GameData.key_of(mv)
+	_bl_label(a["name"], Rect2(0, 0, 196, 28), 20, INK, box)
+	_bl_label("%d chakra   %ds cooldown" % [int(a["cost"]), int(a["cd"])], Rect2(0, 28, 196, 18), 13, Color(0.4, 0.15, 0.1), box)
+	var ok2 := lv >= int(a["lvl"])
+	_bl_label("UNLOCKED" if ok2 else "Needs LV %d  (now %d)" % [int(a["lvl"]), lv], Rect2(0, 47, 196, 18), 14,
+		Color(0.1, 0.45, 0.12) if ok2 else Color(0.7, 0.08, 0.06), box)
+	_bl_label(a["desc"], Rect2(2, 68, 192, 74), 13, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
+	_bl_rect(Rect2(0, 146, 196, 3), INK, box)
+	_bl_label("KEYBIND:  [%s]" % (cur_key if cur_key != "" else " - "), Rect2(0, 152, 196, 22), 16, INK, box)
+	for i in Moves.BIND_KEYS.size():
+		var k: String = Moves.BIND_KEYS[i]
+		var b := Button.new()
+		b.text = k
+		b.position = Vector2((i % 3) * 66, 178 + (i / 3) * 34)
+		b.size = Vector2(62, 30)
+		_style_green(b)
+		b.add_theme_font_size_override("font_size", 17)
+		var holder := Moves.spec(str(GameData.keybinds.get(k, "")))
+		b.tooltip_text = "Empty" if holder.is_empty() else "Now: %s" % holder["name"]
+		if k == cur_key:
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(0.8, 0.1, 0.06)
+			sb.set_border_width_all(3)
+			sb.border_color = Color(0.3, 0.02, 0.02)
+			b.add_theme_stylebox_override("normal", sb)
+		b.pressed.connect(func() -> void:
+			GameData.bind_move(k, mv)
+			_build_tree_page())
+		box.add_child(b)
+	var ub := Button.new()
+	ub.text = "UNBIND"
+	ub.position = Vector2(0, 284)
+	ub.size = Vector2(196, 26)
+	_style_green(ub)
+	ub.add_theme_font_size_override("font_size", 14)
+	ub.disabled = cur_key == ""
+	ub.pressed.connect(func() -> void:
+		GameData.unbind_move(mv)
+		_build_tree_page())
+	box.add_child(ub)
+	var tip := "Abilities still need their level to work." if not ok2 else "Press [%s] in a fight to use it." % cur_key if cur_key != "" else "Pick a key to use it in fights."
+	if tree_kind == "bloodline":
+		tip += " Only the EQUIPPED bloodline's abilities work."
+	_bl_label(tip, Rect2(0, 314, 196, 60), 12, Color(0.35, 0.25, 0.15), box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
 
 func _page_bloodlines() -> Array:
 	var out: Array = []
@@ -1025,9 +1115,10 @@ func _page_sub() -> Array:
 	for i in 3:
 		var a := Bloodline.ability(id, i)
 		var locked := lv < int(a["lvl"])
-		var st := "LOCKED - unlocks at LV %d" % int(a["lvl"]) if locked else _cd(p.bl_cd[i])
-		out.append(_item(a["name"], "[%d]  %d chakra, %ds cooldown" % [i + 1, int(a["cost"]), int(a["cd"])], a["col"],
-			str(i + 1), "%s\n\nStatus: %s" % [a["desc"], st], {"locked": locked}))
+		var st := "LOCKED - unlocks at LV %d" % int(a["lvl"]) if locked else _cd(float(p.move_cd.get("bl:%s:%d" % [id, i], 0.0)))
+		var key := GameData.key_of("bl:%s:%d" % [id, i])
+		out.append(_item(a["name"], "[%s]  %d chakra, %ds cooldown" % [key if key != "" else "no key", int(a["cost"]), int(a["cd"])], a["col"],
+			key if key != "" else str(i + 1), "%s\n\nStatus: %s" % [a["desc"], st], {"locked": locked}))
 	var m := Bloodline.mode(id)
 	var ml := lv < Bloodline.MODE_LEVEL
 	out.append(_item(m["name"], "[C]  power-up  -  drains MD", m["col"], "C",
@@ -1037,10 +1128,11 @@ func _page_sub() -> Array:
 	return out
 
 func _page_companions() -> Array:
-	var can := not p.is_dead and p.clone_cd <= 0.0 and p.chakra >= 40.0
+	var ccd := float(p.move_cd.get("base:clones", 0.0))
+	var can := not p.is_dead and ccd <= 0.0 and p.chakra >= 40.0
 	return [
 		_item("Shadow Clones", "%d clones, %ds" % [p.clone_count, int(p.clone_time)], Color(0.3, 0.6, 1.0), "S",
-			"Clones chase and fight enemies for you. Costs 40 chakra, cooldown 6 seconds.\nStatus: %s" % _cd(p.clone_cd),
+			"Clones chase and fight enemies for you. Costs 40 chakra, cooldown 6 seconds.\nStatus: %s" % _cd(ccd),
 			{"actions": [_act("SUMMON", _summon_clones, "", not can)]}),
 		_locked("More companions", "No other companions exist yet."),
 	]
@@ -1150,14 +1242,14 @@ func _page_controls() -> Array:
 	return [
 		_item("Movement", "WASD, Shift, Space, Q", Color(0.4, 0.7, 0.4), "W",
 			"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nQ: dash"),
-		_item("Fire Jutsu", "R T Y G H", Color(0.85, 0.3, 0.2), "R",
-			"R: Fireball\nT: Phoenix Flowers\nY: Flame Wave\nF: Shadow Clones\nG: Dragon Flame\nH: Flame Armor"),
-		_item("Combat", "Mouse, V, E", Color(0.6, 0.65, 0.8), "C",
-			"Left mouse: melee combo\nRight mouse: kunai\nRight mouse + E: kunai volley\nV: substitution\nTab / N / middle mouse: lock on"),
+		_item("Hotbar", "R T Y F G H V B N", Color(0.85, 0.3, 0.2), "R",
+			"Each key runs the move you put on it. Assign moves in the Bloodline and Element tabs (click an ability, then a key).\nNow: %s" % _binds_text()),
+		_item("Combat", "Mouse, E, Tab", Color(0.6, 0.65, 0.8), "C",
+			"Left mouse: melee combo\nRight mouse: kunai\nRight mouse + E: kunai volley\nTab / middle mouse: lock on"),
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
-			"1 / 2 / 3: bloodline abilities (unlock with bloodline LV)\nTap C: bloodline power-up on / off (bloodline LV 1000, drains MD; X also works)\nHold C: charge chakra\nZ: Kurama Mode (after beating Kurama, MD bar full)"),
-		_item("Menus", "M, B, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
-			"M: this menu\nB: bloodline spin\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
+			"Tap C: bloodline power-up on / off (bloodline LV 1000, drains MD; X also works)\nHold C: charge chakra\nZ: Kurama Mode (after beating Kurama, MD bar full)"),
+		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
+			"M: this menu\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]
 
 # ------------------------------------------------------------------ actions
@@ -1176,15 +1268,14 @@ func _equip_element(element: String) -> void:
 	_refresh_header()
 	_reload_page()
 
+## Spins live on the main menu now: go there and open Customize straight away.
 func _open_spin() -> void:
-	close()
-	var sp = main.get("spin") if main != null else null
-	if sp != null:
-		sp.toggle()
+	GameData.open_customize = true
+	_to_title()
 
 func _summon_clones() -> void:
 	close()
-	p._clones()
+	p._use_move("base:clones")
 
 func _teleport(pos: Vector3) -> void:
 	if p == null or p.is_dead or pos == Vector3.INF:

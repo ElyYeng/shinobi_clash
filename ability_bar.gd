@@ -4,7 +4,7 @@ extends Control
 ## HP / MD / CHI / STM bars and a MENU / QUEST strip. HUD creates it and calls update_from(player) every frame.
 ## What each key shows comes from Player.slot_info(key).
 
-## Keys 1 2 3 (bloodline abilities) sit in a row above Z / C.
+## R T Y F G H and V B N show whatever move is bound to them (Moves / GameData.keybinds).
 const LEFT := ["R", "T", "Y", "F", "G", "H"]
 const RIGHT := ["Q", "RMB+E", "E", "V", "B", "N"]
 const PITCH := 52.0
@@ -17,7 +17,6 @@ var st: StatBar
 var strip_mid: Label
 var strip_right: Label
 var xp_bar: StatBar
-var bl_label: Label
 var world_mode := false
 
 # ------------------------------------------------------------------ inner widgets
@@ -32,6 +31,8 @@ class KeySlot extends Control:
 	var active := false
 	var timer := 0.0
 	var not_ready := false
+	var icon: Texture2D = null
+	var empty := false
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(50, 58)
@@ -60,6 +61,9 @@ class KeySlot extends Control:
 		draw_colored_polygon(pts, fill)
 		var loop: PackedVector2Array = pts.duplicate()
 		loop.append(pts[0])
+		if icon != null:   # ability image inside the octagon
+			draw_texture_rect(icon, Rect2(c - Vector2(17, 17), Vector2(34, 34)), false,
+				Color(0.45, 0.45, 0.45) if locked or dim else Color.WHITE)
 		draw_polyline(loop, Color.BLACK, 5.0)
 		draw_polyline(loop, edge, 2.5)
 		if cd > 0.0 and not locked:      # cooldown pie
@@ -77,10 +81,18 @@ class KeySlot extends Control:
 			var red := Color(0.85, 0.08, 0.08)
 			draw_rect(Rect2(c.x - 8.0, c.y - 2.0, 16.0, 12.0), red)
 			draw_arc(Vector2(c.x, c.y - 2.0), 5.5, PI, TAU, 12, red, 3.0)
+			draw_string_outline(f, Vector2(31, 54), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, Color.BLACK)
+			draw_string(f, Vector2(31, 54), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.7))
 			return
 		var text := key
 		var col := Color(0.7, 0.55, 0.55) if dim else Color.WHITE
+		if empty:
+			col = Color(1, 1, 1, 0.35)
 		var fs := 17 if key.length() <= 1 else 11
+		if icon != null and timer <= 0.0 and cd <= 0.0:   # key letter in the corner over the image
+			draw_string_outline(f, Vector2(31, 54), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, Color.BLACK)
+			draw_string(f, Vector2(31, 54), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, col)
+			return
 		if timer > 0.0:
 			text = str(int(ceil(timer)))
 			col = Color(1.0, 0.88, 0.3)
@@ -152,11 +164,6 @@ func _ready() -> void:
 		_slot(RIGHT[i], Vector2(50.0 + i * PITCH, -160.0))
 	_slot("Z", Vector2(-25.0, -176.0))
 	_slot("C", Vector2(-25.0, -118.0))
-	# bloodline abilities on keys 1 2 3, above Z / C
-	for i in 3:
-		_slot(str(i + 1), Vector2(-103.0 + i * PITCH * 1.5, -240.0))
-	bl_label = _strip_label("", Vector2(-200, -268), 400.0, HORIZONTAL_ALIGNMENT_CENTER)
-	bl_label.add_theme_font_size_override("font_size", 15)
 	hp = _bar(Vector2(-352, -90), 306.0, 22.0, Color(0.25, 0.8, 0.2))
 	md = _bar(Vector2(-330, -64), 290.0, 20.0, Color(0.55, 0.15, 0.85))
 	ck = _bar(Vector2(46, -90), 306.0, 22.0, Color(0.2, 0.5, 1.0))
@@ -237,15 +244,12 @@ func update_from(p: Player) -> void:
 		s.active = info["active"]
 		s.timer = info["timer"]
 		s.not_ready = info["not_ready"]
+		s.icon = info.get("icon", null)
+		s.empty = bool(info.get("empty", false))
 		s.chakra = p.chakra
 		s.queue_redraw()
 	var pts := "  (+%d pts)" % GameData.stat_points if GameData.stat_points > 0 else ""
-	strip_mid.text = "LV %d%s     SPINS %d [B]     KILLS %d" % [GameData.level, pts, GameData.spins, p.kills]
+	strip_mid.text = "LV %d%s     SPINS %d     KILLS %d" % [GameData.level, pts, GameData.spins, p.kills]
 	xp_bar.max_value = float(GameData.xp_needed())
 	xp_bar.value = float(GameData.xp)
-	if GameData.equipped == "none":
-		bl_label.text = ""
-	else:
-		var bname: String = Bloodline.get_def(GameData.equipped)["name"]
-		bl_label.text = "%s  LV %d%s" % [bname, GameData.mastery_level(GameData.equipped), "   -   POWERED UP" if p.powered else ""]
 	strip_right.text = "[ L ] QUEST" if world_mode else ""

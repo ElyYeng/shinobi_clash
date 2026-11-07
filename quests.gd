@@ -122,7 +122,7 @@ func turn_in() -> void:
 	GameData.quest_progress = 0
 	GameData.save()
 	_clear_objective()
-	hud.toast("Quest complete: %s   +%d spin%s  (press B)" % [d["title"], reward, "" if reward == 1 else "s"])
+	hud.toast("Quest complete: %s   +%d spin%s  (spin at the main menu)" % [d["title"], reward, "" if reward == 1 else "s"])
 	_refresh_hud()
 	changed.emit()
 

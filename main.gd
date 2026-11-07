@@ -7,7 +7,7 @@ const FIGHT_ENEMIES := 6      # how many shinobi are kept alive in "fight" mode
 
 var player: Player
 var hud: HUD
-var spin: SpinMenu
+var spin: SpinMenu = null   # spins are on the main menu now (Customize)
 var gmenu: GameMenu
 var play_half := 246.0     # half-size of the playable area, used to keep teleports in bounds
 var dialog: DialogBox
@@ -42,9 +42,6 @@ func _ready() -> void:
 	hud.mode = mode
 	add_child(hud)
 	hud.bind(player)
-	spin = SpinMenu.new()
-	add_child(spin)
-	spin.bind(player)
 	gmenu = GameMenu.new()
 	add_child(gmenu)
 	gmenu.bind(player, self)
@@ -72,7 +69,7 @@ func _process(delta: float) -> void:
 func _give_spins(n: int, why: String) -> void:
 	GameData.spins += n
 	GameData.save()
-	hud.toast("+%d Spin (%s) - press B to spin!" % [n, why])
+	hud.toast("+%d Spin (%s) - spin at the main menu (Customize)" % [n, why])
 
 # ---------------------------------------------------------------- Mode: FIGHT
 func _fight_spawner(delta: float) -> void:
