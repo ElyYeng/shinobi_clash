@@ -121,6 +121,10 @@ func _setup() -> void:
 	add_child(col)
 	model = _make_model()
 	add_child(model)
+	# The imported Kurama rig's feet/rest pose sits below its scene origin.
+	# Lift only the visual rig; keep the boss root and collision capsule grounded
+	# so navigation, melee reach, and server-authoritative hit checks stay correct.
+	model.position.y = 2.5
 	# Kurama overrides Enemy._setup(), so create the inherited health label here too.
 	label = Label3D.new()
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
