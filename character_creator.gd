@@ -37,6 +37,7 @@ var _preset_buttons: Array[Button] = []
 var _part_dropdowns := {}        # category -> OptionButton (item metadata = mesh id)
 var _yaw := PI                   # PI = facing the camera
 var _dragging := false
+var _stop_spin := false
 var _zoom_head := false
 var _cam_blend := 0.0
 
@@ -164,6 +165,12 @@ func _build_ui() -> void:
 	_preview_status.add_theme_constant_override("outline_size", 6)
 	_preview_status.visible = false
 	_preview_panel.add_child(_preview_status)
+
+	var spin_check := CheckBox.new()
+	spin_check.text = "Stop spinning"
+	spin_check.position = Vector2(12, _preview_panel.size.y - 40)
+	spin_check.toggled.connect(func(on: bool): _stop_spin = on)
+	_preview_panel.add_child(spin_check)
 
 	var view_button := Button.new()
 	view_button.text = "FACE / BODY"
@@ -453,7 +460,7 @@ func _update_camera(delta: float) -> void:
 func _process(delta: float) -> void:
 	_update_camera(delta)
 	if _preview_model != null and is_instance_valid(_preview_model):
-		if not _dragging:
+		if not _dragging and not _stop_spin:
 			_yaw += delta * 0.35
 		_preview_model.rotation.y = _yaw
 

@@ -158,9 +158,20 @@ func _dmg() -> float:
 	m *= _bmul("dmg")
 	return m
 
+## Mouse-wheel camera zoom: the SpringArm length eases toward cam_zoom (still collides with walls).
+const ZOOM_MIN := 2.5
+const ZOOM_MAX := 12.0
+const ZOOM_STEP := 0.7
+var cam_zoom := 6.0
+
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
 		return
+	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			cam_zoom = clampf(cam_zoom - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			cam_zoom = clampf(cam_zoom + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		yaw -= event.relative.x * 0.0028 * sens_mult
 		pitch = clampf(pitch - event.relative.y * 0.0028 * sens_mult, -1.2, 0.6)
@@ -180,6 +191,7 @@ func _process(delta: float) -> void:
 	elif not is_dead and Input.is_action_pressed("sprint") and Vector2(velocity.x, velocity.z).length() > WALK_SPEED * 1.2:
 		target_fov = fov_base + 8.0
 	cam.fov = lerpf(cam.fov, target_fov, 8.0 * delta)
+	spring.spring_length = lerpf(spring.spring_length, cam_zoom, 1.0 - exp(-10.0 * delta))
 
 func _nearest_enemy(max_dist: float) -> Enemy:
 	var best: Enemy = null
