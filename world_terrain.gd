@@ -27,13 +27,33 @@ func _ready() -> void:
 	_material.vertex_color_use_as_albedo = true
 	_material.albedo_color = Color.WHITE
 	_material.roughness = 1.0
-	_material.cull_mode = BaseMaterial3D.CULL_BACK
+	# Prevent the generated terrain from disappearing because of triangle winding.
+	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 func height_at(world_x: float, world_z: float) -> float:
 	var broad := _noise.get_noise_2d(world_x, world_z)
 	var detail := _noise.get_noise_2d(world_x * 2.15 + 913.0, world_z * 2.15 - 427.0)
 	var ridge := 1.0 - absf(_noise.get_noise_2d(world_x * 0.72 - 180.0, world_z * 0.72 + 290.0))
 	return broad * 11.0 + detail * 1.6 + pow(ridge, 3.0) * 2.2 - 1.2
+
+## Builds the spawn chunk before the player enters its first physics frame.
+func prepare_spawn(world_position: Vector3) -> void:
+	var center := Vector2i(
+		floori(world_position.x / chunk_size),
+		floori(world_position.z / chunk_size)
+	)
+	if not _chunks.has(center):
+		_create_chunk(center)
+	_last_center = center
+	for ring in range(1, view_distance + 1):
+		for z in range(-ring, ring + 1):
+			for x in range(-ring, ring + 1):
+				if maxi(absi(x), absi(z)) != ring:
+					continue
+				var coord := center + Vector2i(x, z)
+				if not _chunks.has(coord) and not _queued_lookup.has(coord):
+					_queued.append(coord)
+					_queued_lookup[coord] = true
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(_player):
