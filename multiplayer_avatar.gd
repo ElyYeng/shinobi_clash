@@ -29,6 +29,7 @@ func _ready() -> void:
 
 
 var kurama_fx: Node3D
+var animation_lock := 0.0
 
 func set_kurama_visual(enabled: bool) -> void:
 	if enabled:
@@ -54,6 +55,7 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 	elif state == "throw":
 		lock = 0.25
 	Hero.play(model, state, true, variant, lock)
+	animation_lock = lock
 
 ## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
 func play_ability(move_id: String, color: Color) -> void:
@@ -107,9 +109,11 @@ func set_network_transform(pos: Vector3, yaw: float) -> void:
 	target_yaw = yaw
 
 func _process(delta: float) -> void:
+	animation_lock = maxf(0.0, animation_lock - delta)
 	global_position = global_position.lerp(target_position, minf(1.0, delta * 14.0))
 	if model != null:
 		model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
-		Hero.play(model, "run" if speed > 1.0 else "idle")
+		if animation_lock <= 0.0:
+			Hero.play(model, "run" if speed > 1.0 else "idle")
 	_last_position = global_position
