@@ -1,11 +1,31 @@
+@tool
 extends Node3D
 ## Infinite, deterministic chunked terrain for the open-world map.
 ## Chunks are generated around the local player and discarded when they are far away.
 
+@export_group("World Generation")
 @export var chunk_size: float = 64.0
-@export_range(1, 4, 1) var view_distance: int = 2
-@export_range(8, 40, 1) var resolution: int = 20
-@export var world_seed: int = 48127
+@export_range(1, 6, 1) var view_distance: int = 2
+@export_range(8, 64, 1) var resolution: int = 24
+@export var world_seed: int = 48127:
+	set(value):
+		world_seed = value
+		if is_inside_tree():
+			_configure_noise()
+
+@export_group("Terrain Shape")
+@export_range(0.0005, 0.02, 0.0001) var noise_frequency: float = 0.0032
+@export_range(1, 8, 1) var noise_octaves: int = 4
+@export_range(1.0, 30.0, 0.5) var hill_height: float = 11.0
+@export_range(0.0, 8.0, 0.1) var detail_height: float = 1.6
+@export_range(0.0, 10.0, 0.1) var ridge_height: float = 2.2
+@export_range(-10.0, 10.0, 0.1) var base_height: float = -1.2
+
+@export_group("Editor Preview")
+@export var show_editor_preview: bool = true
+@export_range(0, 5, 1) var preview_radius: int = 2
+@export_tool_button("Generate Editor Preview", "World") var generate_preview_action = generate_editor_preview
+@export_tool_button("Clear Editor Preview", "Clear") var clear_preview_action = clear_editor_preview
 
 var _noise := FastNoiseLite.new()
 var _chunks: Dictionary = {}
@@ -17,24 +37,60 @@ var _material := StandardMaterial3D.new()
 const TREE_SCENE: PackedScene = preload("res://maps/tree1.glb")
 
 func _ready() -> void:
-	_noise.seed = world_seed
-	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_noise.frequency = 0.0032
-	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	_noise.fractal_octaves = 4
-	_noise.fractal_lacunarity = 2.0
-	_noise.fractal_gain = 0.48
+	_configure_noise()
 	_material.vertex_color_use_as_albedo = true
 	_material.albedo_color = Color.WHITE
 	_material.roughness = 1.0
 	# Prevent the generated terrain from disappearing because of triangle winding.
 	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
+func _configure_noise() -> void:
+	_noise.seed = world_seed
+	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_noise.frequency = noise_frequency
+	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	_noise.fractal_octaves = noise_octaves
+	_noise.fractal_lacunarity = 2.0
+	_noise.fractal_gain = 0.48
+
 func height_at(world_x: float, world_z: float) -> float:
 	var broad := _noise.get_noise_2d(world_x, world_z)
 	var detail := _noise.get_noise_2d(world_x * 2.15 + 913.0, world_z * 2.15 - 427.0)
 	var ridge := 1.0 - absf(_noise.get_noise_2d(world_x * 0.72 - 180.0, world_z * 0.72 + 290.0))
-	return broad * 11.0 + detail * 1.6 + pow(ridge, 3.0) * 2.2 - 1.2
+	return broad * hill_height + detail * detail_height + pow(ridge, 3.0) * ridge_height + base_height
+
+func generate_editor_preview() -> void:
+	if not Engine.is_editor_hint():
+		return
+	clear_editor_preview()
+	_configure_noise()
+	var root := get_tree().edited_scene_root
+	for z in range(-preview_radius, preview_radius + 1):
+		for x in range(-preview_radius, preview_radius + 1):
+			var coord := Vector2i(x, z)
+			_create_chunk(coord)
+			var chunk: Node3D = _chunks[coord]
+			_mark_editor_owned(chunk, root)
+			chunk.set_meta("editor_terrain_preview", true)
+	notify_property_list_changed()
+
+func clear_editor_preview() -> void:
+	if not Engine.is_editor_hint():
+		return
+	for child in get_children():
+		if child.has_meta("editor_terrain_preview"):
+			remove_child(child)
+			child.free()
+	_chunks.clear()
+	_queued.clear()
+	_queued_lookup.clear()
+
+func _mark_editor_owned(node: Node, owner_node: Node) -> void:
+	if owner_node == null:
+		return
+	node.owner = owner_node
+	for child in node.get_children():
+		_mark_editor_owned(child, owner_node)
 
 ## Builds the spawn chunk before the player enters its first physics frame.
 func prepare_spawn(world_position: Vector3) -> void:
@@ -56,6 +112,8 @@ func prepare_spawn(world_position: Vector3) -> void:
 					_queued_lookup[coord] = true
 
 func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 		if _player == null:
