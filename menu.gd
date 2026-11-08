@@ -46,6 +46,9 @@ func _ready() -> void:
 	custom_btn = _button(vb, "", "", Color(0.85, 0.3, 0.9))
 	custom_btn.pressed.disconnect(_play.bind(""))
 	custom_btn.pressed.connect(_open_customize)
+	var creator_btn := _button(vb, "CHARACTER CREATOR\\nBuild your original shinobi", "", Color(0.72, 0.48, 0.9))
+	creator_btn.pressed.disconnect(_play.bind(""))
+	creator_btn.pressed.connect(_open_character_creator)
 	var multi_btn := Button.new()
 	multi_btn.text = "5   MULTIPLAYER  -  Host or join friends over Radmin VPN"
 	multi_btn.custom_minimum_size = Vector2(580, 52)
@@ -84,6 +87,13 @@ func _refresh_info() -> void:
 	stat.text = "Shinobi LV %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
 		GameData.level, Bloodline.get_def(GameData.equipped)["name"], GameData.quests_done.size(), Quests.DEFS.size(),
 		"DEFEATED" if GameData.kurama_defeated else "undefeated"]
+
+func _open_character_creator() -> void:
+	var script = load("res://character_creator.gd")
+	if script == null:
+		return
+	var creator := script.new()
+	add_child(creator)
 
 func _open_multiplayer() -> void:
 	get_tree().change_scene_to_file("res://multiplayer_lobby.tscn")
@@ -157,3 +167,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_open_customize()
 			KEY_5:
 				_open_multiplayer()
+			KEY_6:
+				_open_character_creator()
