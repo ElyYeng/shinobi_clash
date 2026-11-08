@@ -77,24 +77,48 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 ## meshes, all authored for the same Mixamo skeleton. Toggle the actual meshes
 ## instead of adding primitive clothing overlays.
 static func _apply_custom_model_parts(inst: Node3D, appearance: Dictionary) -> void:
-	var short_hair := inst.find_child("SK_CHR_Man_ShortSpikyHair_05mo", true, false) as Node3D
-	var spiky_hair := inst.find_child("SK_CHR_Man_SpikyHair_08mo", true, false) as Node3D
+	# Hair 1 = the short-spiky mesh; Hair 2 = the larger spiky mesh.
+	var hair_style := str(appearance.get("hair_style", "spiky"))
+	var short_hair := inst.find_child("SK_CHR_Man_ShortSpikyHair_05mo", true, false) as MeshInstance3D
+	var spiky_hair := inst.find_child("SK_CHR_Man_SpikyHair_08mo", true, false) as MeshInstance3D
 	if short_hair != null:
-		short_hair.visible = str(appearance.get("hair_style", "spiky")) == "short"
+		short_hair.visible = hair_style == "short"
+		_tint_mesh(short_hair, Color.from_string(str(appearance.get("hair_color", "#20202A")), Color(0.12, 0.12, 0.16)))
 	if spiky_hair != null:
-		spiky_hair.visible = str(appearance.get("hair_style", "spiky")) != "short"
-	var shirt_a := inst.find_child("Male_Lobby_Top_Cos_NB_Yellow", true, false) as Node3D
-	var shirt_b := inst.find_child("Mesh_0147.rip.053", true, false) as Node3D
-	if shirt_a != null:
-		shirt_a.visible = str(appearance.get("shirt_style", "shirt_a")) == "shirt_a"
-	if shirt_b != null:
-		shirt_b.visible = str(appearance.get("shirt_style", "shirt_a")) == "shirt_b"
-	var pants_a := inst.find_child("Male_Lobby_Bottom_Cos_NB_Yellow", true, false) as Node3D
-	var pants_b := inst.find_child("Mesh_0147.rip.110", true, false) as Node3D
-	if pants_a != null:
-		pants_a.visible = str(appearance.get("pants_style", "pants_a")) == "pants_a"
-	if pants_b != null:
-		pants_b.visible = str(appearance.get("pants_style", "pants_a")) == "pants_b"
+		spiky_hair.visible = hair_style != "short"
+		_tint_mesh(spiky_hair, Color.from_string(str(appearance.get("hair_color", "#20202A")), Color(0.12, 0.12, 0.16)))
+
+	# Shirt 1 / 2 and Pants 1 / 2 are the actual skinned meshes in the supplied GLB.
+	var shirt_1 := inst.find_child("Male_Lobby_Top_Cos_NB_Yellow", true, false) as MeshInstance3D
+	var shirt_2 := inst.find_child("Mesh_0147.rip.053", true, false) as MeshInstance3D
+	if shirt_1 != null:
+		shirt_1.visible = str(appearance.get("shirt_style", "shirt_1")) == "shirt_1"
+	if shirt_2 != null:
+		shirt_2.visible = str(appearance.get("shirt_style", "shirt_1")) == "shirt_2"
+
+	var pants_1 := inst.find_child("Male_Lobby_Bottom_Cos_NB_Yellow", true, false) as MeshInstance3D
+	var pants_2 := inst.find_child("Mesh_0147.rip.110", true, false) as MeshInstance3D
+	if pants_1 != null:
+		pants_1.visible = str(appearance.get("pants_style", "pants_1")) == "pants_1"
+	if pants_2 != null:
+		pants_2.visible = str(appearance.get("pants_style", "pants_1")) == "pants_2"
+
+	# Keep the face/body meshes visible; the head mesh is separate from both hair options.
+	var face := inst.find_child("SK_CHR_Face.mo", true, false) as MeshInstance3D
+	var bald_face := inst.find_child("SK_CHR_Face_bald", true, false) as MeshInstance3D
+	if face != null:
+		face.visible = true
+	if bald_face != null:
+		bald_face.visible = false
+
+static func _tint_mesh(mesh_instance: MeshInstance3D, tint: Color) -> void:
+	if mesh_instance == null or mesh_instance.mesh == null:
+		return
+	for surface in mesh_instance.mesh.get_surface_count():
+		var source := mesh_instance.get_active_material(surface)
+		var material := source.duplicate() as BaseMaterial3D if source is BaseMaterial3D else StandardMaterial3D.new()
+		material.albedo_color = tint
+		mesh_instance.set_surface_override_material(surface, material)
 
 ## Experimental modular wearables for the existing rig. These are separate
 ## meshes attached to the character's actual bones, so they follow its animations.
