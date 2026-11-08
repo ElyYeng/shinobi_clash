@@ -3,3 +3,10 @@ res://main.gd
 res://menu.gd
 res://player.gd
 res://assets/naruto/license.txt
+res://network_session.gd
+res://multiplayer_avatar.gd
+res://clone.gd
+res://projectile.gd
+res://kurama.gd
+res://multiplayer_lobby.gd
+res://enemy.gd
