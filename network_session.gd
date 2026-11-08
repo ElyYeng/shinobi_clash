@@ -249,6 +249,35 @@ func _apply_player_damage(amount: float, knockback: Vector3) -> void:
 		_local_player.take_damage(amount, knockback)
 
 
+## Replicate the persistent bloodline power-up aura on remote player avatars.
+func broadcast_power_state(enabled: bool, color: Color) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_power_state.rpc(1, enabled, color)
+	else:
+		_request_power_state.rpc_id(1, enabled, color)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_power_state(enabled: bool, color: Color) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_apply_power_state(sender, enabled, color)
+	_broadcast_power_state.rpc(sender, enabled, color)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_power_state(peer_id: int, enabled: bool, color: Color) -> void:
+	_apply_power_state(peer_id, enabled, color)
+
+func _apply_power_state(peer_id: int, enabled: bool, color: Color) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		return
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].set_powered_visual(enabled, color)
+
 ## Broadcast a successful ability cast so every peer can render its remote visual.
 func broadcast_ability(move_id: String, color: Color) -> void:
 	if not is_active():
