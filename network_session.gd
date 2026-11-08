@@ -3,6 +3,8 @@ extends Node
 signal connection_succeeded
 signal connection_failed(message: String)
 signal server_disconnected
+signal party_invite_received(inviter_id: int, inviter_name: String)
+signal party_updated
 
 const DEFAULT_PORT := 7000
 const MAX_PLAYERS := 8
@@ -16,6 +18,9 @@ var _local_player: Player
 var _game_root: Node
 var _sync_timer := 0.0
 var _known_players: Dictionary = {}
+var _known_levels: Dictionary = {}
+var _party_leader: Dictionary = {}
+var _pending_party_invites: Dictionary = {}
 var _avatars: Dictionary = {}
 var _remote_clones: Dictionary = {}
 var _next_clone_summon_id := 1
@@ -39,6 +44,8 @@ func host(port: int = DEFAULT_PORT, mode: String = "coop", display_name: String 
 	if player_name == "":
 		player_name = "Shinobi"
 	_known_players[1] = player_name
+	_known_levels[1] = GameData.level
+	_party_leader[1] = 1
 	return OK
 
 func join(address: String, port: int = DEFAULT_PORT, display_name: String = "Shinobi") -> Error:
@@ -63,6 +70,9 @@ func disconnect_session() -> void:
 	_game_root = null
 	_sync_timer = 0.0
 	_known_players.clear()
+	_known_levels.clear()
+	_party_leader.clear()
+	_pending_party_invites.clear()
 	for avatar in _avatars.values():
 		if is_instance_valid(avatar):
 			avatar.queue_free()
@@ -94,10 +104,10 @@ func _process(delta: float) -> void:
 		_submit_state.rpc_id(1, pos, yaw)
 
 func _on_connected_to_server() -> void:
-	_request_join.rpc_id(1, player_name)
+	_request_join.rpc_id(1, player_name, GameData.level)
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_join(requested_name: String) -> void:
+func _request_join(requested_name: String, requested_level: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
@@ -109,11 +119,13 @@ func _request_join(requested_name: String) -> void:
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id])})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1))})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
-	_spawn_remote_local(sender, safe_name)
-	_spawn_remote.rpc(sender, safe_name)
+	_known_levels[sender] = clampi(requested_level, 1, 9999)
+	_party_leader[sender] = sender
+	_spawn_remote_local(sender, safe_name, int(_known_levels[sender]))
+	_spawn_remote.rpc(sender, safe_name, int(_known_levels[sender]))
 	_join_accepted.rpc_id(sender, session_mode)
 
 @rpc("authority", "call_remote", "reliable")
@@ -121,17 +133,20 @@ func _receive_roster(roster: Array) -> void:
 	for entry in roster:
 		var id := int(entry.get("id", 0))
 		var nm := str(entry.get("name", "Shinobi"))
+		var lv := int(entry.get("level", 1))
 		_known_players[id] = nm
+		_known_levels[id] = lv
 		if id != multiplayer.get_unique_id():
-			_spawn_remote_local(id, nm)
+			_spawn_remote_local(id, nm, lv)
 
 @rpc("authority", "call_remote", "reliable")
-func _spawn_remote(peer_id: int, display_name: String) -> void:
+func _spawn_remote(peer_id: int, display_name: String, level: int) -> void:
 	_known_players[peer_id] = display_name
+	_known_levels[peer_id] = level
 	if peer_id != multiplayer.get_unique_id():
-		_spawn_remote_local(peer_id, display_name)
+		_spawn_remote_local(peer_id, display_name, level)
 
-func _spawn_remote_local(peer_id: int, display_name: String) -> void:
+func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1) -> void:
 	if _game_root == null or not is_instance_valid(_game_root):
 		return
 	if _avatars.has(peer_id):
@@ -145,6 +160,8 @@ func _spawn_remote_local(peer_id: int, display_name: String) -> void:
 	avatar.name = "RemotePlayer_%d" % peer_id
 	avatar.set("peer_id", peer_id)
 	avatar.set("display_name", display_name)
+	avatar.set("player_level", level)
+	avatar.set("is_party_member", _same_party(multiplayer.get_unique_id(), peer_id))
 	_game_root.add_child(avatar)
 	_avatars[peer_id] = avatar
 
@@ -183,12 +200,16 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_known_players.erase(peer_id)
+	_known_levels.erase(peer_id)
+	_party_leader.erase(peer_id)
 	_remove_remote_local(peer_id)
 	_despawn_remote.rpc(peer_id)
 
 @rpc("authority", "call_remote", "reliable")
 func _despawn_remote(peer_id: int) -> void:
 	_known_players.erase(peer_id)
+	_known_levels.erase(peer_id)
+	_party_leader.erase(peer_id)
 	_remove_remote_local(peer_id)
 
 func _remove_remote_local(peer_id: int) -> void:
@@ -198,8 +219,83 @@ func _remove_remote_local(peer_id: int) -> void:
 			avatar.queue_free()
 		_avatars.erase(peer_id)
 
+## Party system: party leader ID is shared by every member.
+func _same_party(a_id: int, b_id: int) -> bool:
+	return _party_leader.has(a_id) and _party_leader.has(b_id) and int(_party_leader[a_id]) == int(_party_leader[b_id])
+
+func invite_to_party(target_id: int) -> void:
+	if not is_active() or target_id == multiplayer.get_unique_id():
+		return
+	if multiplayer.is_server():
+		_server_party_invite(1, target_id)
+	else:
+		_request_party_invite.rpc_id(1, target_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_invite(target_id: int) -> void:
+	if multiplayer.is_server():
+		_server_party_invite(multiplayer.get_remote_sender_id(), target_id)
+
+func _server_party_invite(sender_id: int, target_id: int) -> void:
+	if not _known_players.has(sender_id) or not _known_players.has(target_id):
+		return
+	var leader := int(_party_leader.get(sender_id, sender_id))
+	if _party_size(leader) >= 4:
+		return
+	_pending_party_invites[target_id] = leader
+	if target_id == 1:
+		party_invite_received.emit(sender_id, str(_known_players[sender_id]))
+	else:
+		_party_invite.rpc_id(target_id, sender_id, str(_known_players[sender_id]), leader)
+
+@rpc("authority", "call_remote", "reliable")
+func _party_invite(inviter_id: int, inviter_name: String, leader_id: int) -> void:
+	_pending_party_invites[leader_id] = inviter_id
+	party_invite_received.emit(inviter_id, inviter_name)
+
+func accept_party_invite(inviter_id: int) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_server_accept_party(1, inviter_id)
+	else:
+		_request_accept_party.rpc_id(1, inviter_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_accept_party(inviter_id: int) -> void:
+	if multiplayer.is_server():
+		_server_accept_party(multiplayer.get_remote_sender_id(), inviter_id)
+
+func _server_accept_party(member_id: int, inviter_id: int) -> void:
+	var leader := int(_party_leader.get(inviter_id, inviter_id))
+	if int(_pending_party_invites.get(member_id, -1)) != leader or _party_size(leader) >= 4:
+		return
+	_party_leader[member_id] = leader
+	_pending_party_invites.erase(member_id)
+	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
+	_apply_party_state(_party_leader.keys(), _party_leader.values())
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_party_state(ids: Array, leaders: Array) -> void:
+	_apply_party_state(ids, leaders)
+
+func _apply_party_state(ids: Array, leaders: Array) -> void:
+	for i in mini(ids.size(), leaders.size()):
+		_party_leader[int(ids[i])] = int(leaders[i])
+	for peer_id in _avatars:
+		if is_instance_valid(_avatars[peer_id]):
+			_avatars[peer_id].set_party_member(_same_party(multiplayer.get_unique_id(), int(peer_id)))
+	party_updated.emit()
+
+func _party_size(leader_id: int) -> int:
+	var count := 0
+	for peer_id in _party_leader:
+		if int(_party_leader[peer_id]) == leader_id:
+			count += 1
+	return count
+
 func request_projectile_player_hit(attacker_id: int, damage: float, impact_position: Vector3) -> void:
-	if not is_active() or session_mode != "pvp":
+	if not is_active():
 		return
 	if multiplayer.is_server():
 		_server_projectile_player_hit(attacker_id, multiplayer.get_unique_id(), damage, impact_position)
@@ -213,7 +309,7 @@ func _request_projectile_player_hit(attacker_id: int, damage: float, impact_posi
 	_server_projectile_player_hit(attacker_id, multiplayer.get_remote_sender_id(), damage, impact_position)
 
 func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: float, impact_position: Vector3) -> void:
-	if attacker_id == target_id or not _known_players.has(attacker_id) or not _known_players.has(target_id):
+	if attacker_id == target_id or not _known_players.has(attacker_id) or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
 	var target_pos: Vector3
 	if target_id == 1 and _local_player != null:
@@ -234,6 +330,8 @@ func try_hit_players(damage: float, knockback: Vector3) -> void:
 	if not is_active() or session_mode != "pvp":
 		return
 	for peer_id in _avatars.keys():
+		if _same_party(multiplayer.get_unique_id(), int(peer_id)):
+			continue
 		if not is_instance_valid(_avatars[peer_id]):
 			continue
 		var to: Vector3 = _avatars[peer_id].global_position - _local_player.global_position
@@ -251,7 +349,7 @@ func _request_player_hit(target_id: int, damage: float, knockback: Vector3) -> v
 	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback)
 
 func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3) -> void:
-	if attacker_id == target_id or not _known_players.has(target_id):
+	if attacker_id == target_id or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
 	var attacker_pos: Vector3
 	var target_pos: Vector3
