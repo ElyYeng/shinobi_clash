@@ -438,6 +438,35 @@ func _server_party_quest_accept(sender_id: int, quest_id: String) -> void:
 			return
 	_publish_party_quest_state(leader, quest_id, "active", 0)
 
+func request_party_quest_abandon(quest_id: String) -> void:
+	if not is_active() or session_mode != "coop" or quest_id == "":
+		return
+	if multiplayer.is_server():
+		_server_party_quest_abandon(1, quest_id)
+	else:
+		_request_party_quest_abandon.rpc_id(1, quest_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_quest_abandon(quest_id: String) -> void:
+	if multiplayer.is_server():
+		_server_party_quest_abandon(multiplayer.get_remote_sender_id(), quest_id)
+
+func _server_party_quest_abandon(sender_id: int, quest_id: String) -> void:
+	if not _known_players.has(sender_id):
+		return
+	var leader := int(_party_leader.get(sender_id, sender_id))
+	if not _party_quest_states.has(leader):
+		return
+	var state: Dictionary = _party_quest_states[leader]
+	if str(state.get("id", "")) != quest_id:
+		return
+	# Drop the shared quest and remove the authoritative enemies for that squad.
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if node is Enemy and (node as Enemy).network_quest_party_leader == leader:
+			_remove_quest_enemy.rpc((node as Enemy).network_quest_id)
+			node.queue_free()
+	_publish_party_quest_state(leader, "", "", 0)
+
 func request_party_quest_ready(quest_id: String) -> void:
 	if not is_active() or session_mode != "coop" or quest_id == "":
 		return
