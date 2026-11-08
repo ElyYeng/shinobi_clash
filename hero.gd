@@ -51,7 +51,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 			print("[Hero] loaded model: ", path)
 			credit = "Custom character model" if _using_custom_model else CREDIT
 		else:
-			print("[Hero] character model missing - using placeholder model"))
+			print("[Hero] character model missing - using placeholder model")
 	if _scene == null:
 		return null
 	var inst := _scene.instantiate() as Node3D
