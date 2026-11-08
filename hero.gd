@@ -4,7 +4,7 @@ extends RefCounted
 ## auto-fits it to the player's size and maps its animations by name.
 
 const ASSET_DIR := "res://assets/character"
-const CUSTOM_MODEL_FILE := "character costum test1.glb"
+const CUSTOM_MODEL_FILE := "character.glb"
 const LEGACY_ASSET_DIR := "res://assets/naruto"
 const TARGET_HEIGHT := 1.75
 const CREDIT := "Character model: supplied custom Mixamo rig"
@@ -44,14 +44,17 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	if not _searched:
 		_searched = true
 		var custom_path := ASSET_DIR.path_join(CUSTOM_MODEL_FILE)
-		var path := custom_path if ResourceLoader.exists(custom_path) else _scan(LEGACY_ASSET_DIR, 2)
-		if path != "":
-			_scene = load(path) as PackedScene
-			_using_custom_model = path == custom_path
-			print("[Hero] loaded model: ", path)
-			credit = "Custom character model" if _using_custom_model else CREDIT
+		# Use the supplied Mixamo character as the sole main rig.
+		# Never silently fall back to the old Naruto model.
+		if ResourceLoader.exists(custom_path):
+			_scene = load(custom_path) as PackedScene
+			_using_custom_model = true
+			print("[Hero] loaded main Mixamo character: ", custom_path)
+			credit = CREDIT
 		else:
-			print("[Hero] character model missing - using placeholder model")
+			_scene = null
+			_using_custom_model = false
+			push_warning("[Hero] Main character GLB missing at %s; using gameplay placeholder until it is installed." % custom_path)
 	if _scene == null:
 		return null
 	var inst := _scene.instantiate() as Node3D
