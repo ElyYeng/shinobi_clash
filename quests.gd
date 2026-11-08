@@ -159,6 +159,9 @@ func turn_in() -> void:
 	changed.emit()
 
 func abandon() -> void:
+	if _party_coop():
+		NetworkSession.request_party_quest_abandon(GameData.quest_active)
+		return
 	GameData.quest_active = ""
 	GameData.quest_state = ""
 	GameData.quest_progress = 0
