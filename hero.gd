@@ -33,7 +33,6 @@ const FALLBACKS := {
 }
 
 static var _scene: PackedScene = null
-static var _using_custom_model := false
 static var _searched := false
 static var _printed := false
 static var credit := ""
@@ -47,13 +46,11 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 		# Check the standardized filename first, then earlier names used in setup instructions.
 		if custom_path != "":
 			_scene = load(custom_path) as PackedScene
-			_using_custom_model = _scene != null
 			if _using_custom_model:
 				print("[Hero] loaded user's main Mixamo character: ", custom_path)
 				credit = CREDIT
 		else:
 			_scene = null
-			_using_custom_model = false
 			push_warning("[Hero] User Mixamo GLB not found. Install character_main.glb under res://assets/character/. Current characters will use the temporary placeholder.")
 	if _scene == null:
 		return null
@@ -79,6 +76,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 static func _resolve_custom_model_path() -> String:
 	var candidates := [
 		ASSET_DIR.path_join(CUSTOM_MODEL_FILE),
+		ASSET_DIR.path_join("character.glb"),
 		ASSET_DIR.path_join("character costum test1(3).glb"),
 		ASSET_DIR.path_join("character costum test1(2).glb"),
 		ASSET_DIR.path_join("character costum test1.glb")
