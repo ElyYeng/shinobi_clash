@@ -89,6 +89,32 @@ static func _resolve_custom_model_path() -> String:
 	for path in candidates:
 		if ResourceLoader.exists(path):
 			return path
+	# Accept a differently named GLB placed by the user in the character folder.
+	return _scan(ASSET_DIR, 1)
+
+
+## Shared asset scanner used by Hero and the Kurama boss model loader.
+## Keep this public static helper: Kurama.gd calls Hero._scan(ASSET_DIR, 1).
+static func _scan(dir_path: String, depth: int) -> String:
+	var directory := DirAccess.open(dir_path)
+	if directory == null:
+		return ""
+	var files := directory.get_files()
+	files.sort()
+	for file_name in files:
+		var clean_name := file_name.trim_suffix(".import").trim_suffix(".remap")
+		var extension := clean_name.get_extension().to_lower()
+		if extension == "glb" or extension == "gltf":
+			var full_path := dir_path.path_join(clean_name)
+			if ResourceLoader.exists(full_path):
+				return full_path
+	if depth > 0:
+		var subdirectories := directory.get_directories()
+		subdirectories.sort()
+		for subdirectory in subdirectories:
+			var found := _scan(dir_path.path_join(subdirectory), depth - 1)
+			if found != "":
+				return found
 	return ""
 
 
