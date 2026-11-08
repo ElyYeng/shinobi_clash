@@ -189,6 +189,10 @@ func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float) -> void:
 func _join_accepted(mode: String) -> void:
 	session_mode = mode
 	GameData.mode = "world" if mode == "coop" else "fight"
+	var local_id := multiplayer.get_unique_id()
+	_known_players[local_id] = player_name
+	_known_levels[local_id] = GameData.level
+	_party_leader[local_id] = local_id
 	connection_succeeded.emit()
 
 @rpc("authority", "call_remote", "reliable")
