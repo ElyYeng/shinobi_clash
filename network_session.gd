@@ -28,6 +28,7 @@ var _raid_boss: Kurama
 var _raid_sync_timer := 0.0
 var _quest_manager: Quests
 var _party_quest_states: Dictionary = {}
+var _server_quest_leader_override := 0
 
 func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -70,6 +71,7 @@ func disconnect_session() -> void:
 	_raid_sync_timer = 0.0
 	_quest_manager = null
 	_party_quest_states.clear()
+	_server_quest_leader_override = 0
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
@@ -370,6 +372,8 @@ func _party_size(leader_id: int) -> int:
 	return count
 
 func local_party_leader() -> int:
+	if multiplayer.is_server() and _server_quest_leader_override > 0:
+		return _server_quest_leader_override
 	if not is_active():
 		return 1
 	var local_id := multiplayer.get_unique_id()
@@ -382,11 +386,20 @@ func register_quest_manager(manager: Quests) -> bool:
 	var leader := local_party_leader()
 	if _party_quest_states.has(leader):
 		var state: Dictionary = _party_quest_states[leader]
+		_server_quest_leader_override = leader if multiplayer.is_server() else 0
 		manager.apply_shared_quest_state(str(state.get("id", "")), str(state.get("state", "")), int(state.get("progress", 0)))
+		_server_quest_leader_override = 0
 		return true
-	if multiplayer.is_server() and GameData.quest_active != "":
-		_publish_party_quest_state(leader, GameData.quest_active, GameData.quest_state, GameData.quest_progress)
-		return true
+	if multiplayer.is_server():
+		for party_leader in _party_quest_states:
+			var party_state: Dictionary = _party_quest_states[party_leader]
+			_server_quest_leader_override = int(party_leader)
+			manager.apply_shared_quest_state(str(party_state.get("id", "")), str(party_state.get("state", "")), int(party_state.get("progress", 0)))
+			_server_quest_leader_override = 0
+			return true
+		if GameData.quest_active != "":
+			_publish_party_quest_state(leader, GameData.quest_active, GameData.quest_state, GameData.quest_progress)
+			return true
 	return false
 
 func request_party_quest_accept(quest_id: String) -> void:
@@ -442,8 +455,12 @@ func _server_party_quest_ready(sender_id: int, quest_id: String) -> void:
 
 func _publish_party_quest_state(leader_id: int, quest_id: String, state: String, progress: int) -> void:
 	_party_quest_states[leader_id] = {"id": quest_id, "state": state, "progress": progress}
-	if _same_party(1, leader_id) and _quest_manager != null and is_instance_valid(_quest_manager):
+	# The server simulates quest enemies even when the host player is not in
+	# the party that accepted the quest; rewards are still restricted to members.
+	if _quest_manager != null and is_instance_valid(_quest_manager):
+		_server_quest_leader_override = leader_id
 		_quest_manager.apply_shared_quest_state(quest_id, state, progress)
+		_server_quest_leader_override = 0
 	for id in _known_players:
 		var peer_id := int(id)
 		if peer_id != 1 and _same_party(peer_id, leader_id):
@@ -495,6 +512,7 @@ func _server_party_quest_turn_in(sender_id: int, quest_id: String, player_level:
 		xp += GameData.xp_needed(base_level + i)
 	var spins := int(d.get("reward", 0))
 	_party_quest_states.erase(leader)
+	var host_in_party := _same_party(1, leader)
 	for id in _known_players:
 		var peer_id := int(id)
 		if not _same_party(peer_id, leader):
@@ -504,6 +522,8 @@ func _server_party_quest_turn_in(sender_id: int, quest_id: String, player_level:
 				_quest_manager.apply_party_quest_reward(quest_id, xp, spins)
 		else:
 			_receive_party_quest_reward.rpc_id(peer_id, quest_id, xp, spins)
+	if not host_in_party and _quest_manager != null and is_instance_valid(_quest_manager):
+		_quest_manager.apply_shared_quest_state("", "", 0)
 
 @rpc("authority", "call_remote", "reliable")
 func _receive_party_quest_reward(quest_id: String, xp: int, spins: int) -> void:
