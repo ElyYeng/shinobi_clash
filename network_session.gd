@@ -358,25 +358,23 @@ func _server_leave_party(member_id: int) -> void:
 		if int(_party_leader[id]) == old_leader and int(id) != member_id:
 			members.append(int(id))
 	var promoted_leader := old_leader
+	var moved_quest: Dictionary = {}
 	if member_id == old_leader and not members.is_empty():
 		members.sort()
 		promoted_leader = members[0]
 		for id in members:
 			_party_leader[id] = promoted_leader
-		# Keep already-spawned quest enemies bound to the promoted leader.
-		for node in get_tree().get_nodes_in_group("quest_enemies"):
-			if node is Enemy and (node as Enemy).network_quest_party_leader == old_leader:
-				(node as Enemy).network_quest_party_leader = promoted_leader
 		if _party_quest_states.has(old_leader):
-			_party_quest_states[promoted_leader] = _party_quest_states[old_leader]
+			moved_quest = _party_quest_states[old_leader].duplicate(true)
+			_party_quest_states[promoted_leader] = moved_quest
 			_party_quest_states.erase(old_leader)
 	_party_leader[member_id] = member_id
 	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_apply_party_state(_party_leader.keys(), _party_leader.values())
-	if promoted_leader != old_leader and _party_quest_states.has(promoted_leader):
-		var shared: Dictionary = _party_quest_states[promoted_leader]
-		_publish_party_quest_state(promoted_leader, str(shared.get("id", "")), str(shared.get("state", "")), int(shared.get("progress", 0)))
-
+	if not moved_quest.is_empty():
+		# Rebuild objective copies with IDs using the promoted leader.
+		_publish_party_quest_state(promoted_leader, "", "", 0)
+		_publish_party_quest_state(promoted_leader, str(moved_quest.get("id", "")), str(moved_quest.get("state", "")), int(moved_quest.get("progress", 0)))
 func _party_size(leader_id: int) -> int:
 	var count := 0
 	for peer_id in _party_leader:
