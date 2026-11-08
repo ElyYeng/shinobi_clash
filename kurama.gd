@@ -41,6 +41,9 @@ enum State { INTRO, CHASE, ATTACK, HURT, DEAD }
 static var _scene: PackedScene = null
 static var _searched := false
 var _raid_target_peer_id := 0
+var _net_target_position := Vector3.ZERO
+var _net_target_yaw := 0.0
+var _has_net_snapshot := false
 
 var state := State.INTRO
 var phase := 1
@@ -64,16 +67,25 @@ var bomb: BossShot = null
 
 func _physics_process(delta: float) -> void:
 	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and not multiplayer.is_server():
-		# Client replica is driven by the host snapshots; never run a second boss AI.
+		# Smoothly interpolate the client replica between authoritative host snapshots.
 		if state == State.DEAD:
 			return
+		if _has_net_snapshot:
+			var alpha := 1.0 - exp(-12.0 * delta)
+			global_position = global_position.lerp(_net_target_position, alpha)
+			model.rotation.y = lerp_angle(model.rotation.y, _net_target_yaw, 1.0 - exp(-10.0 * delta))
+			var net_distance := global_position.distance_to(_net_target_position)
+			if state == State.CHASE:
+				_loop_anim("run" if net_distance > 0.12 else "combat")
+		_animate_body(delta)
 		return
 	_ai(delta)
 	_animate_body(delta)
 
 func apply_raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, boss_state: int, attack: String, attack_time: float, attack_length: float, target_pos: Vector3) -> void:
-	global_position = global_position.lerp(pos, 0.65)
-	model.rotation.y = lerp_angle(model.rotation.y, yaw, 0.65)
+	_net_target_position = pos
+	_net_target_yaw = yaw
+	_has_net_snapshot = true
 	health = hp
 	phase = boss_phase
 	_update_label()
@@ -266,7 +278,7 @@ func _mouth() -> Vector3:
 func _turn(dir: Vector3, rate: float, delta: float) -> void:
 	var target := atan2(-dir.x, -dir.z)
 	var diff := wrapf(target - model.rotation.y, -PI, PI)
-	model.rotation.y += clampf(diff, -rate * delta, rate * delta)
+	model.rotation.y = lerp_angle(model.rotation.y, target, 1.0 - exp(-rate * delta))
 
 func _dmg_mul() -> float:
 	return 1.0 + 0.15 * float(phase - 1)
@@ -367,16 +379,21 @@ func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 		_loop_anim("combat")
 		return
-	_turn(dir, (2.0 + phase * 0.5) * ts, delta)
-	if dist > CLAW_RANGE * 0.8:
+	# Turn at a steady rate and accelerate smoothly instead of snapping to full speed.
+	_turn(dir, (3.0 + phase * 0.35) * ts, delta)
+	if dist > CLAW_RANGE * 0.78:
 		var f := _fwd()
-		var run_speed := (9.0 + phase * 2.0) * ts
-		velocity.x = f.x * run_speed
-		velocity.z = f.z * run_speed
+		# Slightly faster than a player, but deliberately capped so the boss
+		# closes distance without constantly sprinting past its target.
+		var run_speed := (10.2 + float(phase - 1) * 0.65) * ts
+		var accel := 17.0 * delta
+		velocity.x = move_toward(velocity.x, f.x * run_speed, accel)
+		velocity.z = move_toward(velocity.z, f.z * run_speed, accel)
 		_loop_anim("run")
 	else:
-		velocity.x = move_toward(velocity.x, 0.0, 40.0 * delta)
-		velocity.z = move_toward(velocity.z, 0.0, 40.0 * delta)
+		var brake := 24.0 * delta
+		velocity.x = move_toward(velocity.x, 0.0, brake)
+		velocity.z = move_toward(velocity.z, 0.0, brake)
 		_loop_anim("combat")
 	if cd <= 0.0:
 		_pick_attack(dist)
