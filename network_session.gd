@@ -326,6 +326,9 @@ func _request_kurama_state(enabled: bool) -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
+	# The host must update its own remote avatar; RPC call_remote never runs locally.
+	if _avatars.has(sender) and is_instance_valid(_avatars[sender]):
+		_avatars[sender].set_kurama_visual(enabled)
 	_broadcast_kurama_state.rpc(sender, enabled)
 
 @rpc("authority", "call_remote", "reliable")
@@ -351,6 +354,9 @@ func _request_combat_animation(state: String, variant: int) -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
+	# Apply on the host too; call_remote RPCs are not executed on the sending server.
+	if _avatars.has(sender) and is_instance_valid(_avatars[sender]):
+		_avatars[sender].play_combat_animation(state, variant)
 	_broadcast_combat_animation.rpc(sender, state, variant)
 
 @rpc("authority", "call_remote", "reliable")
