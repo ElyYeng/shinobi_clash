@@ -21,6 +21,10 @@ extends Node3D
 @export_range(0.0, 10.0, 0.1) var ridge_height: float = 2.2
 @export_range(-10.0, 10.0, 0.1) var base_height: float = -1.2
 
+@export_group("Grass Appearance")
+@export_range(2.0, 24.0, 0.5) var grass_tile_size: float = 9.0
+@export_range(0.0, 1.0, 0.05) var grass_detail_strength: float = 0.65
+
 @export_group("Editor Preview")
 @export var show_editor_preview: bool = true
 @export_range(0, 5, 1) var preview_radius: int = 1
@@ -41,6 +45,8 @@ func _ready() -> void:
 	_material.vertex_color_use_as_albedo = true
 	_material.albedo_color = Color.WHITE
 	_material.roughness = 1.0
+	_material.albedo_texture = _make_grass_texture()
+	_material.uv1_scale = Vector3.ONE
 	# Prevent the generated terrain from disappearing because of triangle winding.
 	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	if Engine.is_editor_hint():
@@ -62,6 +68,53 @@ func _configure_noise() -> void:
 	_noise.fractal_octaves = noise_octaves
 	_noise.fractal_lacunarity = 2.0
 	_noise.fractal_gain = 0.48
+
+func _make_grass_texture() -> Texture2D:
+	# Build a small seamless hand-painted grass tile at runtime so no external
+	# texture dependency is needed. Wrapped blade strokes and periodic noise
+	# make the pattern tile cleanly across streamed chunk boundaries.
+	const SIZE := 256
+	var img := Image.create(SIZE, SIZE, false, Image.FORMAT_RGBA8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 93417
+	var base := Color(0.24, 0.39, 0.15)
+	for y in range(SIZE):
+		for x in range(SIZE):
+			var u := float(x) / SIZE * TAU
+			var v := float(y) / SIZE * TAU
+			var broad := sin(u * 3.0 + sin(v * 2.0)) * 0.035
+			var fine := sin(u * 13.0 + cos(v * 11.0)) * 0.018
+			var shade := broad + fine + rng.randf_range(-0.018, 0.018)
+			img.set_pixel(x, y, Color(
+				clampf(base.r + shade, 0.0, 1.0),
+				clampf(base.g + shade * 1.35, 0.0, 1.0),
+				clampf(base.b + shade * 0.65, 0.0, 1.0),
+				1.0
+			))
+
+	var blade_colors := [
+		Color(0.34, 0.52, 0.20), Color(0.42, 0.59, 0.24),
+		Color(0.18, 0.32, 0.12), Color(0.55, 0.64, 0.29),
+		Color(0.28, 0.44, 0.16)
+	]
+	for i in range(560):
+		var x0 := rng.randi_range(0, SIZE - 1)
+		var y0 := rng.randi_range(0, SIZE - 1)
+		var length := rng.randi_range(3, 12)
+		var drift := rng.randi_range(-3, 3)
+		var blade_color: Color = blade_colors[rng.randi_range(0, blade_colors.size() - 1)]
+		for step in range(length):
+			var px := posmod(x0 + int(float(drift) * step / maxf(1.0, float(length - 1))), SIZE)
+			var py := posmod(y0 - step, SIZE)
+			var width := 1 if step > length * 0.55 else 2
+			for offset in range(-width, width + 1):
+				var sx := posmod(px + offset, SIZE)
+				var old := img.get_pixel(sx, py)
+				img.set_pixel(sx, py, old.lerp(blade_color, 0.68 if offset == 0 else 0.34))
+
+	var tex := ImageTexture.create_from_image(img)
+	tex.set_meta("grass_detail_strength", grass_detail_strength)
+	return tex
 
 func height_at(world_x: float, world_z: float) -> float:
 	var broad := _noise.get_noise_2d(world_x, world_z)
@@ -172,6 +225,7 @@ func _create_chunk(coord: Vector2i) -> void:
 
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 	var side := resolution + 1
@@ -186,6 +240,8 @@ func _create_chunk(coord: Vector2i) -> void:
 			var wz := origin_z + lz
 			var h := height_at(wx, wz)
 			verts.append(Vector3(lx, h, lz))
+			# World-aligned UVs keep the grass pattern continuous across chunk borders.
+			uvs.append(Vector2(wx / grass_tile_size, wz / grass_tile_size))
 
 			var sample := 0.8
 			var normal := Vector3(
@@ -216,6 +272,7 @@ func _create_chunk(coord: Vector2i) -> void:
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
