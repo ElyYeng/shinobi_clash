@@ -438,6 +438,8 @@ func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, lon
 	if homing and lock_target:
 		pr.target = lock_target
 	get_parent().add_child(pr)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe)
 
 func _throw_kunai() -> void:
 	if kunai_cd > 0.0 or chakra < 3.0:
@@ -815,6 +817,8 @@ func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> v
 		if not targets.is_empty():
 			pr.target = targets[i % targets.size()]
 		get_parent().add_child(pr)
+		if NetworkSession.is_active():
+			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe)
 
 ## ---- Fire Style jutsu + Kurama Mode (keys: T Y G H, V, RMB+E, Z) ----
 func _toast(t: String) -> void:
@@ -873,6 +877,8 @@ func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size:
 		pr.color = color
 		pr.long_shape = long
 		get_parent().add_child(pr)
+		if NetworkSession.is_active():
+			NetworkSession.broadcast_projectile(origin, d * speed, speed, size, color, long, aoe)
 
 func _fx_phoenix(col: Color) -> void:
 	Sfx.play(self, "fire", -2.0)
