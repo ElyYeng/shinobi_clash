@@ -85,10 +85,11 @@ func apply_raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, b
 		state = incoming_state
 		atk_len = maxf(attack_length, 0.1)
 		_start_anim(attack)
-		atk_t = attack_time
 		slam_pos = target_pos
 	elif incoming_state != state:
 		state = incoming_state
+	if attack == "" and incoming_state == State.CHASE:
+		_loop_anim("run" if pos.distance_to(global_position) > 0.08 else "combat")
 	atk_t = attack_time
 	atk_len = maxf(attack_length, 0.1)
 
@@ -403,7 +404,7 @@ func _do_hit(move: String) -> void:
 	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and multiplayer.is_server():
 		NetworkSession.raid_apply_boss_attack(move, global_position, _fwd(), slam_pos, phase)
 	var p := _player()
-	var alive := p != null and not p.is_dead and not atk_harmless
+	var alive := p != null and not p.is_dead and not atk_harmless and not (NetworkSession.is_active() and NetworkSession.session_mode == "raid")
 	match move:
 		"claw":
 			Sfx.play(self, "swing", 4.0)
