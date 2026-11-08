@@ -84,6 +84,8 @@ func setup(p: Player, h: HUD, w: Node3D) -> void:
 	hud = h
 	world = w
 	_last_kills = p.kills
+	if NetworkSession.is_active():
+		NetworkSession.register_quest_manager(self)
 	if GameData.quest_active != "" and not DEFS.has(GameData.quest_active):
 		GameData.quest_active = ""   # save from a version with different quests
 		GameData.quest_state = ""
@@ -97,7 +99,7 @@ func available_for(npc_id: String) -> String:
 		return ""
 	for id in DEFS:
 		var d: Dictionary = DEFS[id]
-		if d["giver"] != npc_id or GameData.quests_done.has(id):
+		if d["giver"] != npc_id or (GameData.quests_done.has(id) and not bool(d.get("repeatable", false))):
 			continue
 		var req: String = d["req"]
 		if req != "" and not GameData.quests_done.has(req):
@@ -112,6 +114,9 @@ func active_def() -> Dictionary:
 
 # ------------------------------------------------------------------ actions
 func accept(id: String) -> void:
+	if _party_coop():
+		NetworkSession.request_party_quest_accept(id)
+		return
 	GameData.quest_active = id
 	GameData.quest_state = "active"
 	GameData.quest_progress = 0
@@ -127,6 +132,9 @@ func deliver_done() -> void:
 	_set_ready()
 
 func turn_in() -> void:
+	if _party_coop():
+		NetworkSession.request_party_quest_turn_in(GameData.quest_active)
+		return
 	var d := active_def()
 	if d.is_empty():
 		return
@@ -138,7 +146,8 @@ func turn_in() -> void:
 			xp += GameData.xp_needed(GameData.level + i)
 		if xp > 0:
 			player.gain_xp(xp)
-	GameData.quests_done.append(GameData.quest_active)
+	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(GameData.quest_active):
+		GameData.quests_done.append(GameData.quest_active)
 	GameData.quest_active = ""
 	GameData.quest_state = ""
 	GameData.quest_progress = 0
@@ -159,6 +168,9 @@ func abandon() -> void:
 	changed.emit()
 
 func _set_ready() -> void:
+	if _party_coop():
+		NetworkSession.request_party_quest_ready(GameData.quest_active)
+		return
 	if GameData.quest_state == "ready":
 		return
 	GameData.quest_state = "ready"
@@ -187,6 +199,58 @@ func _activate_objective() -> void:
 			_hunt_base = GameData.quest_progress
 			_hunt_spawned = maxi(int(d["count"]) - GameData.quest_progress, 0)
 			_spawn_bandits(_hunt_spawned, d["pos"], d, true)
+
+func _party_coop() -> bool:
+	return NetworkSession.is_active() and NetworkSession.session_mode == "coop"
+
+## Called only by NetworkSession after the host has accepted a party quest update.
+func apply_shared_quest_state(id: String, state: String, progress: int) -> void:
+	var previous_id := GameData.quest_active
+	var changed_id := previous_id != id
+	var changed_state := GameData.quest_state != state
+	if not changed_id and not changed_state and GameData.quest_progress == progress:
+		return
+	if changed_id or state != "active":
+		_clear_objective()
+	GameData.quest_active = id
+	GameData.quest_state = state
+	GameData.quest_progress = progress
+	_last_kills = player.kills if player != null else 0
+	if id != "" and state == "active" and (changed_id or changed_state):
+		_activate_objective()
+	GameData.save()
+	_refresh_hud()
+	changed.emit()
+
+## Host-side quest-enemy kill progress. The host broadcasts the resulting state.
+func apply_shared_enemy_kill() -> bool:
+	if GameData.quest_active == "" or GameData.quest_state != "active":
+		return false
+	var d := active_def()
+	if d.is_empty() or not ["kill", "hunt"].has(str(d["type"])):
+		return false
+	GameData.quest_progress = mini(GameData.quest_progress + 1, int(d["count"]))
+	GameData.save()
+	return GameData.quest_progress >= int(d["count"])
+
+## Applies the shared party turn-in reward locally on each participating machine.
+func apply_party_quest_reward(id: String, xp: int, spins: int) -> void:
+	var d: Dictionary = DEFS.get(id, {})
+	if d.is_empty():
+		return
+	GameData.spins += spins
+	if player != null and xp > 0:
+		player.gain_xp(xp)
+	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(id):
+		GameData.quests_done.append(id)
+	GameData.quest_active = ""
+	GameData.quest_state = ""
+	GameData.quest_progress = 0
+	GameData.save()
+	_clear_objective()
+	hud.toast("Party quest complete: %s   +%d XP" % [d["title"], xp])
+	_refresh_hud()
+	changed.emit()
 
 func _clear_objective() -> void:
 	if beacon != null and is_instance_valid(beacon):
@@ -226,8 +290,6 @@ func _make_beacon(pos: Vector3, text: String) -> void:
 	world.add_child(beacon)
 
 func _spawn_bandits(n: int, center: Vector3, d: Dictionary, named := false) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
 	for i in maxi(n, 0):
 		var e := Enemy.new()
 		e.health = float(d["enemy_health"])
@@ -239,10 +301,16 @@ func _spawn_bandits(n: int, center: Vector3, d: Dictionary, named := false) -> v
 		if named:
 			e.display_name = str(d["enemy_name"])
 			e.add_to_group("hunt_targets")
-		var a := TAU * float(i) / float(maxi(n, 1)) + rng.randf_range(-0.3, 0.3)
-		var r := rng.randf_range(4.0, 10.0)
-		e.position = Vector3(center.x + cos(a) * r, 0.5, center.z + sin(a) * r)
+		# Fixed positions ensure every party member creates a matching local
+		# visual copy of the host-owned enemy, with the same network identity.
+		var angle := TAU * float(i) / float(maxi(n, 1)) + 0.18
+		var radius := 5.5 + float(i % 2) * 2.4
+		e.position = Vector3(center.x + cos(angle) * radius, 0.5, center.z + sin(angle) * radius)
 		e.add_to_group("quest_enemies")
+		if _party_coop():
+			e.network_quest_id = "%s:%d" % [str(d["id"]), GameData.quest_progress + i]
+			e.network_quest_party_leader = NetworkSession.local_party_leader()
+			e.network_quest_mirror = not multiplayer.is_server()
 		world.add_child(e)
 
 # ------------------------------------------------------------------ per-frame
@@ -260,22 +328,27 @@ func _process(_delta: float) -> void:
 				if flat.length() < float(d["radius"]):
 					_set_ready()
 			"kill":
-				if kd > 0:
+				if _party_coop():
+					pass # Shared quest-enemy deaths are counted by the host.
+				elif kd > 0:
 					GameData.quest_progress += kd
 					GameData.save()
 					if GameData.quest_progress >= int(d["count"]):
 						_set_ready()
 			"hunt":   # progress = targets that are no longer alive
-				var alive := 0
-				for e in get_tree().get_nodes_in_group("hunt_targets"):
-					if e.is_in_group("enemies"):
-						alive += 1
-				var prog := _hunt_base + _hunt_spawned - alive
-				if prog != GameData.quest_progress:
-					GameData.quest_progress = prog
-					GameData.save()
-				if GameData.quest_progress >= int(d["count"]):
-					_set_ready()
+				if _party_coop():
+					pass # Shared quest-enemy deaths are counted by the host.
+				else:
+					var alive := 0
+					for e in get_tree().get_nodes_in_group("hunt_targets"):
+						if e.is_in_group("enemies"):
+							alive += 1
+					var prog := _hunt_base + _hunt_spawned - alive
+					if prog != GameData.quest_progress:
+						GameData.quest_progress = prog
+						GameData.save()
+					if GameData.quest_progress >= int(d["count"]):
+						_set_ready()
 			"kurama":
 				if GameData.kurama_defeated:
 					_set_ready()
