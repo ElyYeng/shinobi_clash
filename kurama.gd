@@ -291,7 +291,11 @@ func _ai(delta: float) -> void:
 		return
 	if ap:
 		ap.speed_scale = ts * (1.15 if phase == 3 else 1.0)
+	var is_raid := NetworkSession.is_active() and NetworkSession.session_mode == "raid" and multiplayer.is_server()
 	var target_pos := _raid_target_position()
+	if is_raid and target_pos == Vector3.INF:
+		_select_next_raid_target()
+		target_pos = _raid_target_position()
 	var has_target := target_pos != Vector3.INF
 	if not (NetworkSession.is_active() and NetworkSession.session_mode == "raid"):
 		var p := _player()
