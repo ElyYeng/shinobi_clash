@@ -7,7 +7,7 @@ const ASSET_DIR := "res://assets/character"
 const CUSTOM_MODEL_FILE := "character costum test1.glb"
 const LEGACY_ASSET_DIR := "res://assets/naruto"
 const TARGET_HEIGHT := 1.75
-const CREDIT := 'Model: "Naruto Rigged (HatchXR)" by nitwit.friends (CC-BY-4.0)'
+const CREDIT := "Character model: supplied custom Mixamo rig"
 const MANUAL_SCALE := 0.0        # set >0 to override auto-scale
 const YAW_OFFSET := PI           # glTF models face +Z; set to 0.0 if yours faces away from movement
 
