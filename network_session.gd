@@ -198,6 +198,38 @@ func _remove_remote_local(peer_id: int) -> void:
 			avatar.queue_free()
 		_avatars.erase(peer_id)
 
+func request_projectile_player_hit(attacker_id: int, damage: float, impact_position: Vector3) -> void:
+	if not is_active() or session_mode != "pvp":
+		return
+	if multiplayer.is_server():
+		_server_projectile_player_hit(attacker_id, multiplayer.get_unique_id(), damage, impact_position)
+	else:
+		_request_projectile_player_hit.rpc_id(1, attacker_id, damage, impact_position)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_projectile_player_hit(attacker_id: int, damage: float, impact_position: Vector3) -> void:
+	if not multiplayer.is_server():
+		return
+	_server_projectile_player_hit(attacker_id, multiplayer.get_remote_sender_id(), damage, impact_position)
+
+func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: float, impact_position: Vector3) -> void:
+	if attacker_id == target_id or not _known_players.has(attacker_id) or not _known_players.has(target_id):
+		return
+	var target_pos: Vector3
+	if target_id == 1 and _local_player != null:
+		target_pos = _local_player.global_position
+	elif _avatars.has(target_id) and is_instance_valid(_avatars[target_id]):
+		target_pos = _avatars[target_id].global_position
+	else:
+		return
+	if target_pos.distance_to(impact_position) > 3.5:
+		return
+	var safe_damage := clampf(damage, 1.0, 80.0)
+	if target_id == 1 and _local_player != null:
+		_local_player.take_damage(safe_damage, Vector3.ZERO)
+	else:
+		_apply_player_damage.rpc_id(target_id, safe_damage, Vector3.ZERO)
+
 func try_hit_players(damage: float, knockback: Vector3) -> void:
 	if not is_active() or session_mode != "pvp":
 		return
@@ -277,6 +309,56 @@ func _apply_power_state(peer_id: int, enabled: bool, color: Color) -> void:
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
 		_avatars[peer_id].set_powered_visual(enabled, color)
+
+## Replicate Kurama Mode (Z) on remote avatars.
+func broadcast_kurama_state(enabled: bool) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_kurama_state.rpc(1, enabled)
+	else:
+		_request_kurama_state.rpc_id(1, enabled)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_kurama_state(enabled: bool) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_broadcast_kurama_state.rpc(sender, enabled)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_kurama_state(peer_id: int, enabled: bool) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		return
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].set_kurama_visual(enabled)
+
+## Relay basic combat animation events (melee, dash, throw) to remote avatars.
+func broadcast_combat_animation(state: String, variant: int = 0) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_combat_animation.rpc(1, state, variant)
+	else:
+		_request_combat_animation.rpc_id(1, state, variant)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_combat_animation(state: String, variant: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_broadcast_combat_animation.rpc(sender, state, variant)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_combat_animation(peer_id: int, state: String, variant: int) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		return
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].play_combat_animation(state, variant)
 
 ## Broadcast a successful ability cast so every peer can render its remote visual.
 func broadcast_ability(move_id: String, color: Color) -> void:
