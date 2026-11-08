@@ -5,6 +5,7 @@ extends Node3D
 ##   "world"  - empty open world with NPCs that hand out quests
 
 const FIGHT_ENEMIES := 6      # how many shinobi are kept alive in "fight" mode
+const WORLD_TERRAIN_SCRIPT := preload("res://world_terrain.gd")
 
 var player: Player
 var hud: HUD
@@ -33,6 +34,10 @@ func _ready() -> void:
 	play_half = map.play_half
 	player = Player.new()
 	player.position = map.spawn("PlayerSpawn", Vector3(0, 1, 30) if mode == "kurama" else Vector3(0, 1, 0))
+	if mode == "world":
+		var terrain := map.get_node_or_null("WorldTerrain")
+		if terrain != null:
+			player.position.y = terrain.height_at(player.position.x, player.position.z) + 1.0
 	add_child(player)
 	if NetworkSession.is_active():
 		NetworkSession.bind_local_player(player, self)
@@ -78,6 +83,20 @@ func _load_map() -> void:
 	if map == null:
 		push_warning("[Main] %s missing - generating the map instead (open tools/bake_maps.gd and run it to create it)" % path)
 		map = MapBuilder.build(mode)
+	if mode == "world":
+		# Replace the old bounded flat test field with streamed procedural terrain.
+		var old_floor := map.get_node_or_null("Ground/Floor")
+		if old_floor != null:
+			old_floor.free()
+		var old_bounds := map.get_node_or_null("Bounds")
+		if old_bounds != null:
+			old_bounds.free()
+		var old_grass := map.get_node_or_null("Grass")
+		if old_grass != null:
+			old_grass.free()
+		var terrain := WORLD_TERRAIN_SCRIPT.new()
+		terrain.name = "WorldTerrain"
+		map.add_child(terrain)
 	add_child(map)
 
 # ---------------------------------------------------------------- Mode: FIGHT
@@ -159,6 +178,10 @@ func _start_world() -> void:
 		n.band_color = d["band"]
 		n.greeting = d["greet"]
 		n.position = d["pos"]
+		var terrain := map.get_node_or_null("WorldTerrain")
+		if terrain != null:
+			n.position.y = terrain.height_at(n.position.x, n.position.z)
+			Quests.NPCS[id]["pos"] = n.position
 		n.model_path = d["model"]
 		n.model_height = d["model_height"]
 		n.model_yaw_deg = d["model_yaw"]
