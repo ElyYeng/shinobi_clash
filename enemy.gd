@@ -14,6 +14,7 @@ var band_color := Color(0.6, 0.6, 0.65)
 var network_quest_id := ""
 var network_quest_party_leader := 0
 var network_quest_mirror := false
+var network_quest_defeated := false
 var _quest_net_position := Vector3.ZERO
 var _quest_net_yaw := 0.0
 var _quest_net_health := -1.0
@@ -160,6 +161,8 @@ func _strike(p: Player, dir: Vector3, _dist: float) -> void:
 		p.take_damage(damage * (1.5 if is_boss else 1.0), dir * 7.0)
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
+	if network_quest_defeated or health <= 0.0:
+		return
 	if network_quest_mirror and network_quest_id != "":
 		NetworkSession.request_quest_enemy_damage(network_quest_id, amount, knock)
 		return
@@ -175,6 +178,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	Vfx.damage_number(get_parent(), global_position + Vector3.UP * (2.2 * k), amount)
 	_update_label()
 	if health <= 0.0:
+		network_quest_defeated = true
 		if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
 			NetworkSession.quest_enemy_killed(network_quest_id, network_quest_party_leader)
 		else:
