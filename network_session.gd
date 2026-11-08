@@ -129,8 +129,12 @@ func _spawn_remote(peer_id: int, display_name: String) -> void:
 		_spawn_remote_local(peer_id, display_name)
 
 func _spawn_remote_local(peer_id: int, display_name: String) -> void:
-	if _game_root == null or not is_instance_valid(_game_root) or _avatars.has(peer_id):
+	if _game_root == null or not is_instance_valid(_game_root):
 		return
+	if _avatars.has(peer_id):
+		if is_instance_valid(_avatars[peer_id]):
+			return
+		_avatars.erase(peer_id)
 	var script := load("res://multiplayer_avatar.gd")
 	if script == null:
 		return
