@@ -82,6 +82,7 @@ static func _resolve_custom_model_path() -> String:
 	var candidates := [
 		ASSET_DIR.path_join(CUSTOM_MODEL_FILE),
 		ASSET_DIR.path_join("character.glb"),
+		ASSET_DIR.path_join("character costum test1(4).glb"),
 		ASSET_DIR.path_join("character costum test1(3).glb"),
 		ASSET_DIR.path_join("character costum test1(2).glb"),
 		ASSET_DIR.path_join("character costum test1.glb")
