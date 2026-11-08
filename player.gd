@@ -363,7 +363,7 @@ func _update_anim() -> void:
 	elif dash_time > 0.0:
 		st = "dash"
 	elif hv.length() > 1.0:
-		st = "run"
+		st = Hero.move_state(hv.length())
 		if lock_target:
 			var fwd := hv.dot(facing)
 			var side := hv.dot(facing.cross(Vector3.UP))

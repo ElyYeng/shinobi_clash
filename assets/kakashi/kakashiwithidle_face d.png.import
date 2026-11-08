@@ -2,14 +2,11 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c307v2sg5wxc0"
+uid="uid://7c7pviq78ic"
 path.s3tc="res://.godot/imported/kakashiwithidle_face d.png-96004b49773a9425c3bc8c4424d412dc.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
-}
-generator_parameters={
-"md5": "9854dc6989c136d6d66b33d888b9053c"
 }
 
 [deps]

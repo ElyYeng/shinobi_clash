@@ -125,5 +125,5 @@ func _process(delta: float) -> void:
 		model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
 		if animation_lock <= 0.0:
-			Hero.play(model, "run" if speed > 1.0 else "idle")
+			Hero.play(model, Hero.move_state(speed))
 	_last_position = global_position

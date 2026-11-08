@@ -480,7 +480,7 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	if map.is_empty() and list.size() > 0:
 		map["idle"] = [String(list[0])]
 		print("[Hero] no names matched KEYWORDS; using first animation as idle. Edit KEYWORDS in hero.gd")
-	for st in ["idle", "run", "walk", "strafe_l", "strafe_r"]:
+	for st in ["idle", "run", "walk", "fall", "strafe_l", "strafe_r"]:
 		if map.has(st):
 			for nm in map[st]:
 				ap.get_animation(nm).loop_mode = Animation.LOOP_LINEAR
@@ -489,6 +489,14 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 		_printed = true
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
+
+## Ground speed (m/s) -> locomotion state, so the walk clip is used for slow movement.
+const WALK_BELOW := 4.5
+static func move_state(speed: float) -> String:
+	if speed <= 1.0:
+		return "idle"
+	return "walk" if speed < WALK_BELOW else "run"
+
 
 static func _lookup(map: Dictionary, state: String) -> Array:
 	if map.has(state):
