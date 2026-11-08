@@ -126,3 +126,21 @@ Unlocked by beating Kurama. Press Z to turn it on (needs 50 MD) and Z again to t
 (a full bar lasts 25 s) and ends when MD runs out. It stacks with your bloodline power-up (C): with both on you get both
 bonuses, and MD drains at both rates combined x1.25. Kills still add MD while a mode is on.
 Tuning in player.gd: MODE_TIME, KURAMA_MIN_MD, BOTH_DRAIN_MULT, POWER_DRAIN_TIME.
+
+## Maps (editable in the Godot editor)
+The three maps are normal scene files now. Open one and edit it in the 3D viewport like any level:
+- `maps/village.tscn` - Fight mode village
+- `maps/open_world.tscn` - Main Game (open world)
+- `maps/kurama_arena.tscn` - Kurama Boss Fight
+
+Everything is grouped in the Scene dock: Environment (sky, sun), Ground, Bounds (invisible walls), Walls, Cliffs,
+Buildings, Props, Trees, Lanterns, Bushes, Rocks, Grass, Decor (particles) and Markers. Move, duplicate (Ctrl+D) or delete
+anything, or drop in your own models. Things that should block enemy spawns and grass must be a StaticBody3D with a box or
+cylinder collision shape, in any group except Ground / Bounds / Markers / Grass / Environment.
+- **Markers/PlayerSpawn** sets where you start; **Markers/BossSpawn** where Kurama appears. Drag them.
+- **Grass** is a GrassPatch node: count, area, colours, and areas to keep clear (circles / rectangles for roads) are in the
+  Inspector, and it updates live. It automatically keeps off solid objects.
+- The map root (GameMap) has `play_half` (play area) and `spawn_area` (where Fight-mode enemies appear).
+
+The old generator lives in `map_builder.gd`. If a map file is missing, the game generates it instead; to recreate a missing
+file, open `tools/bake_maps.gd` and use File > Run (existing maps are skipped, so your edits are safe).
