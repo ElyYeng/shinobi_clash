@@ -755,7 +755,7 @@ func _show_party_invite(inviter_id: int, inviter_name: String) -> void:
 		old.queue_free()
 	var panel := Panel.new()
 	panel.name = "PartyInvitePopup"
-	panel.position = (get_viewport_rect().size - Vector2(340, 170)) / 2.0
+	panel.position = (get_viewport().get_visible_rect().size - Vector2(340, 170)) / 2.0
 	panel.size = Vector2(340, 170)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = PARCH
