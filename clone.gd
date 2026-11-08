@@ -6,10 +6,16 @@ var life := 8.0
 var hit_cd := 0.0
 var anim_lock := 0.0
 var cosmetic_only := false
+var network_peer_id := 0
+var network_summon_id := 0
+var network_clone_index := 0
+var network_target_position := Vector3.ZERO
+var network_target_yaw := 0.0
 var model: Node3D
 var arm: Node3D
 
 func _ready() -> void:
+	add_to_group("shadow_clones")
 	model = Hero.create()
 	if model == null:
 		model = Fx.make_ninja(Color(0.95, 0.6, 0.25), Color(0.15, 0.3, 0.8))
@@ -23,6 +29,12 @@ func _process(delta: float) -> void:
 	if life <= 0.0:
 		Fx.puff(get_parent(), global_position + Vector3.UP, Color(1, 1, 1, 0.8), 2.2)
 		queue_free()
+		return
+	if cosmetic_only:
+		global_position = global_position.lerp(network_target_position, minf(1.0, delta * 18.0))
+		if model != null:
+			model.rotation.y = lerp_angle(model.rotation.y, network_target_yaw, minf(1.0, delta * 18.0))
+			Hero.play(model, "run" if global_position.distance_to(network_target_position) > 0.15 else "idle")
 		return
 	hit_cd -= delta
 	anim_lock = maxf(0.0, anim_lock - delta)
@@ -63,3 +75,8 @@ func _process(delta: float) -> void:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-to.x, -to.z), 12.0 * delta)
 	if anim_lock <= 0.0:
 		Hero.play(model, "run" if running else "idle")
+
+
+func set_network_transform(pos: Vector3, yaw: float) -> void:
+	network_target_position = pos
+	network_target_yaw = yaw
