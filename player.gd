@@ -572,6 +572,8 @@ func _use_move(id: String) -> void:
 	cur_mkey = str(a["mkey"])
 	var raw := Moves.raw(id)
 	var col: Color = a["col"]
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_ability(id, col)
 	var mult := _bl_mult() if a["src"] == "bl" else 1.0
 	var dmg := float(a["dmg"]) * _dmg() * mult
 	if kind != "custom":
