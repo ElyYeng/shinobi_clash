@@ -163,7 +163,11 @@ func _create_chunk(coord: Vector2i) -> void:
 	var body := StaticBody3D.new()
 	body.name = "TerrainCollision"
 	var collision := CollisionShape3D.new()
-	collision.shape = mesh.create_trimesh_shape()
+	var terrain_shape := mesh.create_trimesh_shape() as ConcavePolygonShape3D
+	# Generated terrain is a thin, single surface. Accept collision from either
+	# side so triangle winding can never let the player fall through it.
+	terrain_shape.backface_collision = true
+	collision.shape = terrain_shape
 	body.add_child(collision)
 	chunk.add_child(body)
 
