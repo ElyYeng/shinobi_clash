@@ -1,9 +1,9 @@
 78098b89c88a74ebe8c20117b8754620
-::res://::1794180490
+::res://::1794180856
 ability_bar.gd::GDScript::6745162455798817200::1794152850::0::1::::AbilityBar<>Control<><>0<>0<><>::
 bloodline.gd::GDScript::7467067005513776309::1794152850::0::1::::Bloodline<>RefCounted<><>0<>0<><>::
 boss_shot.gd::GDScript::815507746886068423::1794089428::0::1::::BossShot<>Node3D<><>0<>0<><>::
-character_creator.gd::GDScript::7075450280636038207::1794180490::0::1::::<>CanvasLayer<><>0<>0<><>::
+character_creator.gd::GDScript::7075450280636038207::1794180856::0::1::::<>CanvasLayer<><>0<>0<><>::
 clone.gd::GDScript::3957002576662749997::1794177701::0::1::::Clone<>Node3D<><>0<>0<><>::
 CREDITS.md::TextFile::-1::1794089428::0::1::::<><><>0<>0<><>::
 dialog.gd::GDScript::1676796941261360923::1794089428::0::1::::DialogBox<>CanvasLayer<><>0<>0<><>::
@@ -12,12 +12,12 @@ enemy.gd::GDScript::7687718952522186214::1794154409::0::1::::Enemy<>CharacterBod
 export_presets.cfg::TextFile::-1::1794152884::0::1::::<><><>0<>0<><>::
 FIXES.md::TextFile::-1::1794089428::0::1::::<><><>0<>0<><>::
 fx.gd::GDScript::7775042515393488424::1794152850::0::1::::Fx<>RefCounted<><>0<>0<><>::
-gamedata.gd::GDScript::6328727983613246987::1794180490::0::1::::GameData<>RefCounted<><>0<>0<><>::
+gamedata.gd::GDScript::6328727983613246987::1794180856::0::1::::GameData<>RefCounted<><>0<>0<><>::
 game_map.gd::GDScript::5908773717250999369::1794152850::0::1::::GameMap<>Node3D<><>0<>0<><>::
 game_menu.gd::GDScript::809656356807400689::1794152850::0::1::::GameMenu<>CanvasLayer<><>0<>0<><>::
 grass_patch.gd::GDScript::5064263771892012885::1794152850::0::1::::GrassPatch<>Node3D<><>0<>1<><>::
 grass_texture_data.gd::GDScript::1440622627459748026::1794157097::0::1::::<>RefCounted<><>0<>0<><>::
-hero.gd::GDScript::5177824147629990275::1794180490::0::1::::Hero<>RefCounted<><>0<>0<><>::
+hero.gd::GDScript::5177824147629990275::1794180856::0::1::::Hero<>RefCounted<><>0<>0<><>::
 hud.gd::GDScript::4700722380694721419::1794152850::0::1::::HUD<>CanvasLayer<><>0<>0<><>::
 kurama.gd::GDScript::7696684015130423931::1794152850::0::1::::Kurama<>Enemy<><>0<>0<><>::
 main.gd::GDScript::7144483804951604481::1794156235::0::1::::<>Node3D<><>0<>0<><>::
@@ -29,7 +29,7 @@ menu_bg.gd::GDScript::6586852077262739485::1794089428::0::1::::MenuBG<>Control<>
 meshy-model-2026-11-08T02-04-21-930Z.glb::PackedScene::8500412985625741639::1794152850::1794180503::1::::<><><>0<>0<>ad02712104c7fbb1a091925581499813<>res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-cc56640bc88b87589f88e2dcc067af4a.scn::uid://5idd5o3asy6t::::res://meshy-model-2026-11-08T02-04-21-930Z_0.webp
 meshy-model-2026-11-08T02-04-21-930Z_0.webp::CompressedTexture2D::2122369438134158113::1794152850::1794180499::1::::<><><>0<>0<>9820e04095fa1dc772b6b5d7580729a8<>res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-91c5b54db680e1ae2cca71df26ef491f.s3tc.ctex::
 moves.gd::GDScript::988963900932586353::1794152850::0::1::::Moves<>RefCounted<><>0<>0<><>::
-multiplayer_avatar.gd::GDScript::5760157086412123953::1794180490::0::1::::<>Node3D<><>0<>0<><>::
+multiplayer_avatar.gd::GDScript::5760157086412123953::1794180656::0::1::::<>Node3D<><>0<>0<><>::
 multiplayer_lobby.gd::GDScript::3876987055854121665::1794152850::0::1::::<>Control<><>0<>0<><>::
 multiplayer_lobby.tscn::PackedScene::-1::1794152850::0::1::::<><><>0<>0<><>::res://multiplayer_lobby.gd
 MULTIPLAYER_RADMIN.md::TextFile::-1::1794152850::0::1::::<><><>0<>0<><>::
@@ -38,7 +38,7 @@ NOTES.txt::TextFile::-1::1794089784::0::1::::<><><>0<>0<><>::
 npc.gd::GDScript::3217148424790476226::1794152850::0::1::::Npc<>StaticBody3D<><>0<>0<><>::
 npc_def.gd::GDScript::8707213484677852510::1794152850::0::1::::NpcDef<>Resource<><>0<>0<><>::
 npc_spawn.gd::GDScript::5159521271982536813::1794152850::0::1::::NpcSpawn<>Marker3D<><>0<>1<><>::
-player.gd::GDScript::4215064976901610701::1794180490::0::1::::Player<>CharacterBody3D<><>0<>0<><>::
+player.gd::GDScript::4215064976901610701::1794180656::0::1::::Player<>CharacterBody3D<><>0<>0<><>::
 PROGRESSION_UPDATE.txt::TextFile::-1::1794089428::0::1::::<><><>0<>0<><>::
 projectile.gd::GDScript::5156455546586037171::1794177701::0::1::::Projectile<>Area3D<><>0<>0<><>::
 quests.gd::GDScript::3921603325989890675::1794154837::0::1::::Quests<>Node<><>0<>0<><>::
@@ -53,7 +53,7 @@ vfx.gd::GDScript::614237826759111886::1794152850::0::1::::Vfx<>RefCounted<><>0<>
 world_terrain.gd::GDScript::1364128919977764962::1794177701::0::1::::<>Node3D<><>0<>1<><>::
 ::res://assets/::1794177701
 PUT_YOUR_MODEL_HERE.txt::TextFile::-1::1794177701::0::1::::<><><>0<>0<><>::
-::res://assets/character/::1794180492
+::res://assets/character/::1794180855
 character_main.glb::PackedScene::4164685748347679495::1794180492::1794180503::1::::<><><>0<>0<>61a136f653ed331847ceaf6b25639da5<>res://.godot/imported/character_main.glb-0757196d80ccdcc7981ddf5768e712b1.scn::uid://cx3jjuo5fvp4::::res://assets/character/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png<>uid://lje8mmep16cp::::res://assets/character/character_main_T_CHR_Eye_BC.png<>uid://dhtc5wu4flos::::res://assets/character/character_main_T_CHR_Man_Vest_01_BC.png<>uid://dly3gjx1p40ep::::res://assets/character/character_main_Male_Bottom_Cos_NB_Yellow_D.png<>uid://dec23ivib17fe::::res://assets/character/character_main_Male_Top_Cos_NB_Yellow_D.png<>uid://0ya57dqc2dhq::::res://assets/character/character_main_shoe d.png<>uid://d16rehn32j20s::::res://assets/character/character_main_top d.png<>uid://dgjx0ytiqxkhw::::res://assets/character/character_main_bottom d.png
 character_main_bottom d.png::CompressedTexture2D::7600416938672754468::1794177701::1794180499::1::::<><><>0<>0<>c5dc9b6e055b84c09d9d5daf07ead68b<>res://.godot/imported/character_main_bottom d.png-5d89418511a135d90a05aa13bd3234ef.s3tc.ctex::
 character_main_Male_Bottom_Cos_NB_Yellow_D.png::CompressedTexture2D::7982595697199172179::1794177701::1794180499::1::::<><><>0<>0<>ef3ef29d4e6bee1f9cf465240c93a0c2<>res://.godot/imported/character_main_Male_Bottom_Cos_NB_Yellow_D.png-6f5a6a2128fde188602b1f5835c52b21.s3tc.ctex::
@@ -64,7 +64,12 @@ character_main_T_CHR_Eye_BC.png::CompressedTexture2D::790959127995520911::179417
 character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png::CompressedTexture2D::189575027844691639::1794177701::1794180499::1::::<><><>0<>0<>1bf8c9cdc320d451ff40458affefbd2a<>res://.godot/imported/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png-509ca37be805e9f915e19658bf9238fe.s3tc.ctex::
 character_main_T_CHR_Man_Vest_01_BC.png::CompressedTexture2D::226175980276761618::1794177701::1794180499::1::::<><><>0<>0<>0ace15e59bf98db1c7bd7a1b5762e696<>res://.godot/imported/character_main_T_CHR_Man_Vest_01_BC.png-00009932eed0760e61c7922ccb6acc90.s3tc.ctex::
 README.txt::TextFile::-1::1794177701::0::1::::<><><>0<>0<><>::
-::res://assets/icons/::1794180490
+::res://assets/character/headband_textures/::1794180903
+aaaaaaaaaaa.png::CompressedTexture2D::2069879662575300993::1794180882::1794180882::1::::<><><>0<>0<>804cf8f64cf28b7276364a3ff9487250<>res://.godot/imported/aaaaaaaaaaa.png-0f4781163a662bf05fd6e4497f3b5b54.ctex::
+README.txt::TextFile::-1::1794180855::0::1::::<><><>0<>0<><>::
+rodie.png::CompressedTexture2D::2208726054118881071::1794180892::1794180892::1::::<><><>0<>0<>15a57a6b2a2794638f6fa94c0d9d4e15<>res://.godot/imported/rodie.png-d94598e4938f4dfff0c8e06b313d1aa5.ctex::
+tigan.png::CompressedTexture2D::4657687908785018217::1794180903::1794180904::0::::<><><>0<>0<>eda5efeec817fac7838d7d489e78f680<>::
+::res://assets/icons/::1794180499
 base_armor.png::CompressedTexture2D::6480369987268773053::1794152850::1794180499::1::::<><><>0<>0<>0acb683f7feb00507694393c080078f2<>res://.godot/imported/base_armor.png-9f2dd197f01e21085640e44e27e1c2a4.ctex::
 base_clones.png::CompressedTexture2D::4951208684277569463::1794152850::1794180499::1::::<><><>0<>0<>d44f23562534cd53bf4439a14165620b<>res://.godot/imported/base_clones.png-cd64cb8f282ecdf766488744fdccabec.ctex::
 base_sub.png::CompressedTexture2D::762352239204640451::1794152850::1794180499::1::::<><><>0<>0<>fbf6b7d2bb1f9c90c0a6ad7a2f336d19<>res://.godot/imported/base_sub.png-f0dd1cb648d5101c41d0eff1c8f11f17.ctex::
@@ -156,13 +161,13 @@ mode_uchiha.png::CompressedTexture2D::1999535660839792731::1794152850::179418049
 mode_uzumaki.png::CompressedTexture2D::5641007148677352221::1794152850::1794180498::1::::<><><>0<>0<>2f745db73249e529b09b413e4ff0139b<>res://.godot/imported/mode_uzumaki.png-adbca5009351b459f99fb975541aba5e.ctex::
 mode_yamanaka.png::CompressedTexture2D::7498378952314186098::1794152850::1794180498::1::::<><><>0<>0<>58b50dda7001230733d7f50a9b0c31d7<>res://.godot/imported/mode_yamanaka.png-7aa1911509dce215c3416eef8dc00d1a.ctex::
 mode_yuki.png::CompressedTexture2D::6821271399426458736::1794152850::1794180498::1::::<><><>0<>0<>8da61d12025190d5fe96cca28d479f1d<>res://.godot/imported/mode_yuki.png-2185cebafb4e44e2c72665f2fa2c3155.ctex::
-::res://assets/kakashi/::1794180490
+::res://assets/kakashi/::1794180504
 kakashiwithidle.glb::PackedScene::7642272452025446298::1794152850::1794180501::1::::<><><>0<>0<>be8be2dd90b1802cc5296b53fac53e8e<>res://.godot/imported/kakashiwithidle.glb-525eccb576c9db24d1390b04b91c8032.scn::uid://c4uji0dii5hxu::::res://assets/kakashi/kakashiwithidle_shoe d.png<>uid://bes3xeak255ed::::res://assets/kakashi/kakashiwithidle_top d.png<>uid://b2xjabva3wax6::::res://assets/kakashi/kakashiwithidle_bottom d.png<>uid://7c7pviq78ic::::res://assets/kakashi/kakashiwithidle_face d.png
 kakashiwithidle_bottom d.png::CompressedTexture2D::4329546688200774237::1794152850::1794180499::1::::<><><>0<>0<>1b57e32bb1756a48a36302566cf4d127<>res://.godot/imported/kakashiwithidle_bottom d.png-3404c31e3b288bd1953cf26593c364a0.s3tc.ctex::
 kakashiwithidle_face d.png::CompressedTexture2D::66239488197708246::1794152850::1794180504::1::::<><><>0<>0<>10ef530dba5732ad148731865bdb7e6c<>res://.godot/imported/kakashiwithidle_face d.png-96004b49773a9425c3bc8c4424d412dc.s3tc.ctex::
 kakashiwithidle_shoe d.png::CompressedTexture2D::6850167445350003054::1794152850::1794180499::1::::<><><>0<>0<>0a60b09434ad891f0c8c7d895cc81d05<>res://.godot/imported/kakashiwithidle_shoe d.png-e0badac8ce9301e834385df5de1a791a.s3tc.ctex::
 kakashiwithidle_top d.png::CompressedTexture2D::2706076217460629987::1794152850::1794180499::1::::<><><>0<>0<>c8ce129b1bbdfcb7365dfe01e7919982<>res://.godot/imported/kakashiwithidle_top d.png-a899143712e437f5ef964f54742934dd.s3tc.ctex::
-::res://assets/kakashi/textures/::1794180490
+::res://assets/kakashi/textures/::1794180499
 bottom_d.png::CompressedTexture2D::2961881967191894561::1794152850::1794180499::1::::<><><>0<>0<>efac2bf5bdb017ace778ffbbe71f92be<>res://.godot/imported/bottom_d.png-823c947703fd2ae0d22ab5f26f18e4bb.ctex::
 bottom_n.png::CompressedTexture2D::2780110258074219779::1794152850::1794180499::1::::<><><>0<>0<>fb1799b5a333984062be83e6e4b34cb0<>res://.godot/imported/bottom_n.png-a4b2a2f4870cb672cf4b3861f67f6e90.ctex::
 face_d.png::CompressedTexture2D::4182104865380210394::1794152850::1794180499::1::::<><><>0<>0<>a25feb8cdd6056fba4e29245be82e2e6<>res://.godot/imported/face_d.png-260f0fc9056ad2191f98836562af9cc0.ctex::
@@ -171,15 +176,15 @@ shoe_d.png::CompressedTexture2D::3885409841422570338::1794152850::1794180499::1:
 shoe_n.png::CompressedTexture2D::7222140820870149140::1794152850::1794180499::1::::<><><>0<>0<>94b82398d8e094a44295731bff4f3e78<>res://.godot/imported/shoe_n.png-7c797c50dac76375353b53b4ef4e9db1.ctex::
 top_d.png::CompressedTexture2D::1919050576460461571::1794152850::1794180499::1::::<><><>0<>0<>0019df28f43e47a85a9267224da009e3<>res://.godot/imported/top_d.png-de576c6318d274d1d7c761b97b01146e.ctex::
 top_n.png::CompressedTexture2D::2714756188676184702::1794152850::1794180499::1::::<><><>0<>0<>f7a08f1ff000f6120600389890fd4016<>res://.godot/imported/top_n.png-c7430eb1d91827e81d571f818b09d651.ctex::
-::res://assets/kurama/::1794180490
+::res://assets/kurama/::1794180502
 license.txt::TextFile::-1::1794089428::0::1::::<><><>0<>0<><>::
 scene.gltf::PackedScene::6999517460672293458::1794089428::1794180502::1::::<><><>0<>0<>b9c2afa82fd0eafdf31fd73759321333<>res://.godot/imported/scene.gltf-46e773c023247189da13569eea74da39.scn::uid://cwsjx2tkta2bw::::res://assets/kurama/textures/Material.001_baseColor.png
-::res://assets/kurama/textures/::1794180490
+::res://assets/kurama/textures/::1794180498
 Material.001_baseColor.png::CompressedTexture2D::6354743701152214996::1794089428::1794180498::1::::<><><>0<>0<>4fc76f3247193c4c6eca3baea1095fe5<>res://.godot/imported/Material.001_baseColor.png-93d7b640396496c94531ad82b3ab9539.s3tc.ctex::
-::res://assets/naruto/::1794180490
+::res://assets/naruto/::1794180500
 license.txt::TextFile::-1::1794152850::0::1::::<><><>0<>0<><>::
 scene.gltf::PackedScene::4822634237538529600::1794089428::1794180500::1::::<><><>0<>0<>2ac3f0dda0d692ed4f026832728f240f<>res://.godot/imported/scene.gltf-09779609f7dde945c82224118ac83964.scn::uid://b4onsxqhd8l2n::::res://assets/naruto/textures/C__Users_JK_Desktop_NARUTO_ULTI_baseColor.png<>uid://bg8rsiukhupo0::::res://assets/naruto/textures/C__Users_JK_Desktop_NARUTO_ULTI0_baseColor.png
-::res://assets/naruto/textures/::1794180490
+::res://assets/naruto/textures/::1794180498
 C__Users_JK_Desktop_NARUTO_ULTI0_baseColor.png::CompressedTexture2D::2876742996119987969::1794089428::1794180498::1::::<><><>0<>0<>bc67be56300140caf5aa564c997534db<>res://.godot/imported/C__Users_JK_Desktop_NARUTO_ULTI0_baseColor.png-da8264df7db5b3f11ad10e1486e532c8.s3tc.ctex::
 C__Users_JK_Desktop_NARUTO_ULTI_baseColor.png::CompressedTexture2D::4451621136026420839::1794089428::1794180498::1::::<><><>0<>0<>a074b6445f69c1251a384ea084dd8538<>res://.godot/imported/C__Users_JK_Desktop_NARUTO_ULTI_baseColor.png-b69c25b549a73c014591bfe140bcb4b0.s3tc.ctex::
 ::res://data/::1794152850
@@ -199,13 +204,13 @@ nine_tails.tres::Resource/QuestDef::-1::1794152850::0::1::::<><><>0<>0<><>::res:
 parcel.tres::Resource/QuestDef::-1::1794152850::0::1::::<><><>0<>0<><>::res://quest_def.gd
 rough_ninjas.tres::Resource/QuestDef::-1::1794154409::0::1::::<><><>0<>0<><>::res://quest_def.gd
 ::res://Game EXPORT/::1794152884
-::res://maps/::1794180492
+::res://maps/::1794180519
 kurama_arena.tscn::PackedScene::-1::1794152850::0::1::::<><><>0<>0<><>::res://game_map.gd
 meshy-model-2026-11-08T02-04-21-930Z.glb::PackedScene::7712797277225178896::1794152850::1794180503::1::::<><><>0<>0<>ac5cebf03f5adfedb9881825a53439a4<>res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-5861bc2a0b428145285247f3ce872d6d.scn::uid://bar8qq433cn3e::::res://maps/meshy-model-2026-11-08T02-04-21-930Z_0.webp
 meshy-model-2026-11-08T02-04-21-930Z_0.webp::CompressedTexture2D::2423548225458523136::1794152850::1794180498::1::::<><><>0<>0<>ff21bcdca996f6087bbd7e2d6bf463ee<>res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-96f0970b25518e1ad2c07897968992aa.s3tc.ctex::
 meshy-model-2026-11-08T02-40-15-880Z.glb::PackedScene::7645422492151425071::1794152850::1794180500::1::::<><><>0<>0<>4a8a757437505495cf60110642816440<>res://.godot/imported/meshy-model-2026-11-08T02-40-15-880Z.glb-a3e5ceb91a8de4221fa8350caad621f3.scn::uid://ij4qwwptn7tm::::res://maps/meshy-model-2026-11-08T02-40-15-880Z_0.webp
 meshy-model-2026-11-08T02-40-15-880Z_0.webp::CompressedTexture2D::581880704590373514::1794152850::1794180498::1::::<><><>0<>0<>02eaf1630c70b68d3169412f38164e86<>res://.godot/imported/meshy-model-2026-11-08T02-40-15-880Z_0.webp-beeb081796a168884145bc47f526db95.s3tc.ctex::
-open_world.tscn::PackedScene::-1::1794180492::0::1::::<><><>0<>0<><>::res://game_map.gd<>res://world_terrain.gd<>res://npc_spawn.gd<>res://data/npcs/courier.tres<>res://data/npcs/elder.tres<>res://data/npcs/hermit.tres<>res://data/npcs/kakashi.tres<>res://data/npcs/scout.tres<>res://data/npcs/trainer.tres
+open_world.tscn::PackedScene::7108995711362046978::1794180519::0::1::::<><><>0<>0<><>::uid://cqgiv0wj4q4g0::::res://game_map.gd<>uid://b0pl8epam0gs0::::res://maps/tree1.glb<>uid://cfrktdesgepsn::::res://npc_spawn.gd<>uid://dtawx6ujctbu7::::res://maps/tree1_Image_0.webp<>res://data/npcs/courier.tres<>res://data/npcs/elder.tres<>res://data/npcs/hermit.tres<>res://data/npcs/kakashi.tres<>res://data/npcs/scout.tres<>res://data/npcs/trainer.tres<>uid://to2aevvd425c::::res://world_terrain.gd
 Sakuratree.glb::PackedScene::6981518782284523101::1794152850::1794180501::1::::<><><>0<>0<>cca0ba64a13a41c9a69525162f409efd<>res://.godot/imported/Sakuratree.glb-95f5876bc2e3b2775e7a3bd41b7d82b2.scn::uid://b0x6g6ehfldqv::::res://maps/Sakuratree_0.webp<>uid://bvsunr0bstdn3::::res://maps/Sakuratree_1.webp<>uid://b6joawsuh36bv::::res://maps/Sakuratree_2.webp
 Sakuratree_0.webp::CompressedTexture2D::4190517039254713417::1794152850::1794180498::1::::<><><>0<>0<>734d7320435c851427783a2f2c23fba8<>res://.godot/imported/Sakuratree_0.webp-7cb53dddbcce727d51541fa9db75dd45.s3tc.ctex::
 Sakuratree_1.webp::CompressedTexture2D::3898783686428253050::1794152850::1794180498::1::::<><><>0<>0<>8394e60f028b04d4377dc534107562b8<>res://.godot/imported/Sakuratree_1.webp-cb38a66f10bef89ad565e20017a10da4.s3tc.ctex::

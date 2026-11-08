@@ -29,14 +29,18 @@ const DEFAULT_APPEARANCE := {
 	"shirt_style": "shirt1",
 	"pants_style": "pants1",
 	"headband_color": "#2B3A67",
-	"headbandmetal_color": "#C9CED6",
+	"headbandmetal_color": "#FFFFFF",   # white = show the texture untinted
+	"headbandmetal_texture": "",        # "" = the texture embedded in the GLB
 }
 ## Extra colour targets on hair meshes. A hairstyle gets one only if it has a surface whose
 ## MATERIAL NAME matches ("headband", "headbandmetal"), so hairs without a headband show
 ## nothing extra. To add another (e.g. a scarf) add an entry here + a default above.
 const COLOR_SLOTS := {
 	"headband": {"key": "headband_color", "label": "Headband", "material": "headband"},
-	"headbandmetal": {"key": "headbandmetal_color", "label": "Headband plate", "material": "headbandmetal"},
+	## "textures_dir": every png/jpg/webp in that folder becomes a selectable texture for the slot
+	## (stored under "texture_key"). Drop a new image in the folder and it shows up in the creator.
+	"headbandmetal": {"key": "headbandmetal_color", "label": "Headband plate", "material": "headbandmetal",
+		"texture_key": "headbandmetal_texture", "textures_dir": "res://assets/character/headband_textures"},
 }
 ## Older saves / older code used other ids. They are mapped onto the mesh names.
 const LEGACY_IDS := {
@@ -160,6 +164,12 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var hex := str(raw.get(color_key, "")).strip_edges()
 		if Color.html_is_valid(hex):
 			safe[color_key] = "#" + Color.html(hex).to_html(false)
+	for slot in COLOR_SLOTS:
+		var tkey := str(COLOR_SLOTS[slot].get("texture_key", ""))
+		if tkey != "":
+			var tname := str(raw.get(tkey, "")).strip_edges()
+			if tname == "" or (tname.get_file() == tname and tname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"]):
+				safe[tkey] = tname
 	return safe
 
 
@@ -227,6 +237,34 @@ static func _slot_of(material: Material) -> String:
 		if name == COLOR_SLOTS[slot]["material"]:
 			return str(slot)
 	return ""
+
+
+## Image file names available for a slot (see COLOR_SLOTS "textures_dir"), sorted.
+static func list_slot_textures(slot: String) -> Array:
+	var found: Array = []
+	var dir_path := str(COLOR_SLOTS[slot].get("textures_dir", ""))
+	if dir_path == "" or not DirAccess.dir_exists_absolute(dir_path):
+		return found
+	for f in DirAccess.get_files_at(dir_path):
+		var fname := str(f).trim_suffix(".import").trim_suffix(".remap")
+		if fname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"] and not found.has(fname):
+			found.append(fname)
+	found.sort()
+	return found
+
+
+static func slot_for_key(color_key: String) -> String:
+	for slot in COLOR_SLOTS:
+		if COLOR_SLOTS[slot]["key"] == color_key:
+			return str(slot)
+	return ""
+
+
+static func _slot_texture(slot: String, file_name: String) -> Texture2D:
+	if file_name == "":
+		return null
+	var path := str(COLOR_SLOTS[slot]["textures_dir"]).path_join(file_name)
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
 
 
 ## Slots (headband ...) that the given hairstyle id actually contains. Used by the creator.
@@ -313,7 +351,8 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 			if slot == "":
 				_tint_surface(hair, surface, color)
 			else:
-				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])))
+				var tex_name := str(look.get(str(COLOR_SLOTS[slot].get("texture_key", "")), ""))
+				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])), true, _slot_texture(slot, tex_name))
 	# The scalp mesh uses the same material as the hair.
 	if extras.has("backhead"):
 		var back := extras["backhead"] as MeshInstance3D
@@ -330,7 +369,9 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 
 ## Each Hero gets its own copy of the (cached, shared) toon material, so one player's
 ## hair colour never leaks onto another player, a clone or a preview.
-static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color) -> void:
+## matte = true forces metallic 0: glTF materials without a metallic value default to fully
+## metal, which renders pitch black (there is no environment to reflect).
+static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color, matte := false, texture: Texture2D = null) -> void:
 	var meta_key := "hero_base_%d" % surface
 	var base: Material
 	if mi.has_meta(meta_key):
@@ -341,6 +382,10 @@ static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color) -> voi
 	if base is BaseMaterial3D:
 		var tinted := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
 		tinted.albedo_color = color
+		if matte:
+			tinted.metallic = 0.0
+		if texture != null:
+			tinted.albedo_texture = texture
 		mi.set_surface_override_material(surface, tinted)
 
 
@@ -490,8 +535,9 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
 
-## Ground speed (m/s) -> locomotion state, so the walk clip is used for slow movement.
-const WALK_BELOW := 4.5
+## Ground speed (m/s) -> locomotion state. Normal movement (WALK_SPEED 7) plays the walk
+## clip, sprinting (SPRINT_SPEED 12.5) plays the run clip. Raise/lower WALK_BELOW to taste.
+const WALK_BELOW := 9.5
 static func move_state(speed: float) -> String:
 	if speed <= 1.0:
 		return "idle"

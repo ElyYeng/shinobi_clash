@@ -72,7 +72,8 @@ static var character_appearance := {
 	"shirt_style": "shirt1",
 	"pants_style": "pants1",
 	"headband_color": "#2B3A67",
-	"headbandmetal_color": "#C9CED6"
+	"headbandmetal_color": "#FFFFFF",
+	"headbandmetal_texture": ""
 }
 
 static func load_data() -> void:

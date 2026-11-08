@@ -30,6 +30,7 @@ var _options_box: VBoxContainer
 var _color_swatch: ColorRect
 var _target_dropdown: OptionButton   # which colour the card edits (hair / headband ...)
 var _color_target := "hair_color"
+var _texture_dropdown: OptionButton   # texture choices for the selected slot (if it has any)
 var _hex_edit: LineEdit
 var _hsv_sliders := {}           # "h" / "s" / "v" -> HSlider
 var _preset_buttons: Array[Button] = []
@@ -213,6 +214,11 @@ func _build_color_section(parent: Node) -> void:
 	_target_dropdown.custom_minimum_size = Vector2(0, 34)
 	_target_dropdown.item_selected.connect(_on_target_chosen)
 	parent.add_child(_target_dropdown)
+	_texture_dropdown = OptionButton.new()
+	_texture_dropdown.custom_minimum_size = Vector2(0, 34)
+	_texture_dropdown.item_selected.connect(_on_texture_chosen)
+	_texture_dropdown.visible = false
+	parent.add_child(_texture_dropdown)
 	var card := PanelContainer.new()
 	var card_style := StyleBoxFlat.new()
 	card_style.bg_color = Color(0.74, 0.69, 0.54)
@@ -351,6 +357,36 @@ func _rebuild_color_targets() -> void:
 	_target_dropdown.select(selected)
 	_color_target = str(_target_dropdown.get_item_metadata(selected))
 	_target_dropdown.visible = _target_dropdown.item_count > 1
+	_rebuild_texture_options()
+
+
+## Texture dropdown for the selected colour target (only slots with a "textures_dir").
+func _rebuild_texture_options() -> void:
+	_texture_dropdown.clear()
+	var slot := Hero.slot_for_key(_color_target)
+	var files: Array = Hero.list_slot_textures(slot) if slot != "" else []
+	var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", "")) if slot != "" else ""
+	_texture_dropdown.visible = tkey != "" and not files.is_empty()
+	if not _texture_dropdown.visible:
+		return
+	_texture_dropdown.add_item("Default texture", 0)
+	_texture_dropdown.set_item_metadata(0, "")
+	var selected := 0
+	for f in files:
+		var index := _texture_dropdown.item_count
+		_texture_dropdown.add_item(str(f).get_basename().replace("_", " ").capitalize(), index)
+		_texture_dropdown.set_item_metadata(index, str(f))
+		if str(_working.get(tkey, "")) == str(f):
+			selected = index
+	_texture_dropdown.select(selected)
+
+
+func _on_texture_chosen(index: int) -> void:
+	var slot := Hero.slot_for_key(_color_target)
+	if slot == "":
+		return
+	_working[str(Hero.COLOR_SLOTS[slot]["texture_key"])] = str(_texture_dropdown.get_item_metadata(index))
+	_refresh_preview()
 
 
 func _current_color() -> Color:
@@ -359,6 +395,7 @@ func _current_color() -> Color:
 
 func _on_target_chosen(index: int) -> void:
 	_color_target = str(_target_dropdown.get_item_metadata(index))
+	_rebuild_texture_options()
 	_update_color_controls(_current_color())
 
 
