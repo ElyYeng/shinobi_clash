@@ -426,7 +426,7 @@ func _aim_dir(origin: Vector3) -> Vector3:
 	return dir
 
 func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, long: bool, homing: bool) -> void:
-	var origin := global_position + Vector3.UP * 1.3 + facing * 0.6
+	var origin := global_position + Vector3.UP * 1.3 + facing * 1.25
 	var dir := _aim_dir(origin)
 	var pr := Projectile.new()
 	pr.position = origin
@@ -437,9 +437,11 @@ func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, lon
 	pr.size = size
 	pr.color = color
 	pr.long_shape = long
+	pr.source_player = self
 	if homing and lock_target:
 		pr.target = lock_target
 	get_parent().add_child(pr)
+	pr.global_position = origin
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe, dmg * _dmg())
 
@@ -609,8 +611,9 @@ func _use_move(id: String) -> void:
 			Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
 			_hit(target, dmg, Vector3.ZERO)
 		"fan":
+			var projectile_visual := "rasenshuriken" if id == "bl:uzumaki:2" else ""
 			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * mult,
-				float(a["aoe"]), float(a["size"]), col, bool(a["long"]))
+				float(a["aoe"]), float(a["size"]), col, bool(a["long"]), projectile_visual)
 		"homing":
 			_homing(int(a["n"]), float(a["dmg"]) * mult, float(a["aoe"]), col, float(a["size"]))
 		"dash":
@@ -825,9 +828,11 @@ func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> v
 		pr.size = size
 		pr.color = color
 		pr.life = 4.0
+		pr.source_player = self
 		if not targets.is_empty():
 			pr.target = targets[i % targets.size()]
 		get_parent().add_child(pr)
+		pr.global_position = origin + Vector3(cos(ang), 0.3, sin(ang)) * 0.8
 		if NetworkSession.is_active():
 			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe, pr.damage)
 
@@ -872,8 +877,8 @@ func _reset_aura() -> void:
 	aura.light_energy = 1.2
 
 ## Fires `count` projectiles in a fan around the aim direction.
-func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size: float, color: Color, long: bool) -> void:
-	var origin := global_position + Vector3.UP * 1.3 + facing * 0.6
+func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size: float, color: Color, long: bool, visual_kind: String = "") -> void:
+	var origin := global_position + Vector3.UP * 1.3 + facing * 1.25
 	var dir := _aim_dir(origin)
 	for i in count:
 		var ang := deg_to_rad((float(i) - float(count - 1) / 2.0) * spread)
@@ -887,9 +892,12 @@ func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size:
 		pr.size = size
 		pr.color = color
 		pr.long_shape = long
+		pr.source_player = self
+		pr.visual_kind = visual_kind
 		get_parent().add_child(pr)
+		pr.global_position = origin
 		if NetworkSession.is_active():
-			NetworkSession.broadcast_projectile(origin, d * speed, speed, size, color, long, aoe, dmg * _dmg())
+			NetworkSession.broadcast_projectile(origin, d * speed, speed, size, color, long, aoe, dmg * _dmg(), visual_kind)
 
 func _fx_phoenix(col: Color) -> void:
 	Sfx.play(self, "fire", -2.0)
