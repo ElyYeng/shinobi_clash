@@ -397,6 +397,8 @@ func _melee() -> void:
 	velocity.x = facing.x * 10.0
 	velocity.z = facing.z * 10.0
 	Sfx.play(self, "swing", -4.0)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("attack", combo - 1)
 	var dmg := (10.0 + combo * 4.0) * _dmg()
 	var knock := 14.0 if combo == 3 else 4.0
 	for e: Enemy in get_tree().get_nodes_in_group("enemies"):
@@ -977,6 +979,8 @@ func _kurama_mode() -> void:
 		_toast("Not enough MD for Kurama Mode  (%d / %d)" % [int(mode_meter), int(KURAMA_MIN_MD)])
 		return
 	kurama = true
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_kurama_state(true)
 	Sfx.play(self, "power")
 	model.scale = Vector3.ONE * 1.3
 	cloak_fx = Node3D.new()
@@ -989,6 +993,8 @@ func _kurama_mode() -> void:
 	_play_once("jutsu", 0.6)
 
 func _end_mode() -> void:
+	if kurama and NetworkSession.is_active():
+		NetworkSession.broadcast_kurama_state(false)
 	kurama = false
 	if model:
 		model.scale = Vector3.ONE
