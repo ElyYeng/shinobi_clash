@@ -14,6 +14,7 @@ extends Resource
 @export var title := ""
 @export var giver := ""              ## NPC id (file name in res://data/npcs/ without .tres)
 @export var requires := ""           ## quest id that must be finished first ("" = none)
+@export var repeatable := false   ## repeatable quests can be accepted again after turning them in
 @export var order := 0               ## if one NPC offers several quests, lower order comes first
 @export_enum("goto", "deliver", "kill", "hunt", "kurama") var type := "goto"
 
@@ -45,7 +46,7 @@ extends Resource
 
 ## The dictionary shape the rest of the game uses (Quests.DEFS[id]).
 func to_dict() -> Dictionary:
-	return {"id": id, "title": title, "giver": giver, "req": requires, "order": order, "type": type,
+	return {"id": id, "title": title, "giver": giver, "req": requires, "repeatable": repeatable, "order": order, "type": type,
 		"pos": pos, "place": place, "radius": radius, "target": target, "count": count,
 		"enemy_name": enemy_name, "enemy_health": enemy_health, "enemy_damage": enemy_damage,
 		"enemy_speed": enemy_speed, "enemy_color": enemy_color, "enemy_band": enemy_band,
