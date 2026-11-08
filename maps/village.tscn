@@ -1,7 +1,10 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://1b7cp401iokf"]
 
-[ext_resource type="Script" path="res://game_map.gd" id="1_ces2b"]
-[ext_resource type="Script" path="res://grass_patch.gd" id="2_q5nrs"]
+[ext_resource type="Script" uid="uid://cqgiv0wj4q4g0" path="res://game_map.gd" id="1_ces2b"]
+[ext_resource type="Script" uid="uid://ceffxjgvt6f8x" path="res://grass_patch.gd" id="2_q5nrs"]
+[ext_resource type="PackedScene" uid="uid://dh5ev52wdy2um" path="res://maps/meshy-model-2026-11-08T02-04-21-930Z.glb" id="3_q5nrs"]
+[ext_resource type="PackedScene" uid="uid://dg6q8ydm8utsp" path="res://maps/meshy-model-2026-11-08T02-40-15-880Z.glb" id="4_sq3sw"]
+[ext_resource type="PackedScene" uid="uid://b0pl8epam0gs0" path="res://maps/tree1.glb" id="5_dnl03"]
 
 [sub_resource type="Shader" id="Shader_sq3sw"]
 code = "shader_type sky;
@@ -73,43 +76,52 @@ void sky() {
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dnl03"]
 shader = SubResource("Shader_sq3sw")
-shader_parameter/top_color = Color(0.12, 0.17, 0.46, 1)
-shader_parameter/horizon_color = Color(1, 0.56, 0.3, 1)
-shader_parameter/ground_color = Color(0.35, 0.22, 0.2, 1)
-shader_parameter/sun_color = Color(1, 0.64, 0.34, 1)
-shader_parameter/cloud_color = Color(1, 0.68, 0.48, 1)
+shader_parameter/top_color = Color(0.5478527, 0.6410095, 0.9559091, 1)
+shader_parameter/horizon_color = Color(1, 1, 1, 1)
+shader_parameter/ground_color = Color(1, 1, 1, 1)
+shader_parameter/sun_color = Color(1, 1, 1, 1)
+shader_parameter/cloud_color = Color(1, 1, 1, 1)
 shader_parameter/cloud_shadow = Color(0.32, 0.24, 0.45, 1)
 shader_parameter/sun_dir = Vector3(-0.5485139, 0.2923717, 0.78335905)
-shader_parameter/cloud_cover = 0.6
-shader_parameter/star_amount = 0.25
+shader_parameter/cloud_cover = 0.67
+shader_parameter/star_amount = -1.185
 
 [sub_resource type="Sky" id="Sky_0btfk"]
 sky_material = SubResource("ShaderMaterial_dnl03")
+radiance_size = 2
 
 [sub_resource type="Environment" id="Environment_la0qa"]
 background_mode = 2
+background_energy_multiplier = 0.67
 sky = SubResource("Sky_0btfk")
 ambient_light_source = 3
+ambient_light_color = Color(0.3645906, 0.52822495, 0.41100356, 1)
+ambient_light_sky_contribution = 0.0
 ambient_light_energy = 0.6
 reflected_light_source = 2
 tonemap_mode = 3
+tonemap_exposure = 1.2
+tonemap_white = 1.8
 ssao_enabled = true
-ssao_radius = 2.0
-ssao_intensity = 2.4
+ssao_radius = 2.82
+ssao_intensity = 2.89
 ssao_power = 1.6
 ssao_light_affect = 0.35
 glow_enabled = true
-glow_intensity = 0.9
+glow_normalized = true
+glow_intensity = 0.49
 glow_strength = 1.1
-glow_bloom = 0.06
+glow_bloom = 0.18
+glow_hdr_scale = 1.3
+glow_hdr_luminance_cap = 33.11
 fog_enabled = true
-fog_light_color = Color(1, 0.64, 0.45, 1)
+fog_light_color = Color(0.42606202, 0.83566576, 0.650402, 1)
 fog_density = 0.0028
 fog_aerial_perspective = 0.35
 fog_sky_affect = 0.3
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.014
-volumetric_fog_albedo = Color(1, 0.64, 0.45, 1)
+volumetric_fog_albedo = Color(0.31163234, 0.83754975, 0.774546, 1)
 volumetric_fog_anisotropy = 0.7
 volumetric_fog_length = 90.0
 adjustment_enabled = true
@@ -307,7 +319,7 @@ void fragment() { ALBEDO = vec3(0.06, 0.04, 0.05); }
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_cmp20"]
 render_priority = 0
 shader = SubResource("Shader_fbxfr")
-shader_parameter/width = null
+shader_parameter/width = 1.6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_36g5p"]
 next_pass = SubResource("ShaderMaterial_cmp20")
@@ -542,80 +554,6 @@ size = Vector3(7, 4, 4)
 [sub_resource type="BoxMesh" id="BoxMesh_vm5vj"]
 size = Vector3(7, 4, 4)
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_nshy8"]
-height = 10.0
-radius = 6.5
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ox0bs"]
-next_pass = SubResource("ShaderMaterial_cmp20")
-diffuse_mode = 3
-specular_mode = 1
-albedo_color = Color(0.78, 0.2, 0.14, 1)
-roughness = 0.85
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_6rp8x"]
-top_radius = 6.5
-bottom_radius = 6.5
-height = 10.0
-radial_segments = 24
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_dptsl"]
-height = 0.7
-radius = 7.2
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b6b0b"]
-next_pass = SubResource("ShaderMaterial_cmp20")
-diffuse_mode = 3
-specular_mode = 1
-albedo_color = Color(0.55, 0.12, 0.1, 1)
-roughness = 0.85
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_5i11f"]
-top_radius = 7.2
-bottom_radius = 7.2
-height = 0.7
-radial_segments = 24
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_echf5"]
-height = 3.0
-radius = 4.5
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_xdy3b"]
-top_radius = 4.5
-bottom_radius = 4.5
-height = 3.0
-radial_segments = 24
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_y7i30"]
-height = 0.5
-radius = 5.0
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_57rwu"]
-top_radius = 5.0
-bottom_radius = 5.0
-height = 0.5
-radial_segments = 24
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jnxuy"]
-next_pass = SubResource("ShaderMaterial_cmp20")
-diffuse_mode = 3
-specular_mode = 1
-albedo_color = Color(0.3, 0.2, 0.12, 1)
-roughness = 0.85
-
-[sub_resource type="BoxMesh" id="BoxMesh_vw7b0"]
-size = Vector3(3, 4, 0.3)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2js2e"]
-next_pass = SubResource("ShaderMaterial_cmp20")
-diffuse_mode = 3
-specular_mode = 1
-albedo_color = Color(0.95, 0.92, 0.8, 1)
-roughness = 0.85
-
-[sub_resource type="BoxMesh" id="BoxMesh_hmabm"]
-size = Vector3(2.4, 2.4, 0.3)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_wb18f"]
 size = Vector3(6.0681033, 3.6652555, 7.7727036)
 
@@ -765,27 +703,6 @@ roughness = 0.85
 
 [sub_resource type="BoxMesh" id="BoxMesh_7fho4"]
 size = Vector3(5.5070515, 0.35, 7.0261097)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_6cqde"]
-size = Vector3(7.4079657, 4.8039684, 5.7025247)
-
-[sub_resource type="BoxMesh" id="BoxMesh_txw7i"]
-size = Vector3(7.4079657, 4.8039684, 5.7025247)
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_xnytq"]
-top_radius = 3.1363885
-bottom_radius = 3.1363885
-height = 8.007966
-radial_segments = 14
-
-[sub_resource type="BoxMesh" id="BoxMesh_p03ws"]
-size = Vector3(1.2, 2, 0.1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_hx3xv"]
-size = Vector3(4.4447794, 0.7, 0.1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_ram5c"]
-size = Vector3(7.5079656, 0.35, 5.8025246)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bed6x"]
 size = Vector3(8.051554, 3.8516793, 6.716434)
@@ -1028,7 +945,8 @@ size = Vector3(3.145798, 0.7, 0.1)
 size = Vector3(5.3429966, 0.35, 6.775871)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cl0q8"]
-size = Vector3(5.1545544, 4.4993963, 7.0096807)
+margin = 0.0
+size = Vector3(0.905, 0.5408203, 0.72)
 
 [sub_resource type="BoxMesh" id="BoxMesh_p5eud"]
 size = Vector3(5.1545544, 4.4993963, 7.0096807)
@@ -6895,6 +6813,7 @@ particles_anim_v_frames = 1
 particles_anim_loop = false
 
 [sub_resource type="QuadMesh" id="QuadMesh_5tud8"]
+size = Vector2(0.215, 0.65)
 
 [sub_resource type="Gradient" id="Gradient_ruyti"]
 offsets = PackedFloat32Array(0, 0.5, 1)
@@ -6924,6 +6843,9 @@ particles_anim_h_frames = 1
 particles_anim_v_frames = 1
 particles_anim_loop = false
 
+[sub_resource type="QuadMesh" id="QuadMesh_dnl03"]
+size = Vector2(0.42, 0.43)
+
 [sub_resource type="Gradient" id="Gradient_fvajl"]
 offsets = PackedFloat32Array(0, 0.5, 1)
 colors = PackedColorArray(1, 0.95, 0.5, 0, 1, 0.92, 0.45, 1, 1, 0.9, 0.4, 0)
@@ -6937,22 +6859,17 @@ script = ExtResource("1_ces2b")
 environment = SubResource("Environment_la0qa")
 
 [node name="Sun" type="DirectionalLight3D" parent="Environment" unique_id=1845658789]
-transform = Transform3D(0.81915206, 0.16769752, -0.5485139, 0, 0.9563048, 0.2923717, 0.57357645, -0.23949687, 0.78335905, 0, 0, 0)
-light_color = Color(1, 0.64, 0.34, 1)
+transform = Transform3D(0.963523, -0.24568065, -0.106132954, 0.2579059, 0.7464899, 0.61338204, -0.07146895, -0.6183801, 0.78262275, 0, 0, 0)
+light_color = Color(0.88757706, 0.68986475, 0.6788702, 1)
 light_energy = 1.7
-light_volumetric_fog_energy = 1.6
+light_volumetric_fog_energy = 0.333
 light_angular_distance = 0.6
+light_specular = 0.208
 shadow_enabled = true
 shadow_normal_bias = 1.2
 shadow_blur = 1.4
 directional_shadow_blend_splits = true
 directional_shadow_max_distance = 70.0
-
-[node name="FillLight" type="DirectionalLight3D" parent="Environment" unique_id=1955243240]
-transform = Transform3D(-0.81915206, -0.24240388, 0.5198368, 0, 0.90630776, 0.42261827, -0.57357645, 0.34618863, -0.74240386, 0, 0, 0)
-light_color = Color(0.45, 0.55, 1, 1)
-light_energy = 0.35
-light_volumetric_fog_energy = 0.0
 
 [node name="Ground" type="Node3D" parent="." unique_id=1323792028]
 
@@ -7258,59 +7175,6 @@ mesh = SubResource("BoxMesh_vm5vj")
 
 [node name="Buildings" type="Node3D" parent="." unique_id=59205933]
 
-[node name="CouncilTower" type="Node3D" parent="Buildings" unique_id=524932236]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24)
-
-[node name="Pillar" type="StaticBody3D" parent="Buildings/CouncilTower" unique_id=1180642045]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Buildings/CouncilTower/Pillar" unique_id=1521812341]
-shape = SubResource("CylinderShape3D_nshy8")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Buildings/CouncilTower/Pillar" unique_id=1686726301]
-material_override = SubResource("StandardMaterial3D_ox0bs")
-mesh = SubResource("CylinderMesh_6rp8x")
-
-[node name="Pillar2" type="StaticBody3D" parent="Buildings/CouncilTower" unique_id=1868368757]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.35, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Buildings/CouncilTower/Pillar2" unique_id=1939633833]
-shape = SubResource("CylinderShape3D_dptsl")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Buildings/CouncilTower/Pillar2" unique_id=484956842]
-material_override = SubResource("StandardMaterial3D_b6b0b")
-mesh = SubResource("CylinderMesh_5i11f")
-
-[node name="Pillar3" type="StaticBody3D" parent="Buildings/CouncilTower" unique_id=1401145339]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.2, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Buildings/CouncilTower/Pillar3" unique_id=882996512]
-shape = SubResource("CylinderShape3D_echf5")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Buildings/CouncilTower/Pillar3" unique_id=16199113]
-material_override = SubResource("StandardMaterial3D_ox0bs")
-mesh = SubResource("CylinderMesh_xdy3b")
-
-[node name="Pillar4" type="StaticBody3D" parent="Buildings/CouncilTower" unique_id=1325619716]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.95, 0)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Buildings/CouncilTower/Pillar4" unique_id=991406207]
-shape = SubResource("CylinderShape3D_y7i30")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Buildings/CouncilTower/Pillar4" unique_id=970868499]
-material_override = SubResource("StandardMaterial3D_b6b0b")
-mesh = SubResource("CylinderMesh_57rwu")
-
-[node name="Detail" type="MeshInstance3D" parent="Buildings/CouncilTower" unique_id=1112422136]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6.6000004)
-material_override = SubResource("StandardMaterial3D_jnxuy")
-mesh = SubResource("BoxMesh_vw7b0")
-
-[node name="Detail2" type="MeshInstance3D" parent="Buildings/CouncilTower" unique_id=8645973]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.5, 6.5)
-material_override = SubResource("StandardMaterial3D_2js2e")
-mesh = SubResource("BoxMesh_hmabm")
-
 [node name="House" type="StaticBody3D" parent="Buildings" unique_id=1591142220]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.584152, 1.8326278, -28.681265)
 
@@ -7430,36 +7294,6 @@ mesh = SubResource("BoxMesh_ku23w")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3740396, 0)
 material_override = SubResource("StandardMaterial3D_pfrje")
 mesh = SubResource("BoxMesh_7fho4")
-
-[node name="House5" type="StaticBody3D" parent="Buildings" unique_id=1976325649]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.546621, 2.4019842, -10.821247)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Buildings/House5" unique_id=935296734]
-shape = SubResource("BoxShape3D_6cqde")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Buildings/House5" unique_id=1755226597]
-material_override = SubResource("StandardMaterial3D_lsw2p")
-mesh = SubResource("BoxMesh_txw7i")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="Buildings/House5" unique_id=1228822102]
-transform = Transform3D(-2.4041263e-08, -1, 0, 0.55, -4.371139e-08, 0, 0, 0, 1, 0, 0.97635305, 0)
-material_override = SubResource("StandardMaterial3D_f21no")
-mesh = SubResource("CylinderMesh_xnytq")
-
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="Buildings/House5" unique_id=723465697]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8470798, -1.4019842, 2.9012623)
-material_override = SubResource("StandardMaterial3D_7l8c1")
-mesh = SubResource("BoxMesh_p03ws")
-
-[node name="MeshInstance3D4" type="MeshInstance3D" parent="Buildings/House5" unique_id=726638774]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9607937, 2.9012623)
-material_override = SubResource("StandardMaterial3D_ghqai")
-mesh = SubResource("BoxMesh_hx3xv")
-
-[node name="MeshInstance3D5" type="MeshInstance3D" parent="Buildings/House5" unique_id=875050093]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2019842, 0)
-material_override = SubResource("StandardMaterial3D_olegf")
-mesh = SubResource("BoxMesh_ram5c")
 
 [node name="House6" type="StaticBody3D" parent="Buildings" unique_id=1554982027]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40.073494, 1.9258397, 15.87471)
@@ -12581,7 +12415,9 @@ mesh = SubResource("SphereMesh_hgweg")
 [node name="Grass" type="Node3D" parent="." unique_id=489434751]
 
 [node name="Grass" type="Node3D" parent="Grass" unique_id=298975085]
+transform = Transform3D(1, 0, 0, 0, 0.455, 0, 0, 0, 1, 0, -0.1, 0)
 script = ExtResource("2_q5nrs")
+half_size = 40.665
 clear_circles = Array[Vector3]([Vector3(0, 12.5, 0)])
 clear_rects = Array[Rect2]([Rect2(-60, 0.6, 120, 6.8), Rect2(-3.6, 0, 7.2, 60), Rect2(-3.2, -19, 6.4, 10)])
 
@@ -12607,6 +12443,7 @@ angular_velocity_max = 120.0
 angle_max = 360.0
 scale_amount_min = 0.09
 scale_amount_max = 0.17
+color = Color(1, 0.5991581, 0.83363473, 1)
 color_ramp = SubResource("Gradient_ruyti")
 
 [node name="AmbientParticles2" type="CPUParticles3D" parent="Decor" unique_id=926257821]
@@ -12616,7 +12453,7 @@ cast_shadow = 0
 amount = 110
 lifetime = 8.0
 preprocess = 8.0
-mesh = SubResource("QuadMesh_5tud8")
+mesh = SubResource("QuadMesh_dnl03")
 emission_shape = 3
 emission_box_extents = Vector3(45, 1.5, 45)
 direction = Vector3(0, 1, 0)
@@ -12632,3 +12469,19 @@ color_ramp = SubResource("Gradient_fvajl")
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=1799731792]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="meshy-model-2026-11-08T02-04-21-930Z" parent="." unique_id=318972995 instance=ExtResource("3_q5nrs")]
+transform = Transform3D(10.120564, 0, 2.759398, 0, 10.49, 0, -2.759398, 0, 10.120564, -16.65487, 3.71426, -11.269634)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="meshy-model-2026-11-08T02-04-21-930Z" unique_id=2120974114]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.054589838, 0)
+shape = SubResource("BoxShape3D_cl0q8")
+
+[node name="meshy-model-2026-11-08T02-40-15-880Z" parent="." unique_id=2002618951 instance=ExtResource("4_sq3sw")]
+transform = Transform3D(22.99, 0, 0, 0, 22.99, 0, 0, 0, 22.99, 0.12632465, 7.0114574, -23.52615)
+
+[node name="tree1" parent="." unique_id=1801211819 instance=ExtResource("5_dnl03")]
+transform = Transform3D(8.393453, 0, 6.2837205, 0, 10.484999, 0, -6.2837205, 0, 8.393453, -9.16922, -0.38658476, -14.851673)
+
+[node name="tree2" parent="." unique_id=4732744 instance=ExtResource("5_dnl03")]
+transform = Transform3D(7.709832, 0, -7.1058908, 0, 10.485, 0, 7.1058908, 0, 7.709832, 8.191298, -0.38658476, -14.390194)
