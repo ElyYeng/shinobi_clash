@@ -68,11 +68,9 @@ static var open_customize := false     # main menu opens the spin screen straigh
 static var character_appearance := {
 	"hair_style": "spiky",
 	"hair_color": "#20202A",
-	"top_color": "#D65A24",
-	"pants_color": "#343C52",
-	"shoes_color": "#20202A",
-	"headband_color": "#343C52",
-	"show_headband": true
+	"hair_hue": 0.0,
+	"shirt_style": "shirt_1",
+	"pants_style": "pants_1"
 }
 
 static func load_data() -> void:
