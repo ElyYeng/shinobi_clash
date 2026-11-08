@@ -367,6 +367,24 @@ func _party_size(leader_id: int) -> int:
 func register_raid_boss(boss: Kurama) -> void:
 	_raid_boss = boss
 
+## Called by the authoritative host after Kurama's defeat sequence.
+## The RPC changes every participant back to the open world without ending
+## the network session, preserving the party leader/member roster.
+func complete_kurama_raid() -> void:
+	if not is_active() or session_mode != "raid" or not multiplayer.is_server():
+		return
+	_return_raid_party_to_world.rpc()
+
+@rpc("authority", "call_local", "reliable")
+func _return_raid_party_to_world() -> void:
+	if not is_active():
+		return
+	_raid_boss = null
+	_raid_sync_timer = 0.0
+	session_mode = "coop"
+	GameData.mode = "world"
+	get_tree().change_scene_to_file("res://main.tscn")
+
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, boss_state: int, attack: String, attack_time: float, attack_length: float, target_pos: Vector3) -> void:
 	if multiplayer.is_server() or _raid_boss == null or not is_instance_valid(_raid_boss):
