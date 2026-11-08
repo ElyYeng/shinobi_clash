@@ -153,6 +153,7 @@ func _receive_roster(roster: Array) -> void:
 		_party_leader[id] = int(entry.get("party_leader", id))
 		if id != multiplayer.get_unique_id():
 			_spawn_remote_local(id, nm, lv)
+	party_updated.emit()
 
 @rpc("authority", "call_remote", "reliable")
 func _spawn_remote(peer_id: int, display_name: String, level: int) -> void:
@@ -207,7 +208,8 @@ func _join_accepted(mode: String) -> void:
 	var local_id := multiplayer.get_unique_id()
 	_known_players[local_id] = player_name
 	_known_levels[local_id] = GameData.level
-	_party_leader[local_id] = local_id
+	_party_leader[local_id] = 1 if mode == "raid" else local_id
+	party_updated.emit()
 	connection_succeeded.emit()
 
 @rpc("authority", "call_remote", "reliable")
