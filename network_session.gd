@@ -465,31 +465,31 @@ func _apply_shadow_clone_states(peer_id: int, ids: PackedInt32Array, indices: Pa
 		var clone: Clone = _remote_clones[key]
 		clone.set_network_transform(positions[i], yaws[i])
 
-func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float) -> void:
 	if not is_active():
 		return
 	if multiplayer.is_server():
-		_broadcast_projectile_visual.rpc(1, origin, velocity, speed, size, color, long_shape, aoe)
+		_broadcast_projectile_visual.rpc(1, origin, velocity, speed, size, color, long_shape, aoe, damage)
 	else:
-		_request_projectile_visual.rpc_id(1, origin, velocity, speed, size, color, long_shape, aoe)
+		_request_projectile_visual.rpc_id(1, origin, velocity, speed, size, color, long_shape, aoe, damage)
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_show_remote_projectile(sender, origin, velocity, speed, size, color, long_shape, aoe)
-	_broadcast_projectile_visual.rpc(sender, origin, velocity, speed, size, color, long_shape, aoe)
+	_show_remote_projectile(sender, origin, velocity, speed, size, color, long_shape, aoe, damage)
+	_broadcast_projectile_visual.rpc(sender, origin, velocity, speed, size, color, long_shape, aoe, damage)
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
-	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe)
+func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float) -> void:
+	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe, damage)
 
-func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float) -> void:
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
-		_avatars[peer_id].play_projectile(origin, velocity, speed, size, color, long_shape, aoe)
+		_avatars[peer_id].play_projectile(origin, velocity, speed, size, color, long_shape, aoe, damage)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_ability_visual(move_id: String, color: Color) -> void:
