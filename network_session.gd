@@ -363,6 +363,10 @@ func _server_leave_party(member_id: int) -> void:
 		promoted_leader = members[0]
 		for id in members:
 			_party_leader[id] = promoted_leader
+		# Keep already-spawned quest enemies bound to the promoted leader.
+		for node in get_tree().get_nodes_in_group("quest_enemies"):
+			if node is Enemy and (node as Enemy).network_quest_party_leader == old_leader:
+				(node as Enemy).network_quest_party_leader = promoted_leader
 		if _party_quest_states.has(old_leader):
 			_party_quest_states[promoted_leader] = _party_quest_states[old_leader]
 			_party_quest_states.erase(old_leader)
