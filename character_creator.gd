@@ -170,6 +170,7 @@ func _build_ui() -> void:
 	camera.fov = 38.0
 	_preview_world.add_child(camera)
 	camera.look_at(Vector3(0, 0.92, 0), Vector3.UP)
+	camera.make_current()
 
 	var actions := HBoxContainer.new()
 	actions.position = Vector2(22, panel_size.y - 68)
