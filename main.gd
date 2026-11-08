@@ -37,7 +37,7 @@ func _ready() -> void:
 	if mode == "world":
 		var terrain := map.get_node_or_null("WorldTerrain")
 		if terrain != null:
-			player.position.y = terrain.height_at(player.position.x, player.position.z) + 1.0
+			player.position.y = terrain.height_at(player.position.x, player.position.z) + 0.2
 	add_child(player)
 	if NetworkSession.is_active():
 		NetworkSession.bind_local_player(player, self)
