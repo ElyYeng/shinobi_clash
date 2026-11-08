@@ -136,7 +136,7 @@ func _build_ui() -> void:
 	preview_panel.add_child(preview_title)
 
 	var viewport_container := SubViewportContainer.new()
-	viewportport_container_fix(viewport_container)
+	viewport_container.stretch = true
 	viewport_container.position = Vector2(8, 36)
 	viewport_container.size = preview_panel.size - Vector2(16, 44)
 	preview_panel.add_child(viewport_container)
@@ -204,8 +204,6 @@ func _build_ui() -> void:
 	_style_action(save, Color(0.18, 0.43, 0.26))
 	actions.add_child(save)
 
-func viewportport_container_fix(container: SubViewportContainer) -> void:
-	container.stretch = true
 
 func _add_label(parent: Node, text: String, size: int, color: Color) -> Label:
 	var label := Label.new()
