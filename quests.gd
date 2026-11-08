@@ -84,12 +84,13 @@ func setup(p: Player, h: HUD, w: Node3D) -> void:
 	hud = h
 	world = w
 	_last_kills = p.kills
-	if NetworkSession.is_active():
-		NetworkSession.register_quest_manager(self)
 	if GameData.quest_active != "" and not DEFS.has(GameData.quest_active):
 		GameData.quest_active = ""   # save from a version with different quests
 		GameData.quest_state = ""
-	if GameData.quest_active != "":
+	var shared_loaded := false
+	if NetworkSession.is_active():
+		shared_loaded = NetworkSession.register_quest_manager(self)
+	if GameData.quest_active != "" and not shared_loaded:
 		_activate_objective()
 	_refresh_hud()
 
@@ -209,6 +210,10 @@ func apply_shared_quest_state(id: String, state: String, progress: int) -> void:
 	var changed_id := previous_id != id
 	var changed_state := GameData.quest_state != state
 	if not changed_id and not changed_state and GameData.quest_progress == progress:
+		# A manager can be recreated during a scene change while the shared
+		# quest state stays the same; rebuild its local objective nodes once.
+		if id != "" and state == "active" and (beacon == null or not is_instance_valid(beacon)):
+			_activate_objective()
 		return
 	if changed_id or state != "active":
 		_clear_objective()
