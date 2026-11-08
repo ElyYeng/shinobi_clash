@@ -34,6 +34,8 @@ func _ready() -> void:
 	player = Player.new()
 	player.position = map.spawn("PlayerSpawn", Vector3(0, 1, 30) if mode == "kurama" else Vector3(0, 1, 0))
 	add_child(player)
+	if NetworkSession.is_active():
+		NetworkSession.bind_local_player(player, self)
 	hud = HUD.new()
 	hud.mode = mode
 	add_child(hud)
@@ -57,7 +59,7 @@ func _process(delta: float) -> void:
 		while player.kills - awarded_kills >= 8:
 			awarded_kills += 8
 			_give_spins(1, "8 kills")
-	if mode == "fight":
+	if mode == "fight" and (not NetworkSession.is_active() or NetworkSession.session_mode != "pvp"):
 		_fight_spawner(delta)
 	elif mode == "world":
 		_world_interact()

@@ -20,10 +20,10 @@ func _ready() -> void:
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
+	vb.add_theme_constant_override("separation", 10)
 	center.add_child(vb)
 
-	var title := _label(vb, "SHINOBI CLASH", 84, Color(1.0, 0.62, 0.16))
+	var title := _label(vb, "SHINOBI CLASH", 72, Color(1.0, 0.62, 0.16))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_shadow_color", Color(0.9, 0.15, 0.05, 0.75))
 	title.add_theme_constant_override("shadow_offset_x", 0)
@@ -46,10 +46,17 @@ func _ready() -> void:
 	custom_btn = _button(vb, "", "", Color(0.85, 0.3, 0.9))
 	custom_btn.pressed.disconnect(_play.bind(""))
 	custom_btn.pressed.connect(_open_customize)
+	var multi_btn := Button.new()
+	multi_btn.text = "5   MULTIPLAYER  -  Host or join friends over Radmin VPN"
+	multi_btn.custom_minimum_size = Vector2(580, 52)
+	multi_btn.add_theme_font_size_override("font_size", 20)
+	_style_button(multi_btn, Color(0.25, 0.75, 0.95))
+	multi_btn.pressed.connect(_open_multiplayer)
+	vb.add_child(multi_btn)
 	_spacer(vb, 6)
 	var quit := Button.new()
 	quit.text = "Quit"
-	quit.custom_minimum_size = Vector2(0, 44)
+	quit.custom_minimum_size = Vector2(0, 40)
 	quit.add_theme_font_size_override("font_size", 20)
 	_style_button(quit, Color(0.7, 0.7, 0.78))
 	quit.pressed.connect(get_tree().quit)
@@ -77,6 +84,9 @@ func _refresh_info() -> void:
 	stat.text = "Shinobi LV %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
 		GameData.level, Bloodline.get_def(GameData.equipped)["name"], GameData.quests_done.size(), Quests.DEFS.size(),
 		"DEFEATED" if GameData.kurama_defeated else "undefeated"]
+
+func _open_multiplayer() -> void:
+	get_tree().change_scene_to_file("res://multiplayer_lobby.tscn")
 
 func _open_customize() -> void:
 	if spin != null and not spin.root.visible:
@@ -121,8 +131,8 @@ func _style_button(b: Button, accent: Color) -> void:
 func _button(parent: Node, text: String, mode: String, accent := Color(1.0, 0.5, 0.2)) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(580, 88)
-	b.add_theme_font_size_override("font_size", 24)
+	b.custom_minimum_size = Vector2(580, 68)
+	b.add_theme_font_size_override("font_size", 20)
 	_style_button(b, accent)
 	b.pressed.connect(_play.bind(mode))
 	parent.add_child(b)
@@ -145,3 +155,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_play("world")
 			KEY_4:
 				_open_customize()
+			KEY_5:
+				_open_multiplayer()
