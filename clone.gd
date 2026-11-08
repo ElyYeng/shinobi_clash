@@ -21,8 +21,15 @@ func _ready() -> void:
 		model = Fx.make_ninja(Color(0.95, 0.6, 0.25), Color(0.15, 0.3, 0.8))
 	add_child(model)
 	arm = model.get_node_or_null("Arm")
-	global_position.y = 0.0
+	_snap_to_ground()
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(1, 1, 1, 0.8), 2.2)
+
+func _snap_to_ground() -> void:
+	var terrain := get_tree().get_first_node_in_group("world_terrain")
+	if terrain != null and terrain.has_method("height_at"):
+		global_position.y = float(terrain.call("height_at", global_position.x, global_position.z))
+	else:
+		global_position.y = 0.0
 
 func _process(delta: float) -> void:
 	life -= delta
@@ -32,6 +39,7 @@ func _process(delta: float) -> void:
 		return
 	if cosmetic_only:
 		global_position = global_position.lerp(network_target_position, minf(1.0, delta * 18.0))
+		_snap_to_ground()
 		if model != null:
 			model.rotation.y = lerp_angle(model.rotation.y, network_target_yaw, minf(1.0, delta * 18.0))
 			Hero.play(model, "run" if global_position.distance_to(network_target_position) > 0.15 else "idle")
@@ -70,7 +78,7 @@ func _process(delta: float) -> void:
 			if to.length() > 4.0:
 				global_position += to.normalized() * 8.0 * delta
 				running = true
-	global_position.y = 0.0
+	_snap_to_ground()
 	if to.length() > 0.01:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-to.x, -to.z), 12.0 * delta)
 	if anim_lock <= 0.0:
