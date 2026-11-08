@@ -243,7 +243,7 @@ func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockbac
 @rpc("authority", "call_remote", "reliable")
 func _apply_player_damage(amount: float, knockback: Vector3) -> void:
 	if _local_player != null:
-	_local_player.take_damage(amount, knockback)
+		_local_player.take_damage(amount, knockback)
 
 func _on_connection_failed() -> void:
 	is_host = false
