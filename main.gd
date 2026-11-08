@@ -37,7 +37,10 @@ func _ready() -> void:
 	if mode == "world":
 		var terrain := map.get_node_or_null("WorldTerrain")
 		if terrain != null:
-			player.position.y = terrain.height_at(player.position.x, player.position.z) + 0.2
+			# Player origin is at the feet; leave a little clearance above the ground.
+			player.position.y = terrain.height_at(player.position.x, player.position.z) + 0.65
+			# The first collision mesh must exist before CharacterBody3D starts physics.
+			terrain.prepare_spawn(player.position)
 	add_child(player)
 	if NetworkSession.is_active():
 		NetworkSession.bind_local_player(player, self)
