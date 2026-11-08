@@ -40,6 +40,7 @@ enum State { INTRO, CHASE, ATTACK, HURT, DEAD }
 
 static var _scene: PackedScene = null
 static var _searched := false
+var _raid_target_peer_id := 0
 
 var state := State.INTRO
 var phase := 1
@@ -280,7 +281,7 @@ func _ai(delta: float) -> void:
 		velocity.z = 0.0
 		move_and_slide()
 		return
-	if stun > 0.0:            # Shadow Bind etc.
+	if stun > 0.0:
 		stun -= delta * ts
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -290,12 +291,17 @@ func _ai(delta: float) -> void:
 		return
 	if ap:
 		ap.speed_scale = ts * (1.15 if phase == 3 else 1.0)
-	var p := _player()
-	var has_target := p != null and not p.is_dead
+	var target_pos := _raid_target_position()
+	var has_target := target_pos != Vector3.INF
+	if not (NetworkSession.is_active() and NetworkSession.session_mode == "raid"):
+		var p := _player()
+		has_target = p != null and not p.is_dead
+		if has_target:
+			target_pos = p.global_position
 	var dir := _fwd()
 	var dist := 999.0
 	if has_target:
-		var to := p.global_position - global_position
+		var to := target_pos - global_position
 		to.y = 0.0
 		dist = to.length()
 		if dist > 0.01:
@@ -308,6 +314,7 @@ func _ai(delta: float) -> void:
 			velocity.x = 0.0
 			velocity.z = 0.0
 			if intro_t > 1.0 and has_target:
+				_select_next_raid_target()
 				_start_attack("roar", true)
 		State.CHASE:
 			_chase(delta, ts, has_target, dir, dist)
@@ -320,6 +327,35 @@ func _ai(delta: float) -> void:
 			if hurt_t <= 0.0:
 				state = State.CHASE
 	move_and_slide()
+
+func _raid_target_position() -> Vector3:
+	if not NetworkSession.is_active() or NetworkSession.session_mode != "raid" or not multiplayer.is_server():
+		return Vector3.INF
+	if _raid_target_peer_id == 1:
+		if NetworkSession._local_player != null and not NetworkSession._local_player.is_dead:
+			return NetworkSession._local_player.global_position
+	elif NetworkSession._avatars.has(_raid_target_peer_id):
+		var avatar = NetworkSession._avatars[_raid_target_peer_id]
+		if is_instance_valid(avatar):
+			return avatar.global_position
+	return Vector3.INF
+
+func _select_next_raid_target() -> void:
+	if not NetworkSession.is_active() or NetworkSession.session_mode != "raid" or not multiplayer.is_server():
+		return
+	var ids: Array[int] = []
+	if NetworkSession._local_player != null and not NetworkSession._local_player.is_dead:
+		ids.append(1)
+	for id in NetworkSession._avatars:
+		var avatar = NetworkSession._avatars[id]
+		if is_instance_valid(avatar):
+			ids.append(int(id))
+	ids.sort()
+	if ids.is_empty():
+		_raid_target_peer_id = 0
+		return
+	var current_index := ids.find(_raid_target_peer_id)
+	_raid_target_peer_id = ids[(current_index + 1) % ids.size()]
 
 func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float) -> void:
 	if not has_target:
@@ -342,6 +378,7 @@ func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float
 		_pick_attack(dist)
 
 func _pick_attack(dist: float) -> void:
+	_select_next_raid_target()
 	if pending_roar:
 		pending_roar = false
 		_start_attack("roar")
@@ -444,8 +481,11 @@ func _do_hit(move: String) -> void:
 		"bomb":
 			if bomb != null and is_instance_valid(bomb):
 				var aim := _fwd()
-				if p != null and not p.is_dead:
-					aim = (p.global_position + Vector3.UP - bomb.global_position).normalized()
+				var target_pos := _raid_target_position()
+				if target_pos == Vector3.INF and p != null and not p.is_dead:
+					target_pos = p.global_position
+				if target_pos != Vector3.INF:
+					aim = (target_pos + Vector3.UP - bomb.global_position).normalized()
 				bomb.release(aim, 38.0)
 				bomb = null
 
