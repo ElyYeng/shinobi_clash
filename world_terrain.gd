@@ -14,6 +14,7 @@ var _queued_lookup: Dictionary = {}
 var _last_center := Vector2i(2147483647, 2147483647)
 var _player: Node3D
 var _material := StandardMaterial3D.new()
+const TREE_SCENE: PackedScene = preload("res://maps/tree1.glb")
 
 func _ready() -> void:
 	_noise.seed = world_seed
@@ -146,4 +147,43 @@ func _create_chunk(coord: Vector2i) -> void:
 	body.add_child(collision)
 	chunk.add_child(body)
 
+	_scatter_trees(chunk, coord)
 	_chunks[coord] = chunk
+
+func _scatter_trees(chunk: Node3D, coord: Vector2i) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(world_seed) + coord.x * 73856093 + coord.y * 19349663
+	var npc_clearance := [Vector2(-30.0, -95.0), Vector2(0.0, -14.0), Vector2(115.0, -105.0), Vector2(9.0, -9.0), Vector2(75.0, 45.0), Vector2(-65.0, 35.0)]
+	for i in range(7):
+		var lx := rng.randf_range(5.0, chunk_size - 5.0)
+		var lz := rng.randf_range(5.0, chunk_size - 5.0)
+		var wx := float(coord.x) * chunk_size + lx
+		var wz := float(coord.y) * chunk_size + lz
+		# Keep the spawn clearing and quest-giver locations open and readable.
+		if Vector2(wx, wz).length() < 27.0:
+			continue
+		var near_npc := false
+		for npc_pos in npc_clearance:
+			if Vector2(wx - npc_pos.x, wz - npc_pos.y).length() < 9.0:
+				near_npc = true
+				break
+		if near_npc:
+			continue
+		var tree := StaticBody3D.new()
+		tree.name = "Tree_%02d" % i
+		tree.position = Vector3(lx, height_at(wx, wz), lz)
+		tree.rotation.y = rng.randf_range(0.0, TAU)
+		var scale_value := rng.randf_range(7.0, 10.0)
+		var model := TREE_SCENE.instantiate() as Node3D
+		if model == null:
+			continue
+		model.scale = Vector3.ONE * scale_value
+		tree.add_child(model)
+		var trunk := CollisionShape3D.new()
+		var trunk_shape := CylinderShape3D.new()
+		trunk_shape.radius = 0.55
+		trunk_shape.height = 3.2
+		trunk.shape = trunk_shape
+		trunk.position.y = 1.6
+		tree.add_child(trunk)
+		chunk.add_child(tree)
