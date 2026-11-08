@@ -28,6 +28,33 @@ func _ready() -> void:
 	_last_position = global_position
 
 
+var kurama_fx: Node3D
+
+func set_kurama_visual(enabled: bool) -> void:
+	if enabled:
+		if kurama_fx != null and is_instance_valid(kurama_fx):
+			kurama_fx.queue_free()
+		kurama_fx = Node3D.new()
+		add_child(kurama_fx)
+		model.scale = Vector3.ONE * 1.3
+		Vfx.aura_flames(kurama_fx, Vector3(0, 1.0, 0), 0.65, Color(1.0, 0.5, 0.1), 26, true)
+		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
+	else:
+		if kurama_fx != null and is_instance_valid(kurama_fx):
+			kurama_fx.queue_free()
+		kurama_fx = null
+		model.scale = Vector3.ONE
+
+func play_combat_animation(state: String, variant: int = 0) -> void:
+	if model == null:
+		return
+	var lock := 0.45
+	if state == "attack":
+		lock = 0.5
+	elif state == "throw":
+		lock = 0.25
+	Hero.play(model, state, true, variant, lock)
+
 ## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
 func play_ability(move_id: String, color: Color) -> void:
 	if model != null:
@@ -57,6 +84,8 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 	shot.aoe = aoe
 	shot.damage = 0.0
 	shot.life = 4.0
+	shot.network_attacker_id = peer_id
+	shot.network_damage_enabled = true
 	var root := get_parent()
 	if root != null:
 		root.add_child(shot)
