@@ -43,6 +43,23 @@ func play_ability(move_id: String, color: Color) -> void:
 				name_tag.text = display_name
 		)
 
+
+## Spawn a cosmetic projectile on this peer; damage is deliberately zero.
+func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float, shot_size: float, color: Color, long_shape: bool, aoe: float) -> void:
+	var shot := Projectile.new()
+	shot.global_position = origin
+	shot.velocity = shot_velocity
+	shot.speed = shot_speed
+	shot.size = shot_size
+	shot.color = color
+	shot.long_shape = long_shape
+	shot.aoe = aoe
+	shot.damage = 0.0
+	shot.life = 4.0
+	var root := get_parent()
+	if root != null:
+		root.add_child(shot)
+
 func set_network_transform(pos: Vector3, yaw: float) -> void:
 	target_position = pos
 	target_yaw = yaw
