@@ -28,6 +28,8 @@ var _preview_panel: Panel
 var _preview_status: Label
 var _options_box: VBoxContainer
 var _color_swatch: ColorRect
+var _target_dropdown: OptionButton   # which colour the card edits (hair / headband ...)
+var _color_target := "hair_color"
 var _hex_edit: LineEdit
 var _hsv_sliders := {}           # "h" / "s" / "v" -> HSlider
 var _preset_buttons: Array[Button] = []
@@ -206,7 +208,11 @@ func _add_label(parent: Node, value: String, size: int) -> void:
 
 ## Hair colour card: preview chip + hex field, preset swatches, H / S / V sliders.
 func _build_color_section(parent: Node) -> void:
-	_add_label(parent, "HAIR COLOR", 17)
+	_add_label(parent, "COLOR", 17)
+	_target_dropdown = OptionButton.new()
+	_target_dropdown.custom_minimum_size = Vector2(0, 34)
+	_target_dropdown.item_selected.connect(_on_target_chosen)
+	parent.add_child(_target_dropdown)
 	var card := PanelContainer.new()
 	var card_style := StyleBoxFlat.new()
 	card_style.bg_color = Color(0.74, 0.69, 0.54)
@@ -325,7 +331,35 @@ func _sync_controls() -> void:
 				break
 		dropdown.select(index)
 		_working[key] = str(dropdown.get_item_metadata(index))
-	_update_color_controls(Color.html(str(_working["hair_color"])))
+	_rebuild_color_targets()
+	_update_color_controls(_current_color())
+
+
+## Colour targets = "Hair" + any headband-style slot the SELECTED hairstyle contains.
+func _rebuild_color_targets() -> void:
+	_target_dropdown.clear()
+	_target_dropdown.add_item("Hair", 0)
+	_target_dropdown.set_item_metadata(0, "hair_color")
+	for slot in Hero.get_color_slots(_preview_model, str(_working.get("hair_style", ""))):
+		var index := _target_dropdown.item_count
+		_target_dropdown.add_item(str(Hero.COLOR_SLOTS[slot]["label"]), index)
+		_target_dropdown.set_item_metadata(index, Hero.COLOR_SLOTS[slot]["key"])
+	var selected := 0
+	for i in _target_dropdown.item_count:
+		if str(_target_dropdown.get_item_metadata(i)) == _color_target:
+			selected = i
+	_target_dropdown.select(selected)
+	_color_target = str(_target_dropdown.get_item_metadata(selected))
+	_target_dropdown.visible = _target_dropdown.item_count > 1
+
+
+func _current_color() -> Color:
+	return Color.html(str(_working.get(_color_target, _working["hair_color"])))
+
+
+func _on_target_chosen(index: int) -> void:
+	_color_target = str(_target_dropdown.get_item_metadata(index))
+	_update_color_controls(_current_color())
 
 
 func _update_color_controls(color: Color) -> void:
@@ -405,11 +439,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_part_chosen(index: int, category: String, dropdown: OptionButton) -> void:
 	_working[Hero.CATEGORIES[category]["key"]] = str(dropdown.get_item_metadata(index))
+	if category == "hair":
+		_rebuild_color_targets()
+		_update_color_controls(_current_color())
 	_refresh_preview()
 
 
 func _apply_hair_color(color: Color) -> void:
-	_working["hair_color"] = "#" + color.to_html(false)
+	_working[_color_target] = "#" + color.to_html(false)
 	_update_color_controls(color)
 	_refresh_preview()
 
@@ -429,7 +466,7 @@ func _on_hex_submitted(text: String) -> void:
 	if Color.html_is_valid(hex):
 		_apply_hair_color(Color.html(hex))
 	else:
-		_update_color_controls(Color.html(str(_working["hair_color"])))
+		_update_color_controls(_current_color())
 
 
 func _randomize() -> void:

@@ -28,6 +28,15 @@ const DEFAULT_APPEARANCE := {
 	"hair_color": "#E6B52E",
 	"shirt_style": "shirt1",
 	"pants_style": "pants1",
+	"headband_color": "#2B3A67",
+	"headbandmetal_color": "#C9CED6",
+}
+## Extra colour targets on hair meshes. A hairstyle gets one only if it has a surface whose
+## MATERIAL NAME matches ("headband", "headbandmetal"), so hairs without a headband show
+## nothing extra. To add another (e.g. a scarf) add an entry here + a default above.
+const COLOR_SLOTS := {
+	"headband": {"key": "headband_color", "label": "Headband", "material": "headband"},
+	"headbandmetal": {"key": "headbandmetal_color", "label": "Headband plate", "material": "headbandmetal"},
 }
 ## Older saves / older code used other ids. They are mapped onto the mesh names.
 const LEGACY_IDS := {
@@ -144,9 +153,13 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var number := id.substr(String(cat).length())
 		if id.begins_with(String(cat)) and number.is_valid_int() and number.length() <= 2:
 			safe[key] = id
-	var hex := str(raw.get("hair_color", "")).strip_edges()
-	if Color.html_is_valid(hex):
-		safe["hair_color"] = "#" + Color.html(hex).to_html(false)
+	var color_keys: Array = ["hair_color"]
+	for slot in COLOR_SLOTS:
+		color_keys.append(COLOR_SLOTS[slot]["key"])
+	for color_key in color_keys:
+		var hex := str(raw.get(color_key, "")).strip_edges()
+		if Color.html_is_valid(hex):
+			safe[color_key] = "#" + Color.html(hex).to_html(false)
 	return safe
 
 
@@ -199,7 +212,37 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 			want = str(entries[0]["id"])
 		for entry in entries:
 			(entry["node"] as MeshInstance3D).visible = entry["id"] == want
-	_apply_hair_color(model, Color.html(str(look["hair_color"])))
+	_apply_hair_color(model, Color.html(str(look["hair_color"])), look)
+
+
+## Which COLOR_SLOTS slot a material belongs to ("" = plain hair). Ignores Blender's ".001" suffixes.
+static func _slot_of(material: Material) -> String:
+	if material == null:
+		return ""
+	var name := material.resource_name.to_lower().replace(".", "_")
+	var cut := name.rfind("_")
+	if cut > 0 and name.substr(cut + 1).is_valid_int():
+		name = name.substr(0, cut)
+	for slot in COLOR_SLOTS:
+		if name == COLOR_SLOTS[slot]["material"]:
+			return str(slot)
+	return ""
+
+
+## Slots (headband ...) that the given hairstyle id actually contains. Used by the creator.
+static func get_color_slots(model: Node3D, hair_id: String) -> Array:
+	var found: Array = []
+	if model == null or not model.has_meta("hero_parts"):
+		return found
+	for entry in (model.get_meta("hero_parts") as Dictionary).get("hair", []):
+		if entry["id"] != hair_id:
+			continue
+		var hair := entry["node"] as MeshInstance3D
+		for surface in hair.mesh.get_surface_count():
+			var slot := _slot_of(hair.mesh.surface_get_material(surface))
+			if slot != "" and not found.has(slot):
+				found.append(slot)
+	return found
 
 
 static func _names_of(mi: MeshInstance3D) -> Array:
@@ -259,14 +302,18 @@ static func _find_extras(inst: Node) -> Dictionary:
 	return extras
 
 
-static func _apply_hair_color(model: Node3D, color: Color) -> void:
+static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> void:
 	var parts: Dictionary = model.get_meta("hero_parts")
 	var extras: Dictionary = model.get_meta("hero_extra", {})
 	# Every hairstyle (also the hidden ones, so switching style keeps the colour).
 	for entry in parts.get("hair", []):
 		var hair := entry["node"] as MeshInstance3D
 		for surface in hair.mesh.get_surface_count():
-			_tint_surface(hair, surface, color)
+			var slot := _slot_of(hair.mesh.surface_get_material(surface))
+			if slot == "":
+				_tint_surface(hair, surface, color)
+			else:
+				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])))
 	# The scalp mesh uses the same material as the hair.
 	if extras.has("backhead"):
 		var back := extras["backhead"] as MeshInstance3D
