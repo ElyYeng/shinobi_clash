@@ -37,7 +37,7 @@ static var _printed := false
 static var credit := ""
 
 ## Returns a Node3D wrapper (forward = -Z, feet at y=0) or null if no model found.
-static func create() -> Node3D:
+static func create(appearance: Dictionary = {}) -> Node3D:
 	if not _searched:
 		_searched = true
 		var path := _scan(ASSET_DIR, 2)
@@ -60,7 +60,121 @@ static func create() -> Node3D:
 	_fit(fixer, inst)
 	Fx.toonify_model(inst)
 	_setup_anims(wrapper, inst)
+	var chosen := appearance if not appearance.is_empty() else GameData.character_appearance
+	_apply_wearables(inst, chosen)
 	return wrapper
+
+
+## Experimental modular wearables for the existing rig. These are separate
+## meshes attached to the character's actual bones, so they follow its animations.
+## Replace the primitive meshes with authored skinned clothing assets as the art
+## pipeline grows; the saved appearance format stays the same.
+static func _apply_wearables(inst: Node3D, appearance: Dictionary) -> void:
+	var skeletons := inst.find_children("*", "Skeleton3D", true, false)
+	if skeletons.is_empty():
+		push_warning("[Hero] Character rig has no Skeleton3D; skipping wearable overlays.")
+		return
+	var skeleton := skeletons[0] as Skeleton3D
+	var unit_scale := 1.0 / maxf(absf(inst.scale.x), 0.00001)
+	var hair := Color.from_string(str(appearance.get("hair_color", "#20202A")), Color(0.12, 0.12, 0.16))
+	var top := Color.from_string(str(appearance.get("top_color", "#D65A24")), Color(0.84, 0.35, 0.14))
+	var pants := Color.from_string(str(appearance.get("pants_color", "#343C52")), Color(0.2, 0.23, 0.32))
+	var shoes := Color.from_string(str(appearance.get("shoes_color", "#20202A")), Color(0.12, 0.12, 0.16))
+	var band := Color.from_string(str(appearance.get("headband_color", "#343C52")), Color(0.2, 0.23, 0.32))
+	var style := str(appearance.get("hair_style", "spiky"))
+
+	# Hair cap and hairstyle variations are parented to the head bone.
+	var hair_attachment := _make_bone_attachment(skeleton, ["Head_06", "Head"], "Wear_Hair")
+	if hair_attachment != null:
+		var cap := SphereMesh.new()
+		cap.radius = 0.18 * unit_scale
+		cap.height = 0.27 * unit_scale
+		_add_wear_mesh(hair_attachment, "HairCap", cap, hair, Vector3(0, 0.11, 0) * unit_scale, Vector3.ONE)
+		if style == "spiky":
+			var spike_positions := [
+				Vector3(-0.10, 0.22, 0.00), Vector3(-0.04, 0.26, 0.03),
+				Vector3(0.04, 0.25, 0.02), Vector3(0.11, 0.20, 0.00),
+				Vector3(0.00, 0.24, -0.08)
+			]
+			for i in spike_positions.size():
+				var spike := CylinderMesh.new()
+				spike.top_radius = 0.0
+				spike.bottom_radius = 0.075 * unit_scale
+				spike.height = 0.25 * unit_scale
+				_add_wear_mesh(hair_attachment, "HairSpike%d" % i, spike, hair, spike_positions[i] * unit_scale, Vector3(0.0, 0.0, deg_to_rad(float(i - 2) * 12.0)))
+		elif style == "ponytail":
+			var tail := CapsuleMesh.new()
+			tail.radius = 0.075 * unit_scale
+			tail.height = 0.42 * unit_scale
+			_add_wear_mesh(hair_attachment, "Ponytail", tail, hair, Vector3(0, -0.13, -0.17) * unit_scale, Vector3(0.35, 0, 0))
+
+	# A thin forehead band can be toggled and recolored independently.
+	if bool(appearance.get("show_headband", true)):
+		var head_attachment := _make_bone_attachment(skeleton, ["Head_06", "Head"], "Wear_Headband")
+		if head_attachment != null:
+			var band_mesh := BoxMesh.new()
+			band_mesh.size = Vector3(0.38, 0.055, 0.08) * unit_scale
+			_add_wear_mesh(head_attachment, "Headband", band_mesh, band, Vector3(0, 0.035, 0.165) * unit_scale, Vector3.ZERO)
+
+	# Chest piece and sleeves follow the torso and arm bones.
+	var torso_attachment := _make_bone_attachment(skeleton, ["Spine2_04", "Spine1_03", "Spine"], "Wear_Top")
+	if torso_attachment != null:
+		var torso := CapsuleMesh.new()
+		torso.radius = 0.255 * unit_scale
+		torso.height = 0.72 * unit_scale
+		_add_wear_mesh(torso_attachment, "JacketTorso", torso, top, Vector3(0, -0.15, 0) * unit_scale, Vector3.ZERO)
+	for arm_token in ["LeftArm_09", "RightArm_033"]:
+		var arm_attachment := _make_bone_attachment(skeleton, [arm_token, "LeftArm" if arm_token.begins_with("Left") else "RightArm"], "Wear_Sleeve_" + arm_token)
+		if arm_attachment != null:
+			var sleeve := CapsuleMesh.new()
+			sleeve.radius = 0.095 * unit_scale
+			sleeve.height = 0.42 * unit_scale
+			_add_wear_mesh(arm_attachment, "Sleeve", sleeve, top.darkened(0.12), Vector3(0, -0.18, 0) * unit_scale, Vector3.ZERO)
+
+	# Pants and sandals follow each leg/foot independently.
+	for leg_token in ["LeftUpLeg_056", "RightUpLeg_00"]:
+		var leg_attachment := _make_bone_attachment(skeleton, [leg_token, "UpLeg"], "Wear_Pants_" + leg_token)
+		if leg_attachment != null:
+			var leg := CapsuleMesh.new()
+			leg.radius = 0.14 * unit_scale
+			leg.height = 0.58 * unit_scale
+			_add_wear_mesh(leg_attachment, "TrouserLeg", leg, pants, Vector3(0, -0.23, 0) * unit_scale, Vector3.ZERO)
+	for foot_token in ["LeftFoot_058", "RightFoot_062"]:
+		var foot_attachment := _make_bone_attachment(skeleton, [foot_token, "Foot"], "Wear_Shoe_" + foot_token)
+		if foot_attachment != null:
+			var shoe := BoxMesh.new()
+			shoe.size = Vector3(0.23, 0.13, 0.36) * unit_scale
+			_add_wear_mesh(foot_attachment, "NinjaSandal", shoe, shoes, Vector3(0, -0.045, 0.075) * unit_scale, Vector3.ZERO)
+
+static func _make_bone_attachment(skeleton: Skeleton3D, tokens: Array, node_name: String) -> BoneAttachment3D:
+	var bone_index := -1
+	for token in tokens:
+		for i in skeleton.get_bone_count():
+			if skeleton.get_bone_name(i).to_lower().contains(str(token).to_lower()):
+				bone_index = i
+				break
+		if bone_index >= 0:
+			break
+	if bone_index < 0:
+		return null
+	var attachment := BoneAttachment3D.new()
+	attachment.name = node_name
+	skeleton.add_child(attachment)
+	attachment.bone_name = skeleton.get_bone_name(bone_index)
+	return attachment
+
+static func _add_wear_mesh(parent: Node3D, node_name: String, mesh: Mesh, color: Color, offset: Vector3, rotation: Vector3) -> void:
+	var part := MeshInstance3D.new()
+	part.name = node_name
+	part.mesh = mesh
+	part.position = offset
+	part.rotation = rotation
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.82
+	material.metallic = 0.0
+	part.material_override = material
+	parent.add_child(part)
 
 static func _scan(dir_path: String, depth: int) -> String:
 	var d := DirAccess.open(dir_path)
