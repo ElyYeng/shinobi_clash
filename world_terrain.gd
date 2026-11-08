@@ -46,6 +46,8 @@ func _ready() -> void:
 	_material.vertex_color_use_as_albedo = true
 	_material.albedo_color = Color.WHITE
 	_material.roughness = 1.0
+	_material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	_material.albedo_texture = _make_grass_texture()
 	_material.uv1_scale = Vector3.ONE
 	# Prevent the generated terrain from disappearing because of triangle winding.
