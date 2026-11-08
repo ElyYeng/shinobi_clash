@@ -90,7 +90,6 @@ func _build_ui() -> void:
 	_hair_style = OptionButton.new()
 	_hair_style.add_item("Spiky")
 	_hair_style.add_item("Short")
-	_hair_style.add_item("Ponytail")
 	_hair_style.custom_minimum_size = Vector2(0, 36)
 	_hair_style.item_selected.connect(_on_hair_style_changed)
 	content.add_child(_hair_style)
@@ -273,7 +272,7 @@ func _set_selected_color(hex: String) -> void:
 	_refresh_preview()
 
 func _on_hair_style_changed(index: int) -> void:
-	_working["hair_style"] = ["spiky", "short", "ponytail"][clampi(index, 0, 2)]
+	_working["hair_style"] = ["spiky", "short"][clampi(index, 0, 1)]
 	_refresh_preview()
 
 func _refresh_preview() -> void:
