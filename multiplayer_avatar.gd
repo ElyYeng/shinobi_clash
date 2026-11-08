@@ -5,6 +5,7 @@ var peer_id := 0
 var display_name := "Shinobi"
 var player_level := 1
 var is_party_member := false
+var character_appearance: Dictionary = {}
 var target_position := Vector3.ZERO
 var target_yaw := 0.0
 var model: Node3D
@@ -14,7 +15,7 @@ var power_fx: Node3D
 
 func _ready() -> void:
 	add_to_group("network_players")
-	model = Hero.create()
+	model = Hero.create(character_appearance)
 	if model == null:
 		var hue := fposmod(float(peer_id) * 0.173, 1.0)
 		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
