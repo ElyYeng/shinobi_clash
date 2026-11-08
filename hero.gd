@@ -69,10 +69,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	Fx.toonify_model(inst)
 	_setup_anims(wrapper, inst)
 	var chosen := appearance if not appearance.is_empty() else GameData.character_appearance
-	if _using_custom_model:
-		_apply_custom_model_parts(inst, chosen)
-	else:
-		_apply_wearables(inst, chosen)
+	_apply_custom_model_parts(inst, chosen)
 	return wrapper
 
 
