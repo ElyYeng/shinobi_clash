@@ -110,7 +110,7 @@ func _make_grass_texture() -> Texture2D:
 			for offset in range(-width, width + 1):
 				var sx := posmod(px + offset, SIZE)
 				var old := img.get_pixel(sx, py)
-				img.set_pixel(sx, py, old.lerp(blade_color, 0.68 if offset == 0 else 0.34))
+				img.set_pixel(sx, py, old.lerp(blade_color, grass_detail_strength * (0.68 if offset == 0 else 0.34)))
 
 	var tex := ImageTexture.create_from_image(img)
 	tex.set_meta("grass_detail_strength", grass_detail_strength)
