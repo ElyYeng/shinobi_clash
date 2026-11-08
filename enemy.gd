@@ -31,6 +31,9 @@ static var time_scale := 1.0  # <1 slows all enemies (Sharingan)
 
 func _ready() -> void:
 	_setup()
+	if network_quest_mirror:
+		_quest_net_position = global_position
+		_quest_net_yaw = model.rotation.y if model != null else 0.0
 
 func _setup() -> void:
 	add_to_group("enemies")
