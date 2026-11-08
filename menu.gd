@@ -92,7 +92,7 @@ func _open_character_creator() -> void:
 	var script = load("res://character_creator.gd")
 	if script == null:
 		return
-	var creator := script.new()
+	var creator = script.new()
 	add_child(creator)
 
 func _open_multiplayer() -> void:
