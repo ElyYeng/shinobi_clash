@@ -46,19 +46,27 @@ func _ready() -> void:
 	add_child(marker)
 	set_marker("")
 
-## Loads a real character model: scaled to model_height, feet on the ground, first animation looped as idle.
+## Loads a real character model (also used by NpcSpawn for its editor preview).
 func _load_model() -> Node3D:
-	if model_path == "" or not ResourceLoader.exists(model_path):
-		if model_path != "":
-			push_warning("[Npc] %s: model not found: %s" % [display_name, model_path])
+	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name)
+	if m != null:
+		label_y = float(m.get_meta("label_y", label_y))
+	return m
+
+## Builds a character model: scaled to `height`, feet on the ground, first animation looped as idle.
+## Returns null if there is no model. The name-tag height is stored in meta "label_y".
+static func build_model(path: String, height: float, yaw_deg: float, use_outline: bool, who := "") -> Node3D:
+	if path == "" or not ResourceLoader.exists(path):
+		if path != "":
+			push_warning("[Npc] %s: model not found: %s" % [who, path])
 		return null
-	var scene := load(model_path) as PackedScene
+	var scene := load(path) as PackedScene
 	if scene == null:
 		return null
 	var inst := scene.instantiate() as Node3D
 	var wrapper := Node3D.new()
 	var fixer := Node3D.new()
-	fixer.rotation.y = deg_to_rad(model_yaw_deg)
+	fixer.rotation.y = deg_to_rad(yaw_deg)
 	wrapper.add_child(fixer)
 	fixer.add_child(inst)
 	var box := AABB()
@@ -72,11 +80,11 @@ func _load_model() -> Node3D:
 		box = b if first else box.merge(b)
 		first = false
 	if not first and box.size.y > 0.001:
-		var sc := model_height / box.size.y
+		var sc := height / box.size.y
 		inst.scale *= sc
 		inst.position = Vector3(-(box.position.x + box.size.x / 2.0) * sc, -box.position.y * sc, -(box.position.z + box.size.z / 2.0) * sc)
-		label_y = model_height + 0.55
-	Fx.toonify_model(inst, outline)
+		wrapper.set_meta("label_y", height + 0.55)
+	Fx.toonify_model(inst, use_outline)
 	var aps := inst.find_children("*", "AnimationPlayer", true, false)
 	if not aps.is_empty():
 		var ap := aps[0] as AnimationPlayer

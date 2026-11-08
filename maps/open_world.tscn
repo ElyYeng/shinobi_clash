@@ -2,6 +2,13 @@
 
 [ext_resource type="Script" path="res://game_map.gd" id="1_j2yjm"]
 [ext_resource type="Script" path="res://grass_patch.gd" id="2_siocp"]
+[ext_resource type="Script" path="res://npc_spawn.gd" id="3_qxdqu"]
+[ext_resource type="Resource" path="res://data/npcs/courier.tres" id="4_v5ir3"]
+[ext_resource type="Resource" path="res://data/npcs/elder.tres" id="5_uq7pf"]
+[ext_resource type="Resource" path="res://data/npcs/hermit.tres" id="6_jhtt0"]
+[ext_resource type="Resource" path="res://data/npcs/kakashi.tres" id="7_50uj7"]
+[ext_resource type="Resource" path="res://data/npcs/scout.tres" id="8_y2voo"]
+[ext_resource type="Resource" path="res://data/npcs/trainer.tres" id="9_gl62a"]
 
 [sub_resource type="Shader" id="Shader_4awwk"]
 code = "shader_type sky;
@@ -323,3 +330,35 @@ color_ramp = SubResource("Gradient_qy3pc")
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=1728953674]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="NPCs" type="Node3D" parent="." unique_id=1807373219]
+
+[node name="CourierRin" type="Marker3D" parent="NPCs" unique_id=2068068341]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, -95)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("4_v5ir3")
+
+[node name="ElderHayate" type="Marker3D" parent="NPCs" unique_id=202290230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("5_uq7pf")
+
+[node name="HermitSora" type="Marker3D" parent="NPCs" unique_id=1928266956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 115, 0, -105)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("6_jhtt0")
+
+[node name="Kakashi" type="Marker3D" parent="NPCs" unique_id=1954952304]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -9)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("7_50uj7")
+
+[node name="ScoutMika" type="Marker3D" parent="NPCs" unique_id=1883476424]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0, 45)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("8_y2voo")
+
+[node name="InstructorDaichi" type="Marker3D" parent="NPCs" unique_id=1905053713]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -65, 0, 35)
+script = ExtResource("3_qxdqu")
+npc = ExtResource("9_gl62a")

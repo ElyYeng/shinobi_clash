@@ -34,6 +34,14 @@ static func build(for_mode: String) -> GameMap:
 		var boss := Marker3D.new()
 		boss.position = Vector3(0, 0, -34)
 		b._add(boss, "BossSpawn")
+	if b.mode == "world":   # one draggable NpcSpawn per NPC file
+		b._into("NPCs")
+		Quests.ensure_loaded()
+		for id in Quests.NPCS:
+			var sp := NpcSpawn.new()
+			sp.npc = load(Quests.NPC_DIR.path_join(id + ".tres")) as NpcDef
+			sp.position = Quests.NPCS[id]["pos"]
+			b._add(sp, str(Quests.NPCS[id]["name"]).replace(" ", ""))
 	var map := GameMap.new()
 	map.name = {"fight": "Village", "world": "OpenWorld", "kurama": "KuramaArena"}[b.mode]
 	map.play_half = 46.0 if b.mode == "fight" else (96.0 if b.mode == "kurama" else 246.0)

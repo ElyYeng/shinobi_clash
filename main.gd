@@ -135,6 +135,13 @@ func _start_world() -> void:
 	quests = Quests.new()
 	add_child(quests)
 	Quests.ensure_loaded()
+	# NPC spawns placed in the map (maps/open_world.tscn > NPCs) override the pos in the NPC files
+	var placed := {}
+	for s in map.find_children("*", "NpcSpawn", true, false):
+		var sp := s as NpcSpawn
+		if sp.npc_id() != "" and Quests.NPCS.has(sp.npc_id()):
+			placed[sp.npc_id()] = sp
+			Quests.NPCS[sp.npc_id()]["pos"] = sp.global_position   # quest arrows / Travel use it too
 	for id in Quests.NPCS:
 		var d: Dictionary = Quests.NPCS[id]
 		var n := Npc.new()
@@ -148,6 +155,8 @@ func _start_world() -> void:
 		n.model_height = d["model_height"]
 		n.model_yaw_deg = d["model_yaw"]
 		n.outline = d["outline"]
+		if placed.has(id):
+			n.rotation.y = (placed[id] as Node3D).global_rotation.y
 		add_child(n)
 		npcs[id] = n
 	quests.setup(player, hud, self)

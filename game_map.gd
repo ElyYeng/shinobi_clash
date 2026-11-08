@@ -8,12 +8,13 @@ extends Node3D
 ##   anything else         solid StaticBody3D nodes in it block enemy spawns and grass (Buildings, Trees, Props...)
 ##   Markers/PlayerSpawn   where the player starts (Marker3D; move it in the editor)
 ##   Markers/BossSpawn     where Kurama appears (Kurama arena)
+##   NPCs/<NpcSpawn>       where each NPC stands (open world); drag them, or add more from prefabs/npc_spawn.tscn
 ## GrassPatch nodes (in Grass) scatter grass and flowers; their settings are in the Inspector.
 
 @export var play_half := 46.0                 ## half-size of the playable square (keeps teleports in bounds)
 @export var spawn_area := Rect2(-45, -36, 90, 81)   ## x / z area where fight-mode enemies may spawn
 
-const NO_FOOTPRINT := ["Ground", "Bounds", "Markers", "Grass", "Environment"]
+const NO_FOOTPRINT := ["Ground", "Bounds", "Markers", "Grass", "Environment", "NPCs"]
 
 var footprints: Array[Rect2] = []
 

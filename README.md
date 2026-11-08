@@ -144,3 +144,10 @@ cylinder collision shape, in any group except Ground / Bounds / Markers / Grass 
 
 The old generator lives in `map_builder.gd`. If a map file is missing, the game generates it instead; to recreate a missing
 file, open `tools/bake_maps.gd` and use File > Run (existing maps are skipped, so your edits are safe).
+
+### NPCs on the map
+In `maps/open_world.tscn` every NPC is an **NpcSpawn** under the **NPCs** group, with a live preview of the character.
+- **Move / turn an NPC:** select it and drag it in the 3D view (rotating it turns the NPC). Quest arrows and Travel follow.
+- **Add an NPC:** drag `prefabs/npc_spawn.tscn` from the FileSystem dock into the 3D view (or Ctrl+D an existing spawn),
+  then drag an NPC file from `data/npcs` onto its **Npc** field in the Inspector. New NPC = a new file in `data/npcs` first.
+- NPCs that have no spawn on the map stand at the `pos` written in their NPC file.
