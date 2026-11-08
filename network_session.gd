@@ -307,6 +307,37 @@ func _apply_party_state(ids: Array, leaders: Array) -> void:
 			_avatars[peer_id].set_party_member(_same_party(multiplayer.get_unique_id(), int(peer_id)))
 	party_updated.emit()
 
+func leave_party() -> void:
+	if not is_active():
+		return
+	var my_id := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_server_leave_party(my_id)
+	else:
+		_request_leave_party.rpc_id(1)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_leave_party() -> void:
+	if multiplayer.is_server():
+		_server_leave_party(multiplayer.get_remote_sender_id())
+
+func _server_leave_party(member_id: int) -> void:
+	if not _party_leader.has(member_id):
+		return
+	var old_leader := int(_party_leader[member_id])
+	var members: Array[int] = []
+	for id in _party_leader:
+		if int(_party_leader[id]) == old_leader and int(id) != member_id:
+			members.append(int(id))
+	if member_id == old_leader and not members.is_empty():
+		members.sort()
+		var promoted := members[0]
+		for id in members:
+			_party_leader[id] = promoted
+	_party_leader[member_id] = member_id
+	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
+	_apply_party_state(_party_leader.keys(), _party_leader.values())
+
 func _party_size(leader_id: int) -> int:
 	var count := 0
 	for peer_id in _party_leader:
