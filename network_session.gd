@@ -17,6 +17,8 @@ var _game_root: Node
 var _sync_timer := 0.0
 var _known_players: Dictionary = {}
 var _avatars: Dictionary = {}
+var _remote_clones: Dictionary = {}
+var _next_clone_summon_id := 1
 
 func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -83,6 +85,7 @@ func _process(delta: float) -> void:
 	if _sync_timer < SYNC_INTERVAL:
 		return
 	_sync_timer = 0.0
+	_sync_shadow_clone_transforms()
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
 	if multiplayer.is_server():
@@ -257,38 +260,99 @@ func broadcast_ability(move_id: String, color: Color) -> void:
 
 
 
-## Replicate shadow-clone spawns. Remote copies are visual-only to avoid duplicate AI damage.
-func broadcast_shadow_clones(spawn_positions: Array[Vector3], lifetime: float) -> void:
+## Replicate clone spawns and their live transforms. Remote clones are visual-only.
+func broadcast_shadow_clones(clones: Array[Clone], lifetime: float) -> void:
 	if not is_active():
 		return
+	var summon_id := _next_clone_summon_id
+	_next_clone_summon_id += 1
+	var spawn_positions: Array[Vector3] = []
+	for i in clones.size():
+		var clone := clones[i]
+		clone.network_peer_id = multiplayer.get_unique_id()
+		clone.network_summon_id = summon_id
+		clone.network_clone_index = i
+		spawn_positions.append(clone.global_position)
 	if multiplayer.is_server():
-		_broadcast_shadow_clones.rpc(1, spawn_positions, lifetime)
+		_broadcast_shadow_clones.rpc(1, summon_id, spawn_positions, lifetime)
 	else:
-		_request_shadow_clones.rpc_id(1, spawn_positions, lifetime)
+		_request_shadow_clones.rpc_id(1, summon_id, spawn_positions, lifetime)
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_shadow_clones(spawn_positions: Array[Vector3], lifetime: float) -> void:
+func _request_shadow_clones(summon_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_spawn_remote_clones(sender, spawn_positions, lifetime)
-	_broadcast_shadow_clones.rpc(sender, spawn_positions, lifetime)
+	_spawn_remote_clones(sender, summon_id, spawn_positions, lifetime)
+	_broadcast_shadow_clones.rpc(sender, summon_id, spawn_positions, lifetime)
 
 @rpc("authority", "call_remote", "reliable")
-func _broadcast_shadow_clones(peer_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
-	_spawn_remote_clones(peer_id, spawn_positions, lifetime)
+func _broadcast_shadow_clones(peer_id: int, summon_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
+	_spawn_remote_clones(peer_id, summon_id, spawn_positions, lifetime)
 
-func _spawn_remote_clones(peer_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
+func _spawn_remote_clones(peer_id: int, summon_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
 	if peer_id == multiplayer.get_unique_id() or _game_root == null or not is_instance_valid(_game_root):
 		return
-	for spawn_pos in spawn_positions:
+	for i in spawn_positions.size():
+		var key := "%d:%d:%d" % [peer_id, summon_id, i]
+		if _remote_clones.has(key) and is_instance_valid(_remote_clones[key]):
+			continue
 		var clone := Clone.new()
 		clone.life = clampf(lifetime, 0.5, 20.0)
 		clone.cosmetic_only = true
+		clone.network_peer_id = peer_id
+		clone.network_summon_id = summon_id
+		clone.network_clone_index = i
 		_game_root.add_child(clone)
-		clone.global_position = spawn_pos
+		clone.global_position = spawn_positions[i]
+		_remote_clones[key] = clone
+
+func _sync_shadow_clone_transforms() -> void:
+	var ids := PackedInt32Array()
+	var indices := PackedInt32Array()
+	var positions := PackedVector3Array()
+	var yaws := PackedFloat32Array()
+	var owner_id := multiplayer.get_unique_id()
+	for node in get_tree().get_nodes_in_group("shadow_clones"):
+		var clone := node as Clone
+		if clone == null or clone.cosmetic_only or clone.network_peer_id != owner_id:
+			continue
+		ids.append(clone.network_summon_id)
+		indices.append(clone.network_clone_index)
+		positions.append(clone.global_position)
+		yaws.append(clone.model.rotation.y if clone.model != null else 0.0)
+	if ids.is_empty():
+		return
+	if multiplayer.is_server():
+		_broadcast_shadow_clone_states.rpc(owner_id, ids, indices, positions, yaws)
+	else:
+		_submit_shadow_clone_states.rpc_id(1, ids, indices, positions, yaws)
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _submit_shadow_clone_states(ids: PackedInt32Array, indices: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender) or ids.size() != indices.size() or ids.size() != positions.size() or ids.size() != yaws.size():
+		return
+	_apply_shadow_clone_states(sender, ids, indices, positions, yaws)
+	_broadcast_shadow_clone_states.rpc(sender, ids, indices, positions, yaws)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _broadcast_shadow_clone_states(peer_id: int, ids: PackedInt32Array, indices: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array) -> void:
+	_apply_shadow_clone_states(peer_id, ids, indices, positions, yaws)
+
+func _apply_shadow_clone_states(peer_id: int, ids: PackedInt32Array, indices: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		return
+	for i in ids.size():
+		var key := "%d:%d:%d" % [peer_id, ids[i], indices[i]]
+		if not _remote_clones.has(key) or not is_instance_valid(_remote_clones[key]):
+			continue
+		var clone: Clone = _remote_clones[key]
+		clone.set_network_transform(positions[i], yaws[i])
 
 func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
 	if not is_active():
