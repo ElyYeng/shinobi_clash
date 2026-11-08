@@ -111,12 +111,33 @@ func _ai(delta: float) -> void:
 	atk_cd -= delta * ts
 	stun -= delta * ts
 	var p := get_tree().get_first_node_in_group("player") as Player
-	if p == null or p.is_dead:
+	var target_peer_id := 1
+	var target_pos := p.global_position if p != null and not p.is_dead else Vector3.INF
+	if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
+		# The host AI can choose any living party avatar, not only the host.
+		target_pos = Vector3.INF
+		var nearest := INF
+		if p != null and not p.is_dead and NetworkSession._same_party(1, network_quest_party_leader):
+			nearest = global_position.distance_to(p.global_position)
+			target_pos = p.global_position
+			target_peer_id = 1
+		for id in NetworkSession._avatars:
+			var avatar = NetworkSession._avatars[id]
+			if not is_instance_valid(avatar) or not NetworkSession._same_party(int(id), network_quest_party_leader):
+				continue
+			var candidate_pos: Vector3 = avatar.global_position
+			var candidate_dist := global_position.distance_to(candidate_pos)
+			if candidate_dist < nearest:
+				nearest = candidate_dist
+				target_pos = candidate_pos
+				target_peer_id = int(id)
+	var has_target := target_pos != Vector3.INF
+	if not has_target:
 		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 		move_and_slide()
 		return
-	var to := p.global_position - global_position
+	var to := target_pos - global_position
 	to.y = 0.0
 	var dist := to.length()
 	var dir := to.normalized()
@@ -136,7 +157,7 @@ func _ai(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 		if windup <= 0.0:
-			_strike(p, dir, dist)
+			_strike(p, dir, dist, target_peer_id, target_pos)
 	else:
 		if dist > 2.0 * k:
 			velocity.x = dir.x * speed * ts
@@ -153,12 +174,17 @@ func _ai(delta: float) -> void:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-dir.x, -dir.z), 10.0 * delta)
 	move_and_slide()
 
-func _strike(p: Player, dir: Vector3, _dist: float) -> void:
+func _strike(p: Player, dir: Vector3, _dist: float, target_peer_id: int, target_pos: Vector3) -> void:
 	Fx.swing(arm)
-	var to := p.global_position - global_position
+	var to := target_pos - global_position
 	to.y = 0.0
 	if to.length() < 2.8 * k:
-		p.take_damage(damage * (1.5 if is_boss else 1.0), dir * 7.0)
+		var hit_damage := damage * (1.5 if is_boss else 1.0)
+		var knockback := dir * 7.0
+		if target_peer_id == 1 and p != null:
+			p.take_damage(hit_damage, knockback)
+		elif network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
+			NetworkSession.damage_quest_party_member(target_peer_id, network_quest_party_leader, hit_damage, knockback)
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	if network_quest_defeated or health <= 0.0:
