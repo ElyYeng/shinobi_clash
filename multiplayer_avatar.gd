@@ -3,6 +3,8 @@ extends Node3D
 
 var peer_id := 0
 var display_name := "Shinobi"
+var player_level := 1
+var is_party_member := false
 var target_position := Vector3.ZERO
 var target_yaw := 0.0
 var model: Node3D
@@ -18,7 +20,7 @@ func _ready() -> void:
 		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
 	add_child(model)
 	name_tag = Label3D.new()
-	name_tag.text = display_name
+	name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
 	name_tag.position = Vector3(0, 2.4, 0)
 	name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	name_tag.font_size = 32
@@ -66,11 +68,11 @@ func play_ability(move_id: String, color: Color) -> void:
 		Vfx.burst(root, global_position + Vector3.UP, color, 30, 8.0, 0.28, 0.55, 0.0)
 		Vfx.shockwave(root, global_position + Vector3.UP * 0.2, color, 3.5, 0.4)
 	if name_tag != null:
-		name_tag.text = "%s  •  %s" % [display_name, move_id]
+		name_tag.text = "%s  •  Lv. %d\n%s" % [display_name, player_level, move_id]
 		var timer := get_tree().create_timer(1.2)
 		timer.timeout.connect(func() -> void:
 			if is_instance_valid(name_tag):
-				name_tag.text = display_name
+				name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
 		)
 
 
@@ -103,6 +105,11 @@ func set_powered_visual(enabled: bool, color: Color) -> void:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()
 		power_fx = null
+
+func set_party_member(value: bool) -> void:
+	is_party_member = value
+	if name_tag != null:
+		name_tag.modulate = Color(0.55, 1.0, 0.65) if value else Color.WHITE
 
 func set_network_transform(pos: Vector3, yaw: float) -> void:
 	target_position = pos
