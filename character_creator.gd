@@ -99,6 +99,27 @@ func _build_ui() -> void:
 		"ponytail": _hair_style.select(2)
 		_: _hair_style.select(0)
 
+	_add_label(content, "SHIRT STYLE", 15, Color(0.13, 0.09, 0.06))
+	var shirt_style := OptionButton.new()
+	shirt_style.add_item("Shirt 1")
+	shirt_style.add_item("Shirt 2")
+	shirt_style.select(1 if str(_working.get("shirt_style", "shirt_a")) == "shirt_b" else 0)
+	shirt_style.item_selected.connect(func(index: int) -> void:
+		_working["shirt_style"] = "shirt_b" if index == 1 else "shirt_a"
+		_refresh_preview()
+	)
+	content.add_child(shirt_style)
+	_add_label(content, "PANTS STYLE", 15, Color(0.13, 0.09, 0.06))
+	var pants_style := OptionButton.new()
+	pants_style.add_item("Pants 1")
+	pants_style.add_item("Pants 2")
+	pants_style.select(1 if str(_working.get("pants_style", "pants_a")) == "pants_b" else 0)
+	pants_style.item_selected.connect(func(index: int) -> void:
+		_working["pants_style"] = "pants_b" if index == 1 else "pants_a"
+		_refresh_preview()
+	)
+	content.add_child(pants_style)
+
 	_headband_toggle = CheckButton.new()
 	_headband_toggle.text = "Wear forehead protector"
 	_headband_toggle.button_pressed = bool(_working.get("show_headband", true))
@@ -109,7 +130,7 @@ func _build_ui() -> void:
 	content.add_child(_headband_toggle)
 
 	var note := Label.new()
-	note.text = "TEST RIG: Naruto Rigged (HatchXR), CC-BY-4.0.\nHair and clothing are first-pass overlays attached to the rig bones."
+	note.text = "CUSTOM MIXAMO RIG.\nChoose between the included hair, shirt and pants meshes."
 	note.custom_minimum_size = Vector2(0, 44)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_font_size_override("font_size", 12)
@@ -271,7 +292,7 @@ func _randomize() -> void:
 	rng.randomize()
 	for key in SLOT_LABELS:
 		_working[key] = PALETTE[rng.randi_range(0, PALETTE.size() - 1)]
-	_working["hair_style"] = ["spiky", "short", "ponytail"][rng.randi_range(0, 2)]
+	_working["hair_style"] = ["spiky", "short"][rng.randi_range(0, 1)]\n\t_working["shirt_style"] = "shirt_b" if rng.randf() > 0.5 else "shirt_a"\n\t_working["pants_style"] = "pants_b" if rng.randf() > 0.5 else "pants_a"
 	_working["show_headband"] = rng.randf() > 0.2
 	_headband_toggle.button_pressed = bool(_working["show_headband"])
 	_hair_style.select(["spiky", "short", "ponytail"].find(_working["hair_style"]))
@@ -280,9 +301,9 @@ func _randomize() -> void:
 
 func _reset() -> void:
 	_working = {
-		"hair_style":"spiky", "hair_color":"#20202A", "top_color":"#D65A24",
+		"hair_style":"spiky", "shirt_style":"shirt_a", "pants_style":"pants_a",\n\t\t"hair_color":"#20202A", "top_color":"#D65A24",
 		"pants_color":"#343C52", "shoes_color":"#20202A",
-		"headband_color":"#343C52", "show_headband":true
+		"headband_color":"#343C52", "show_headband":true,\n\t\t"shirt_style":"shirt_a", "pants_style":"pants_a"
 	}
 	_selected_color = "hair_color"
 	_slot_title.text = "HAIR COLOR"
