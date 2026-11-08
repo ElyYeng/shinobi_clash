@@ -462,12 +462,17 @@ func _fx_fireball(col: Color) -> void:
 func _fx_clones(_col: Color) -> void:
 	Sfx.play(self, "poof")
 	var side := Basis(Vector3.UP, yaw) * Vector3.RIGHT
+	var spawn_positions: Array[Vector3] = []
 	for i in clone_count:
 		var offs := (i - (clone_count - 1) / 2.0) * 2.5
+		var spawn_pos := global_position + side * offs
+		spawn_positions.append(spawn_pos)
 		var c := Clone.new()
 		c.life = clone_time
-		c.position = global_position + side * offs
+		c.position = spawn_pos
 		get_parent().add_child(c)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_shadow_clones(spawn_positions, clone_time)
 	_play_once("jutsu", 0.6)
 
 ## ---- Bloodline abilities (keys 1 2 3) and power-up mode (C) ----
