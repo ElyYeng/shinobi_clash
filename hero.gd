@@ -4,7 +4,7 @@ extends RefCounted
 ## auto-fits it to the player's size and maps its animations by name.
 
 const ASSET_DIR := "res://assets/character"
-const CUSTOM_MODEL_FILE := "character.glb"
+const CUSTOM_MODEL_FILE := "character_main.glb"
 const LEGACY_ASSET_DIR := "res://assets/naruto"
 const TARGET_HEIGHT := 1.75
 const CREDIT := "Character model: supplied custom Mixamo rig"
@@ -90,8 +90,7 @@ static func _resolve_custom_model_path() -> String:
 	for path in candidates:
 		if ResourceLoader.exists(path):
 			return path
-	# As a final convenience, accept another GLB placed in the character-only folder.
-	return _scan(ASSET_DIR, 1)
+	return ""
 
 
 static func _find_mesh(root: Node, mesh_id: String, old_node_name: String = "") -> MeshInstance3D:
