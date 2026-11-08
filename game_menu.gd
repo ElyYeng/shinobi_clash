@@ -267,6 +267,10 @@ var tree_kind := "bloodline"            # which ability page is shown: "bloodlin
 var tree_page := 0                      # which pair of columns
 var tree_sel_col := ""                  # selected column (slot index or element); "" = pick the equipped one
 var tree_sel_idx := 0                   # selected ability in that column (bloodline: 3 = power-up)
+var party_hud: Panel
+var party_hud_list: VBoxContainer
+var party_hud_signature := ""
+var party_hud_timer := 0.0
 
 func bind(player: Player, main_node: Node) -> void:
 	p = player
@@ -325,8 +329,90 @@ func _ready() -> void:
 	scroll.add_child(bl_page)
 	bl_page.visible = false
 	root.visible = false
+	_build_party_hud()
+	if not NetworkSession.party_updated.is_connected(_refresh_party_hud):
+		NetworkSession.party_updated.connect(_refresh_party_hud)
 	if NetworkSession.is_active() and not NetworkSession.party_invite_received.is_connected(_show_party_invite):
 		NetworkSession.party_invite_received.connect(_show_party_invite)
+
+func _build_party_hud() -> void:
+	party_hud = Panel.new()
+	party_hud.name = "PartyHUD"
+	party_hud.position = Vector2(16, 16)
+	party_hud.size = Vector2(226, 150)
+	party_hud.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	party_hud.position = Vector2(16, -166)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(PARCH.r, PARCH.g, PARCH.b, 0.94)
+	sb.set_border_width_all(3)
+	sb.border_color = GOLD_DK
+	party_hud.add_theme_stylebox_override("panel", sb)
+	party_hud.mouse_filter = Control.MOUSE_FILTER_PASS
+	add_child(party_hud)
+	var title := Label.new()
+	title.text = "YOUR PARTY"
+	title.position = Vector2(10, 5)
+	title.size = Vector2(202, 24)
+	_style_label(title, 19, INK, 3)
+	party_hud.add_child(title)
+	var line := ColorRect.new()
+	line.position = Vector2(8, 30)
+	line.size = Vector2(206, 3)
+	line.color = INK
+	party_hud.add_child(line)
+	var sc := ScrollContainer.new()
+	sc.position = Vector2(8, 36)
+	sc.size = Vector2(206, 105)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	party_hud.add_child(sc)
+	party_hud_list = VBoxContainer.new()
+	party_hud_list.add_theme_constant_override("separation", 2)
+	sc.add_child(party_hud_list)
+	party_hud.visible = false
+	_refresh_party_hud()
+
+func _refresh_party_hud() -> void:
+	if party_hud_list == null:
+		return
+	var signature := ""
+	if NetworkSession.is_active():
+		var my_id := multiplayer.get_unique_id()
+		var leader := int(NetworkSession._party_leader.get(my_id, my_id))
+		for id in NetworkSession._known_players:
+			if NetworkSession._same_party(my_id, int(id)):
+				signature += "%d:%s:%d;" % [int(id), str(NetworkSession._known_players[id]), int(NetworkSession._known_levels.get(id, 1))]
+	party_hud_signature = signature
+	for child in party_hud_list.get_children():
+		child.queue_free()
+	if not NetworkSession.is_active() or signature.is_empty():
+		party_hud.visible = false
+		return
+	party_hud.visible = true
+	var ids: Array[int] = []
+	var my_id := multiplayer.get_unique_id()
+	for id in NetworkSession._known_players:
+		if NetworkSession._same_party(my_id, int(id)):
+			ids.append(int(id))
+	ids.sort()
+	for id in ids:
+		var nm := str(NetworkSession._known_players[id])
+		var lv := int(NetworkSession._known_levels.get(id, 1))
+		var row := Label.new()
+		row.text = "%s  •  Lv. %d%s" % [nm, lv, " (YOU)" if id == my_id else ""]
+		row.custom_minimum_size = Vector2(194, 22)
+		row.add_theme_font_override("font", font())
+		row.add_theme_font_size_override("font_size", 15)
+		row.add_theme_color_override("font_color", GREEN_DK)
+		row.add_theme_color_override("font_outline_color", Color.WHITE)
+		row.add_theme_constant_override("outline_size", 2)
+		party_hud_list.add_child(row)
+
+func _process(delta: float) -> void:
+	party_hud_timer += delta
+	if party_hud_timer >= 0.5:
+		party_hud_timer = 0.0
+		if party_hud != null and is_instance_valid(party_hud):
+			_refresh_party_hud()
 
 func _rect(r: Rect2, col: Color) -> ColorRect:
 	var c := ColorRect.new()
@@ -733,7 +819,11 @@ func _page_party() -> Array:
 	var out: Array = []
 	var my_id := multiplayer.get_unique_id()
 	var leader := int(NetworkSession._party_leader.get(my_id, my_id))
-	out.append(_item("Your Party", "%d / 4 members" % NetworkSession._party_size(leader), Color(0.8, 0.65, 0.2), "P", "Invite connected players below. Party members cannot damage each other."))
+	var party_count := NetworkSession._party_size(leader)
+	var party_actions: Array = []
+	if party_count > 1:
+		party_actions.append(_act("LEAVE PARTY", NetworkSession.leave_party, "", false))
+	out.append(_item("Your Party", "%d / 4 members" % party_count, Color(0.8, 0.65, 0.2), "P", "Invite connected players below. Party members cannot damage each other.", {"actions": party_actions}))
 	for id in NetworkSession._known_players:
 		var peer_id := int(id)
 		if peer_id == my_id:
