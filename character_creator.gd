@@ -4,6 +4,7 @@ extends CanvasLayer
 var _working: Dictionary = {}
 var _preview_world: Node3D
 var _preview_model: Node3D
+var _preview_status: Label
 var _hair_color_slider: HSlider
 var _hair_color_swatch: ColorRect
 var _hair_style: OptionButton
@@ -154,6 +155,18 @@ func _build_ui() -> void:
 	camera.look_at(Vector3(0, 0.92, 0), Vector3.UP)
 	camera.make_current()
 
+	_preview_status = Label.new()
+	_preview_status.position = Vector2(20, preview_panel.size.y * 0.5 - 52)
+	_preview_status.size = Vector2(preview_panel.size.x - 40, 104)
+	_preview_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_preview_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_preview_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_preview_status.add_theme_font_size_override("font_size", 17)
+	_preview_status.add_theme_color_override("font_color", Color(1.0, 0.9, 0.72))
+	_preview_status.add_theme_color_override("font_outline_color", Color.BLACK)
+	_preview_status.add_theme_constant_override("outline_size", 6)
+	preview_panel.add_child(_preview_status)
+
 	var actions := HBoxContainer.new()
 	actions.position = Vector2(24, panel_size.y - 62)
 	actions.size = Vector2(panel_size.x - 48, 42)
@@ -217,7 +230,12 @@ func _refresh_preview() -> void:
 		_preview_model.queue_free()
 	_preview_model = Hero.create(_working)
 	if _preview_model == null:
+		if _preview_status != null:
+			_preview_status.text = "CUSTOM CHARACTER MODEL NOT FOUND\\n\\nInstall your GLB here:\\nres://assets/character/character_main.glb"
+			_preview_status.visible = true
 		return
+	if _preview_status != null:
+		_preview_status.visible = false
 	_preview_world.add_child(_preview_model)
 	Hero.play(_preview_model, "idle", true)
 
