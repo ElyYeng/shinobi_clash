@@ -5,6 +5,7 @@ extends Node3D
 var life := 8.0
 var hit_cd := 0.0
 var anim_lock := 0.0
+var cosmetic_only := false
 var model: Node3D
 var arm: Node3D
 
@@ -42,7 +43,8 @@ func _process(delta: float) -> void:
 			running = true
 		elif hit_cd <= 0.0:
 			hit_cd = 0.7
-			best.take_damage(8.0, to.normalized() * 5.0)
+			if not cosmetic_only:
+				best.take_damage(8.0, to.normalized() * 5.0)
 			var l := Hero.play(model, "attack", true)
 			if l > 0.0:
 				anim_lock = minf(l, 0.5)
