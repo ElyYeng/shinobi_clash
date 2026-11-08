@@ -113,6 +113,8 @@ func _start_kurama() -> void:
 	kurama = Kurama.new()
 	kurama.position = map.spawn("BossSpawn", Vector3(0, 0, -34))
 	add_child(kurama)
+	if NetworkSession.is_active() and NetworkSession.session_mode == "raid":
+		NetworkSession.register_raid_boss(kurama)
 	hud.boss = kurama
 	kurama.defeated.connect(_on_kurama_defeated)
 	kurama.enraged.connect(_on_kurama_enraged)

@@ -43,12 +43,16 @@ func _build_ui() -> void:
 	pvp.text = "HOST PVP ARENA  (up to 8 players)"
 	pvp.pressed.connect(_host.bind("pvp"))
 	col.add_child(pvp)
+	var raid := Button.new()
+	raid.text = "HOST KURAMA RAID  (LEVEL 10+, PARTY CO-OP)"
+	raid.pressed.connect(_host.bind("raid"))
+	col.add_child(raid)
 	var join := Button.new()
 	join.text = "JOIN HOST"
 	join.pressed.connect(_join)
 	col.add_child(join)
 	status_label = Label.new()
-	status_label.text = "Same Radmin VPN network required. Host uses UDP port 7000."
+	status_label.text = "Kurama Raid requires Level 10 for every player. Same Radmin VPN network; UDP 7000."
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(status_label)
 	var back := Button.new()
@@ -64,6 +68,9 @@ func _field(parent: Node, hint: String, value: String) -> LineEdit:
 	return field
 
 func _host(mode: String) -> void:
+	if mode == "raid" and GameData.level < 10:
+		status_label.text = "Kurama Raid requires Level 10."
+		return
 	var port := _read_port()
 	if port < 1:
 		return
@@ -71,7 +78,7 @@ func _host(mode: String) -> void:
 	if error != OK:
 		status_label.text = "Could not host: %s" % error_string(error)
 		return
-	GameData.mode = "world" if mode == "coop" else "fight"
+	GameData.mode = "world" if mode == "coop" else ("kurama" if mode == "raid" else "fight")
 	get_tree().change_scene_to_file("res://main.tscn")
 
 func _join() -> void:

@@ -24,6 +24,8 @@ var _pending_party_invites: Dictionary = {}
 var _avatars: Dictionary = {}
 var _remote_clones: Dictionary = {}
 var _next_clone_summon_id := 1
+var _raid_boss: Kurama
+var _raid_sync_timer := 0.0
 
 func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -62,6 +64,8 @@ func join(address: String, port: int = DEFAULT_PORT, display_name: String = "Shi
 	return OK
 
 func disconnect_session() -> void:
+	_raid_boss = null
+	_raid_sync_timer = 0.0
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
@@ -96,6 +100,11 @@ func _process(delta: float) -> void:
 		return
 	_sync_timer = 0.0
 	_sync_shadow_clone_transforms()
+	if multiplayer.is_server() and session_mode == "raid" and _raid_boss != null and is_instance_valid(_raid_boss):
+		_raid_sync_timer += delta
+		if _raid_sync_timer >= 0.1:
+			_raid_sync_timer = 0.0
+			_raid_snapshot.rpc(_raid_boss.global_position, _raid_boss.model.rotation.y, _raid_boss.health, _raid_boss.phase, int(_raid_boss.state), _raid_boss.atk, _raid_boss.atk_t, _raid_boss.atk_len, _raid_boss.slam_pos)
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
 	if multiplayer.is_server():
@@ -111,6 +120,9 @@ func _request_join(requested_name: String, requested_level: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
+	if session_mode == "raid" and requested_level < 10:
+		_join_rejected.rpc_id(sender, "Kurama Raid requires Level 10.")
+		return
 	if multiplayer.get_peers().size() > MAX_CLIENTS:
 		_join_rejected.rpc_id(sender, "This room is full (8 players maximum).")
 		return
@@ -119,13 +131,15 @@ func _request_join(requested_name: String, requested_level: int) -> void:
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1))})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id))})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
 	_known_levels[sender] = clampi(requested_level, 1, 9999)
-	_party_leader[sender] = sender
+	_party_leader[sender] = 1 if session_mode == "raid" else sender
 	_spawn_remote_local(sender, safe_name, int(_known_levels[sender]))
 	_spawn_remote.rpc(sender, safe_name, int(_known_levels[sender]))
+	if session_mode == "raid":
+		_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_join_accepted.rpc_id(sender, session_mode)
 
 @rpc("authority", "call_remote", "reliable")
@@ -136,6 +150,7 @@ func _receive_roster(roster: Array) -> void:
 		var lv := int(entry.get("level", 1))
 		_known_players[id] = nm
 		_known_levels[id] = lv
+		_party_leader[id] = int(entry.get("party_leader", id))
 		if id != multiplayer.get_unique_id():
 			_spawn_remote_local(id, nm, lv)
 
@@ -188,7 +203,7 @@ func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _join_accepted(mode: String) -> void:
 	session_mode = mode
-	GameData.mode = "world" if mode == "coop" else "fight"
+	GameData.mode = "world" if mode == "coop" else ("kurama" if mode == "raid" else "fight")
 	var local_id := multiplayer.get_unique_id()
 	_known_players[local_id] = player_name
 	_known_levels[local_id] = GameData.level
@@ -344,6 +359,87 @@ func _party_size(leader_id: int) -> int:
 		if int(_party_leader[peer_id]) == leader_id:
 			count += 1
 	return count
+
+
+## Shared Kurama raid. Host simulates the boss; clients receive authoritative snapshots.
+func register_raid_boss(boss: Kurama) -> void:
+	_raid_boss = boss
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, boss_state: int, attack: String, attack_time: float, attack_length: float, target_pos: Vector3) -> void:
+	if multiplayer.is_server() or _raid_boss == null or not is_instance_valid(_raid_boss):
+		return
+	_raid_boss.apply_raid_snapshot(pos, yaw, hp, boss_phase, boss_state, attack, attack_time, attack_length, target_pos)
+
+func request_raid_boss_damage(amount: float) -> void:
+	if not is_active() or session_mode != "raid":
+		return
+	if multiplayer.is_server():
+		if _raid_boss != null and is_instance_valid(_raid_boss):
+			_raid_boss.take_damage(amount)
+	else:
+		_request_raid_boss_damage.rpc_id(1, amount)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_raid_boss_damage(amount: float) -> void:
+	if not multiplayer.is_server() or session_mode != "raid" or _raid_boss == null or not is_instance_valid(_raid_boss):
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _avatars.has(sender) or not is_instance_valid(_avatars[sender]):
+		return
+	if _avatars[sender].global_position.distance_to(_raid_boss.global_position) > 42.0:
+		return
+	_raid_boss.take_damage(clampf(amount, 1.0, 120.0))
+
+func raid_apply_boss_attack(move: String, boss_pos: Vector3, forward: Vector3, slam_target: Vector3, boss_phase: int) -> void:
+	if not is_active() or session_mode != "raid" or not multiplayer.is_server():
+		return
+	var damage := 0.0
+	var radius := 0.0
+	match move:
+		"claw":
+			damage = Kurama.CLAW_DMG * (1.0 + 0.15 * float(boss_phase - 1))
+			radius = Kurama.CLAW_RANGE
+		"slam":
+			damage = Kurama.SLAM_DMG * (1.0 + 0.15 * float(boss_phase - 1))
+			radius = Kurama.SLAM_RADIUS
+		"roar":
+			damage = Kurama.ROAR_DMG * (1.0 + 0.15 * float(boss_phase - 1))
+			radius = Kurama.ROAR_RADIUS
+		_:
+			return
+	var targets: Array[int] = [1]
+	for id in _avatars:
+		targets.append(int(id))
+	for target_id in targets:
+		var target_pos := Vector3.ZERO
+		var target_player: Player
+		if target_id == 1:
+			target_player = _local_player
+			if target_player == null or target_player.is_dead:
+				continue
+			target_pos = target_player.global_position
+		else:
+			if not _avatars.has(target_id) or not is_instance_valid(_avatars[target_id]):
+				continue
+			target_pos = _avatars[target_id].global_position
+		var delta := target_pos - (slam_target if move == "slam" else boss_pos)
+		delta.y = 0.0
+		var hit := delta.length() < radius
+		if move == "claw":
+			var to_boss := target_pos - boss_pos
+			to_boss.y = 0.0
+			hit = to_boss.length() < radius and forward.dot(to_boss.normalized()) > 0.25
+		if move == "roar":
+			hit = hit and target_pos.y < 0.7
+		elif move == "slam":
+			hit = hit and target_pos.y < 3.0
+		if hit:
+			var knock := delta.normalized() * (16.0 if move == "claw" else (18.0 if move == "roar" else 14.0))
+			if target_id == 1:
+				target_player.take_damage(damage, knock)
+			else:
+				_apply_player_damage.rpc_id(target_id, damage, knock)
 
 func request_projectile_player_hit(attacker_id: int, damage: float, impact_position: Vector3) -> void:
 	if not is_active():

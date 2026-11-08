@@ -60,6 +60,39 @@ var slam_pos := Vector3.ZERO
 var bomb: BossShot = null
 
 # ------------------------------------------------------------------ setup
+
+func _physics_process(delta: float) -> void:
+	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and not multiplayer.is_server():
+		# Client replica is driven by the host snapshots; never run a second boss AI.
+		if state == State.DEAD:
+			return
+		return
+	_ai(delta)
+	_animate_body(delta)
+
+func apply_raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, boss_state: int, attack: String, attack_time: float, attack_length: float, target_pos: Vector3) -> void:
+	global_position = global_position.lerp(pos, 0.65)
+	model.rotation.y = lerp_angle(model.rotation.y, yaw, 0.65)
+	health = hp
+	phase = boss_phase
+	_update_label()
+	var incoming_state := State.values()[clampi(boss_state, 0, State.size() - 1)]
+	if incoming_state == State.DEAD and state != State.DEAD:
+		_die()
+		return
+	if attack != "" and (atk != attack or state != incoming_state):
+		atk = attack
+		state = incoming_state
+		atk_len = maxf(attack_length, 0.1)
+		_start_anim(attack)
+		slam_pos = target_pos
+	elif incoming_state != state:
+		state = incoming_state
+	if attack == "" and incoming_state == State.CHASE:
+		_loop_anim("run" if pos.distance_to(global_position) > 0.08 else "combat")
+	atk_t = attack_time
+	atk_len = maxf(attack_length, 0.1)
+
 func _setup() -> void:
 	add_to_group("enemies")
 	is_boss = true
@@ -368,8 +401,10 @@ func _attack(delta: float, ts: float, has_target: bool, dir: Vector3) -> void:
 		_end_attack()
 
 func _do_hit(move: String) -> void:
+	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and multiplayer.is_server():
+		NetworkSession.raid_apply_boss_attack(move, global_position, _fwd(), slam_pos, phase)
 	var p := _player()
-	var alive := p != null and not p.is_dead and not atk_harmless
+	var alive := p != null and not p.is_dead and not atk_harmless and not (NetworkSession.is_active() and NetworkSession.session_mode == "raid")
 	match move:
 		"claw":
 			Sfx.play(self, "swing", 4.0)
@@ -417,6 +452,9 @@ func _end_attack() -> void:
 # ------------------------------------------------------------------ taking damage / dying
 @warning_ignore("unused_parameter")
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
+	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and not multiplayer.is_server():
+		NetworkSession.request_raid_boss_damage(amount)
+		return
 	if state == State.DEAD or state == State.INTRO or atk_harmless:
 		return
 	health -= amount
