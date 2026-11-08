@@ -92,25 +92,10 @@ func disconnect_session() -> void:
 	_avatars.clear()
 
 func _sanitize_appearance(raw: Dictionary) -> Dictionary:
-	var safe := {
-		"hair_style": "spiky",
-		"hair_color": "#20202A",
-		"top_color": "#D65A24",
-		"pants_color": "#343C52",
-		"shoes_color": "#20202A",
-		"headband_color": "#343C52",
-		"show_headband": true
-	}
-	var palette := ["#20202A", "#38313A", "#75452F", "#B87843", "#E5B94F", "#D65A24", "#A83232", "#315C91", "#356B42", "#6C4C91", "#D5D0C6", "#171719"]
-	for key in ["hair_color", "top_color", "pants_color", "shoes_color", "headband_color"]:
-		var value := str(raw.get(key, safe[key]))
-		if palette.has(value):
-			safe[key] = value
-	var style := str(raw.get("hair_style", "spiky"))
-	if ["spiky", "short", "ponytail"].has(style):
-		safe["hair_style"] = style
-	safe["show_headband"] = bool(raw.get("show_headband", true))
-	return safe
+	# Single source of truth lives in Hero: valid hair/shirt/pants ids + any hex hair colour.
+	# (This used to be a separate old-schema whitelist that stripped shirt/pants and forced
+	# the hair colour onto a fixed palette, so remote players never looked right.)
+	return Hero.sanitize_appearance(raw)
 
 func is_active() -> bool:
 	return multiplayer.multiplayer_peer != null

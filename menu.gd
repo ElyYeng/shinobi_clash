@@ -46,7 +46,7 @@ func _ready() -> void:
 	custom_btn = _button(vb, "", "", Color(0.85, 0.3, 0.9))
 	custom_btn.pressed.disconnect(_play.bind(""))
 	custom_btn.pressed.connect(_open_customize)
-	var creator_btn := _button(vb, "CHARACTER CREATOR\\nBuild your original shinobi", "", Color(0.72, 0.48, 0.9))
+	var creator_btn := _button(vb, "6   CHARACTER CREATOR\nChoose hair, hair colour, shirt and pants", "", Color(0.72, 0.48, 0.9))
 	creator_btn.pressed.disconnect(_play.bind(""))
 	creator_btn.pressed.connect(_open_character_creator)
 	var multi_btn := Button.new()

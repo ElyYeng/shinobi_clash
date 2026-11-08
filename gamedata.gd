@@ -64,13 +64,13 @@ static var mastery := {}               # bloodline id (or "el:<Element>" for ele
 static var keybinds := {}
 static var open_customize := false     # main menu opens the spin screen straight away (from the M menu)
 
-## Cosmetic-only character creator selections. Colors are saved as HTML strings for JSON.
+## Cosmetic-only character creator selections (see Hero.CATEGORIES). Style ids are the mesh
+## names inside the character GLB (hair1, shirt2, pants1 ...); colour is an HTML string for JSON.
 static var character_appearance := {
-	"hair_style": "spiky",
+	"hair_style": "hair1",
 	"hair_color": "#E6B52E",
-	"hair_hue": 0.12,
-	"shirt_style": "shirt_1",
-	"pants_style": "pants_1"
+	"shirt_style": "shirt1",
+	"pants_style": "pants1"
 }
 
 static func load_data() -> void:
@@ -109,6 +109,8 @@ static func load_data() -> void:
 			for key in character_appearance:
 				if appearance_data.has(key):
 					character_appearance[key] = appearance_data[key]
+			# Old saves used other ids ("spiky", "shirt_1" ...); map them onto the mesh names.
+			character_appearance = Hero.sanitize_appearance(character_appearance)
 		quests_done = d.get("quests_done", [])
 		quest_active = str(d.get("quest_active", ""))
 		quest_state = str(d.get("quest_state", ""))

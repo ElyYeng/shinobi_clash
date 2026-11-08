@@ -10,3 +10,12 @@ res://projectile.gd
 res://kurama.gd
 res://multiplayer_lobby.gd
 res://enemy.gd
+res://quests.gd
+res://quest_def.gd
+res://world_terrain.gd
+res://maps/open_world.tscn
+res://gamedata.gd
+res://hero.gd
+res://character_creator.gd
+res://assets/PUT_YOUR_MODEL_HERE.txt
+res://ragdoll.gd

@@ -1,11 +1,9 @@
-CUSTOM CHARACTER ASSET FOLDER
+MAIN CHARACTER MODEL
 
-Install the latest user-supplied Mixamo rig as:
-character_main.glb
+The customizable Mixamo character lives here:
+character_main.glb   ->   res://assets/character/character_main.glb
 
-Expected project path:
-res://assets/character/character_main.glb
-
-Alternative: keep its original filename from the upload in this folder. Hero searches this folder for GLB/GLTF files, preferring the latest uploaded filename.
-
-After copying the model, open the project in Godot and let it import. The character creator preview will show a warning if the GLB is missing.
+Open the project in Godot once so it imports the GLB.
+Mesh names inside it drive the Character Creator: hair1, hair2, shirt1, shirt2, pants1, pants2.
+Add a mesh named hair3 / shirt3 / pants3 and it appears in the creator automatically.
+See USER_CHARACTER_MODEL_SETUP.md in the project root.

@@ -35,7 +35,14 @@ static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
 	for i in sk.get_bone_count():
 		var nm := sk.get_bone_name(i)
 		var m := re.search(nm)
-		idx[m.get_string(1) if m else nm.get_slice(":", 1)] = i
+		if m:
+			idx[m.get_string(1)] = i
+		elif nm.contains(":"):
+			idx[nm.get_slice(":", 1)] = i
+		elif nm.begins_with("mixamorig_"):   # Godot's import turns "mixamorig:Hips" into "mixamorig_Hips"
+			idx[nm.trim_prefix("mixamorig_")] = i
+		else:
+			idx[nm] = i
 	for p in PARTS:
 		if not idx.has(p[0]) or not idx.has(p[1]):
 			return null
