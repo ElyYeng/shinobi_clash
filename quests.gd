@@ -314,7 +314,7 @@ func _spawn_bandits(n: int, center: Vector3, d: Dictionary, named := false) -> v
 		e.position = Vector3(center.x + cos(angle) * radius, 0.5, center.z + sin(angle) * radius)
 		e.add_to_group("quest_enemies")
 		if _party_coop():
-			e.network_quest_id = "%s:%d" % [str(d["id"]), spawn_index]
+			e.network_quest_id = "%d:%s:%d" % [NetworkSession.local_party_leader(), str(d["id"]), spawn_index]
 			e.network_quest_party_leader = NetworkSession.local_party_leader()
 			e.network_quest_mirror = not multiplayer.is_server()
 		world.add_child(e)
