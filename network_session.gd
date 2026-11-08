@@ -1125,7 +1125,7 @@ func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String) -> void:
-	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe, damage)
+	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
 
 func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String) -> void:
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
