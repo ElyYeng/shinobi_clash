@@ -108,6 +108,15 @@ func _setup() -> void:
 	add_child(col)
 	model = _make_model()
 	add_child(model)
+	# Kurama overrides Enemy._setup(), so create the inherited health label here too.
+	label = Label3D.new()
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.font_size = 48
+	label.pixel_size = 0.005
+	label.position.y = 2.5 * k
+	add_child(label)
+	_update_label()
 	_loop_anim("idle", 0.0)
 	# fiery chakra aura: flames licking up around him + a hot orange light on the arena
 	Vfx.aura_flames(self, Vector3(0, 2.5, 0), 4.2, Color(1.0, 0.45, 0.08), 110)
