@@ -303,12 +303,13 @@ func _spawn_bandits(n: int, center: Vector3, d: Dictionary, named := false) -> v
 			e.add_to_group("hunt_targets")
 		# Fixed positions ensure every party member creates a matching local
 		# visual copy of the host-owned enemy, with the same network identity.
-		var angle := TAU * float(i) / float(maxi(n, 1)) + 0.18
-		var radius := 5.5 + float(i % 2) * 2.4
+		var spawn_index := GameData.quest_progress + i
+		var angle := TAU * float(spawn_index) / float(maxi(int(d["count"]), 1)) + 0.18
+		var radius := 5.5 + float(spawn_index % 2) * 2.4
 		e.position = Vector3(center.x + cos(angle) * radius, 0.5, center.z + sin(angle) * radius)
 		e.add_to_group("quest_enemies")
 		if _party_coop():
-			e.network_quest_id = "%s:%d" % [str(d["id"]), GameData.quest_progress + i]
+			e.network_quest_id = "%s:%d" % [str(d["id"]), spawn_index]
 			e.network_quest_party_leader = NetworkSession.local_party_leader()
 			e.network_quest_mirror = not multiplayer.is_server()
 		world.add_child(e)
