@@ -42,6 +42,7 @@ const TREE_SCENE: PackedScene = preload("res://maps/tree1.glb")
 const GRASS_TEXTURE_DATA = preload("res://grass_texture_data.gd")
 
 func _ready() -> void:
+	add_to_group("world_terrain")
 	_configure_noise()
 	_material.vertex_color_use_as_albedo = true
 	_material.albedo_color = Color.WHITE
