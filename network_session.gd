@@ -19,6 +19,7 @@ var _game_root: Node
 var _sync_timer := 0.0
 var _known_players: Dictionary = {}
 var _known_levels: Dictionary = {}
+var _known_appearances: Dictionary = {}
 var _party_leader: Dictionary = {}
 var _pending_party_invites: Dictionary = {}
 var _avatars: Dictionary = {}
@@ -50,6 +51,7 @@ func host(port: int = DEFAULT_PORT, mode: String = "coop", display_name: String 
 		player_name = "Shinobi"
 	_known_players[1] = player_name
 	_known_levels[1] = GameData.level
+	_known_appearances[1] = _sanitize_appearance(GameData.character_appearance)
 	_party_leader[1] = 1
 	return OK
 
@@ -81,12 +83,34 @@ func disconnect_session() -> void:
 	_sync_timer = 0.0
 	_known_players.clear()
 	_known_levels.clear()
+	_known_appearances.clear()
 	_party_leader.clear()
 	_pending_party_invites.clear()
 	for avatar in _avatars.values():
 		if is_instance_valid(avatar):
 			avatar.queue_free()
 	_avatars.clear()
+
+func _sanitize_appearance(raw: Dictionary) -> Dictionary:
+	var safe := {
+		"hair_style": "spiky",
+		"hair_color": "#20202A",
+		"top_color": "#D65A24",
+		"pants_color": "#343C52",
+		"shoes_color": "#20202A",
+		"headband_color": "#343C52",
+		"show_headband": true
+	}
+	var palette := ["#20202A", "#38313A", "#75452F", "#B87843", "#E5B94F", "#D65A24", "#A83232", "#315C91", "#356B42", "#6C4C91", "#D5D0C6", "#171719"]
+	for key in ["hair_color", "top_color", "pants_color", "shoes_color", "headband_color"]:
+		var value := str(raw.get(key, safe[key]))
+		if palette.has(value):
+			safe[key] = value
+	var style := str(raw.get("hair_style", "spiky"))
+	if ["spiky", "short", "ponytail"].has(style):
+		safe["hair_style"] = style
+	safe["show_headband"] = bool(raw.get("show_headband", true))
+	return safe
 
 func is_active() -> bool:
 	return multiplayer.multiplayer_peer != null
@@ -96,7 +120,7 @@ func bind_local_player(player: Player, game_root: Node) -> void:
 	_game_root = game_root
 	for id in _known_players:
 		if int(id) != multiplayer.get_unique_id():
-			_spawn_remote_local(int(id), str(_known_players[id]))
+			_spawn_remote_local(int(id), str(_known_players[id]), int(_known_levels.get(id, 1)), _known_appearances.get(id, {}))
 
 func _process(delta: float) -> void:
 	if not is_active() or _local_player == null:
@@ -121,10 +145,10 @@ func _process(delta: float) -> void:
 		_submit_state.rpc_id(1, pos, yaw)
 
 func _on_connected_to_server() -> void:
-	_request_join.rpc_id(1, player_name, GameData.level)
+	_request_join.rpc_id(1, player_name, GameData.level, _sanitize_appearance(GameData.character_appearance))
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_join(requested_name: String, requested_level: int) -> void:
+func _request_join(requested_name: String, requested_level: int, requested_appearance: Dictionary) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
@@ -139,13 +163,14 @@ func _request_join(requested_name: String, requested_level: int) -> void:
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id))})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id)), "appearance": _known_appearances.get(id, {})})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
 	_known_levels[sender] = clampi(requested_level, 1, 9999)
+	_known_appearances[sender] = _sanitize_appearance(requested_appearance)
 	_party_leader[sender] = 1 if session_mode == "raid" else sender
-	_spawn_remote_local(sender, safe_name, int(_known_levels[sender]))
-	_spawn_remote.rpc(sender, safe_name, int(_known_levels[sender]))
+	_spawn_remote_local(sender, safe_name, int(_known_levels[sender]), _known_appearances[sender])
+	_spawn_remote.rpc(sender, safe_name, int(_known_levels[sender]), _known_appearances[sender])
 	if session_mode == "raid":
 		_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_join_accepted.rpc_id(sender, session_mode)
@@ -158,19 +183,21 @@ func _receive_roster(roster: Array) -> void:
 		var lv := int(entry.get("level", 1))
 		_known_players[id] = nm
 		_known_levels[id] = lv
+		_known_appearances[id] = _sanitize_appearance(entry.get("appearance", {}))
 		_party_leader[id] = int(entry.get("party_leader", id))
 		if id != multiplayer.get_unique_id():
-			_spawn_remote_local(id, nm, lv)
+			_spawn_remote_local(id, nm, lv, _known_appearances[id])
 	party_updated.emit()
 
 @rpc("authority", "call_remote", "reliable")
-func _spawn_remote(peer_id: int, display_name: String, level: int) -> void:
+func _spawn_remote(peer_id: int, display_name: String, level: int, appearance: Dictionary) -> void:
 	_known_players[peer_id] = display_name
 	_known_levels[peer_id] = level
+	_known_appearances[peer_id] = _sanitize_appearance(appearance)
 	if peer_id != multiplayer.get_unique_id():
-		_spawn_remote_local(peer_id, display_name, level)
+		_spawn_remote_local(peer_id, display_name, level, _known_appearances[peer_id])
 
-func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1) -> void:
+func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1, appearance: Dictionary = {}) -> void:
 	if _game_root == null or not is_instance_valid(_game_root):
 		return
 	if _avatars.has(peer_id):
@@ -185,6 +212,7 @@ func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1) -> 
 	avatar.set("peer_id", peer_id)
 	avatar.set("display_name", display_name)
 	avatar.set("player_level", level)
+	avatar.set("character_appearance", _sanitize_appearance(appearance))
 	avatar.set("is_party_member", _same_party(multiplayer.get_unique_id(), peer_id))
 	_game_root.add_child(avatar)
 	_avatars[peer_id] = avatar
@@ -216,6 +244,7 @@ func _join_accepted(mode: String) -> void:
 	var local_id := multiplayer.get_unique_id()
 	_known_players[local_id] = player_name
 	_known_levels[local_id] = GameData.level
+	_known_appearances[local_id] = _sanitize_appearance(GameData.character_appearance)
 	_party_leader[local_id] = 1 if mode == "raid" else local_id
 	party_updated.emit()
 	connection_succeeded.emit()
@@ -232,6 +261,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		_server_leave_party(peer_id)
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
+	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
 	_remove_remote_local(peer_id)
 	_despawn_remote.rpc(peer_id)
@@ -240,6 +270,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _despawn_remote(peer_id: int) -> void:
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
+	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
 	_remove_remote_local(peer_id)
 
