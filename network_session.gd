@@ -572,6 +572,15 @@ func _apply_local_party_quest_kill_reward() -> void:
 func _party_quest_kill_reward() -> void:
 	_apply_local_party_quest_kill_reward()
 
+func damage_quest_party_member(peer_id: int, leader_id: int, amount: float, knockback: Vector3) -> void:
+	if not is_active() or not multiplayer.is_server() or not _same_party(peer_id, leader_id):
+		return
+	var safe_damage := clampf(amount, 1.0, 80.0)
+	if peer_id == 1 and _local_player != null:
+		_local_player.take_damage(safe_damage, knockback)
+	elif _known_players.has(peer_id):
+		_apply_player_damage.rpc_id(peer_id, safe_damage, knockback)
+
 func request_quest_enemy_damage(enemy_id: String, amount: float, knock: Vector3) -> void:
 	if not is_active() or session_mode != "coop" or enemy_id == "":
 		return
