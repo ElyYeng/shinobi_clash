@@ -1,4 +1,9 @@
-Put your downloaded character model in this folder (.glb or .gltf).
-Any file name works. Subfolders (1 level) are fine, e.g. assets/naruto/scene.gltf
-Godot imports it automatically; the game finds it and auto-scales it to ~1.9m tall.
-Check the Output panel when you press F5: it prints the animation names found.
+MAIN PLAYER CHARACTER MODEL
+
+Place the custom Mixamo character GLB here:
+assets/character/character_main.glb
+
+The Character Creator and the whole player/clone/multiplayer Hero system load that rig.
+The model can also be placed in assets/character under its original uploaded name.
+Godot must import the GLB before running the game.
+Do not place this model in assets/naruto; that folder is no longer used by Hero.
