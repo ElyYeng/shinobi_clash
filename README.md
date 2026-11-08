@@ -120,3 +120,9 @@ it is scaled to `model_height` and plays its first animation as idle. If a model
 
 **Kakashi** (open world, next to the Elder) gives *Rough Ninjas*: defeat 3 Rough Ninjas in the south-west fields, then return
 to him for +2 levels. His model is `assets/kakashi/kakashiwithidle.glb`.
+
+## Kurama Mode (Z)
+Unlocked by beating Kurama. Press Z to turn it on (needs 50 MD) and Z again to turn it off. No timer: it drains MD
+(a full bar lasts 25 s) and ends when MD runs out. It stacks with your bloodline power-up (C): with both on you get both
+bonuses, and MD drains at both rates combined x1.25. Kills still add MD while a mode is on.
+Tuning in player.gd: MODE_TIME, KURAMA_MIN_MD, BOTH_DRAIN_MULT, POWER_DRAIN_TIME.

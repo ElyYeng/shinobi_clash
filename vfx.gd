@@ -446,7 +446,8 @@ static func glow_light(node: Node3D, color: Color, energy := 1.5, light_range :=
 	return l
 
 ## Upward-licking flames / energy around a spot (Kurama's chakra, etc.).
-static func aura_flames(node: Node3D, offset: Vector3, radius: float, color: Color, amount := 80) -> void:
+## soft = true: small, dimmer flames that don't blow out to white (player modes seen up close).
+static func aura_flames(node: Node3D, offset: Vector3, radius: float, color: Color, amount := 80, soft := false) -> void:
 	var p := CPUParticles3D.new()
 	p.amount = amount
 	p.lifetime = 1.6
@@ -454,17 +455,18 @@ static func aura_flames(node: Node3D, offset: Vector3, radius: float, color: Col
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	p.emission_sphere_radius = radius
 	p.mesh = quad()
-	p.material_override = particle_mat(true, 1.7)
+	p.material_override = particle_mat(true, 0.9 if soft else 1.7)
 	p.direction = Vector3.UP
 	p.spread = 25.0
 	p.initial_velocity_min = radius * 0.6
 	p.initial_velocity_max = radius * 1.4
 	p.gravity = Vector3(0, 1.5, 0)
-	p.scale_amount_min = radius * 0.25
-	p.scale_amount_max = radius * 0.55
+	p.scale_amount_min = radius * (0.14 if soft else 0.25)
+	p.scale_amount_max = radius * (0.3 if soft else 0.55)
 	p.scale_amount_curve = shrink_curve()
 	var g := Gradient.new()
-	g.colors = PackedColorArray([Color(1.0, 0.95, 0.6, 0.9), color, Color(color.r * 0.4, color.g * 0.1, color.b * 0.1, 0.0)])
+	var hot := Color(color.lightened(0.25), 0.4) if soft else Color(1.0, 0.95, 0.6, 0.9)
+	g.colors = PackedColorArray([hot, Color(color, 0.55 if soft else 1.0), Color(color.r * 0.4, color.g * 0.1, color.b * 0.1, 0.0)])
 	g.offsets = PackedFloat32Array([0.0, 0.4, 1.0])
 	p.color_ramp = g
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

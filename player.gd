@@ -14,12 +14,14 @@ var max_chakra := 100.0
 var kills := 0
 var is_dead := false
 const MODE_MAX := 100.0
-const MODE_TIME := 25.0
+const MODE_TIME := 25.0        # seconds a full MD bar lasts in Kurama Mode (no timer: it drains MD)
+const KURAMA_MIN_MD := 50.0    # MD needed to enter Kurama Mode
+const BOTH_DRAIN_MULT := 1.25  # Kurama Mode + bloodline power-up together drain both rates, x1.25
 var stamina := 100.0
 var max_stamina := 100.0
 var stam_delay := 0.0
 var mode_meter := 0.0        # "MD" bar: fills over time and with kills; Z (Kurama Mode) needs it full
-var mode_time := 0.0         # > 0 while Kurama Mode is active
+var kurama := false          # Kurama Mode (Z) is on; drains MD, no timer
 var armor_time := 0.0
 var t_cd := 0.0
 var y_cd := 0.0
@@ -151,7 +153,7 @@ func apply_bloodline() -> void:
 
 func _dmg() -> float:
 	var m := dmg_mult
-	if mode_time > 0.0:
+	if kurama:
 		m *= 2.0
 	m *= _bmul("dmg")
 	return m
@@ -222,25 +224,24 @@ func _physics_process(delta: float) -> void:
 	stam_delay = maxf(0.0, stam_delay - delta)
 	if armor_time > 0.0:
 		armor_time -= delta
-		if armor_time <= 0.0 and mode_time <= 0.0:
+		if armor_time <= 0.0 and not kurama:
 			_reset_aura()
-	if mode_time > 0.0:
-		mode_time -= delta
-		mode_meter = maxf(0.0, mode_meter - MODE_MAX / MODE_TIME * delta)
-		aura.light_color = Color(1.0, 0.5, 0.08)
-		aura.light_energy = 5.0
-		if mode_time <= 0.0:
-			_end_mode()
-	elif powered:   # bloodline power-up drains MD; no timer
-		mode_meter = maxf(0.0, mode_meter - MODE_MAX / POWER_DRAIN_TIME * delta)
+	var drain := md_drain()
+	if drain > 0.0:   # Kurama Mode and / or the bloodline power-up drain MD; no timers
+		mode_meter = maxf(0.0, mode_meter - drain * delta)
+		if kurama and not powered:
+			aura.light_color = Color(1.0, 0.5, 0.08)
+			aura.light_energy = 2.0
 		if mode_meter <= 0.0:
+			var both := kurama and powered
+			_end_mode()
 			_power_off()
-			_toast("Out of MD - power-up ended")
+			_toast("Out of MD - %s ended" % ("both modes" if both else "power-up"))
 	elif mode_meter < MODE_MAX:
 		mode_meter = minf(MODE_MAX, mode_meter + 1.0 * delta * _md_mult())
 	invuln = maxf(0.0, invuln - delta)
 	_update_buffs(delta)
-	var hpr := hp_regen + _badd("hp") + (6.0 if mode_time > 0.0 else 0.0)
+	var hpr := hp_regen + _badd("hp") + (6.0 if kurama else 0.0)
 	if hpr > 0.0:
 		health = minf(max_health, health + hpr * delta)
 
@@ -284,7 +285,7 @@ func _physics_process(delta: float) -> void:
 
 	var charging := Input.is_action_pressed("charge") and is_on_floor() and not moving
 	var surge := _bmul("speed")
-	if mode_time > 0.0:
+	if kurama:
 		surge *= 1.3
 
 	if dash_time > 0.0:
@@ -664,7 +665,7 @@ func _update_buffs(delta: float) -> void:
 			_aura_tick(float(pmode["r"]), float(pmode["dps"]), pmode["col"])
 			cur_mkey = ""
 	Enemy.time_scale = enemy_slow()
-	if buffs.is_empty() and not powered and armor_time <= 0.0 and mode_time <= 0.0 and aura.light_energy > 1.2:
+	if buffs.is_empty() and not powered and armor_time <= 0.0 and not kurama and aura.light_energy > 1.2:
 		aura.light_energy = move_toward(aura.light_energy, 1.2, 6.0 * delta)
 
 func _aura_tick(radius: float, dps: float, col: Color) -> void:
@@ -694,9 +695,6 @@ func _toggle_power() -> void:
 	if lv < Bloodline.MODE_LEVEL:
 		_toast("%s unlocks at %s LV %d  (you are LV %d)" % [m["name"], _bl_name(), Bloodline.MODE_LEVEL, lv])
 		return
-	if mode_time > 0.0:
-		_toast("Already in Kurama Mode")
-		return
 	if mode_meter < POWER_MIN_MD:
 		_toast("Not enough MD to power up  (%d / %d)" % [int(mode_meter), int(POWER_MIN_MD)])
 		return
@@ -706,15 +704,15 @@ func _toggle_power() -> void:
 	var col: Color = m["col"]
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
-	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 1.25, col, 55)
+	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
 	aura.visible = true
 	aura.light_color = col
-	aura.light_energy = 4.5
+	aura.light_energy = 1.8
 	Sfx.play(self, "power")
-	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 70, 12.0, 0.45, 0.8, 0.0)
-	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 6.0, 0.4)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
+	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
 	Vfx.shake(cam, 0.2, 0.35)
-	_toast("%s!" % str(m["name"]).to_upper())
+	_toast("KURAMA MODE + %s!" % str(m["name"]).to_upper() if kurama else "%s!" % str(m["name"]).to_upper())
 	_play_once("jutsu", 0.6)
 
 func _power_off() -> void:
@@ -820,9 +818,20 @@ func _toast(t: String) -> void:
 	if h != null:
 		h.toast(t)
 
+## MD gained from kills etc. (also while a mode is on, so kills keep it going).
 func add_mode(amount: float) -> void:
-	if mode_time <= 0.0:
-		mode_meter = minf(MODE_MAX, mode_meter + amount * _md_mult())
+	mode_meter = minf(MODE_MAX, mode_meter + amount * _md_mult())
+
+## MD lost per second right now: Kurama Mode, the bloodline power-up, or both (faster).
+func md_drain() -> float:
+	var d := 0.0
+	if kurama:
+		d += MODE_MAX / MODE_TIME
+	if powered:
+		d += MODE_MAX / POWER_DRAIN_TIME
+	if kurama and powered:
+		d *= BOTH_DRAIN_MULT
+	return d
 
 func _element_color() -> Color:
 	return GameData.get_element_color()
@@ -831,7 +840,12 @@ func _reset_aura() -> void:
 	if powered:
 		aura.visible = true
 		aura.light_color = pmode["col"]
-		aura.light_energy = 4.5
+		aura.light_energy = 1.8
+		return
+	if kurama:
+		aura.visible = true
+		aura.light_color = Color(1.0, 0.5, 0.08)
+		aura.light_energy = 2.0
 		return
 	var def := Bloodline.get_def(GameData.equipped)
 	aura.visible = GameData.equipped != "none"
@@ -928,32 +942,35 @@ func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest
 			facing = f.normalized()
 	Fx.puff(get_parent(), dest + Vector3.UP, Color(0.9, 0.9, 0.9, 0.8), 2.0)
 
-func _kurama_mode() -> void:  # Z - needs Kurama defeated and the MD bar full
-	if is_dead or mode_time > 0.0:
+## Z - Kurama Mode on / off. Needs Kurama defeated and KURAMA_MIN_MD to start; no timer, it drains MD.
+## Works together with the bloodline power-up (C); with both on, MD drains faster.
+func _kurama_mode() -> void:
+	if is_dead:
 		return
-	if powered:
-		_toast("Release your bloodline power-up (C) first")
+	if kurama:
+		_end_mode()
+		_toast("Kurama Mode released")
 		return
 	if not GameData.kurama_defeated:
 		_toast("Defeat Kurama in the Kurama Boss Fight to unlock Kurama Mode")
 		return
-	if mode_meter < MODE_MAX:
-		_toast("MD bar must be full  (%d / %d)" % [int(mode_meter), int(MODE_MAX)])
+	if mode_meter < KURAMA_MIN_MD:
+		_toast("Not enough MD for Kurama Mode  (%d / %d)" % [int(mode_meter), int(KURAMA_MIN_MD)])
 		return
-	mode_time = MODE_TIME
+	kurama = true
 	Sfx.play(self, "power")
 	model.scale = Vector3.ONE * 1.3
 	cloak_fx = Node3D.new()
 	add_child(cloak_fx)
-	Vfx.aura_flames(cloak_fx, Vector3(0, 1.0, 0), 1.4, Color(1.0, 0.5, 0.1), 70)
+	Vfx.aura_flames(cloak_fx, Vector3(0, 1.0, 0), 0.65, Color(1.0, 0.5, 0.1), 26, true)
 	health = minf(max_health, health + max_health * 0.25)
-	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 80, 14.0, 0.5, 0.9, 0.0)
-	Vfx.shake(cam, 0.3, 0.5)
-	_toast("KURAMA MODE!")
+	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
+	Vfx.shake(cam, 0.25, 0.4)
+	_toast("KURAMA MODE + %s!" % str(pmode["name"]).to_upper() if powered else "KURAMA MODE!")
 	_play_once("jutsu", 0.6)
 
 func _end_mode() -> void:
-	mode_time = 0.0
+	kurama = false
 	if model:
 		model.scale = Vector3.ONE
 	if cloak_fx != null and is_instance_valid(cloak_fx):
@@ -990,14 +1007,14 @@ func slot_info(key: String) -> Dictionary:
 		"E":
 			d["name"] = "Talk"
 		"Z":
-			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated, "active": mode_time > 0.0,
-				"timer": mode_time, "not_ready": mode_meter < MODE_MAX and mode_time <= 0.0}, true)
+			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated, "active": kurama,
+				"not_ready": mode_meter < KURAMA_MIN_MD and not kurama}, true)
 		"C":   # power-up: no timer, drains MD
 			var m := Bloodline.mode(GameData.equipped)
 			if powered:
 				d.merge({"name": pmode["name"], "active": true, "icon": Moves.mode_icon(GameData.equipped)}, true)
 			elif not m.is_empty() and _bl_level() >= Bloodline.MODE_LEVEL:
-				d.merge({"name": m["name"], "not_ready": mode_meter < POWER_MIN_MD or mode_time > 0.0,
+				d.merge({"name": m["name"], "not_ready": mode_meter < POWER_MIN_MD,
 					"icon": Moves.mode_icon(GameData.equipped)}, true)
 			else:
 				d["name"] = "Charge"
@@ -1011,7 +1028,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 		return
 	if armor_time > 0.0:
 		amount *= 0.4
-	if mode_time > 0.0:
+	if kurama:
 		amount *= 0.5
 	amount *= _bmul("def")
 	health -= amount

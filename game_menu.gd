@@ -796,8 +796,8 @@ func _page_tools() -> Array:
 		_item("Chakra / Power-up", "C", Color(0.3, 0.45, 1.0), "C",
 			"Tap C: bloodline power-up on / off (%s). No timer - it drains MD and ends when MD runs out.\nHold C while standing still: charge chakra, 40 per second (x%.2f).\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [pu, p.regen_mult]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
-			"Unlocks when you defeat Kurama. Needs the MD bar full (fills with time and kills).\nFor %d seconds: x2 damage, x1.3 speed, half damage taken, health regen. Status: %s" % [
-				int(Player.MODE_TIME), "ACTIVE" if p.mode_time > 0.0 else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(Player.MODE_MAX)])]),
+			"Unlocks when you defeat Kurama. Press Z to turn it on (needs %d MD) and again to turn it off. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
+				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(Player.MODE_MAX)])]),
 	]
 
 func _binds_text() -> String:
@@ -1247,7 +1247,7 @@ func _page_controls() -> Array:
 		_item("Combat", "Mouse, E, Tab", Color(0.6, 0.65, 0.8), "C",
 			"Left mouse: melee combo\nRight mouse: kunai\nRight mouse + E: kunai volley\nTab / middle mouse: lock on"),
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
-			"Tap C: bloodline power-up on / off (bloodline LV 1000, drains MD; X also works)\nHold C: charge chakra\nZ: Kurama Mode (after beating Kurama, MD bar full)"),
+			"Tap C: bloodline power-up on / off (bloodline LV 1000, drains MD; X also works)\nHold C: charge chakra\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
 		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
 			"M: this menu\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]
