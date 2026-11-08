@@ -23,7 +23,7 @@ extends Node3D
 
 @export_group("Editor Preview")
 @export var show_editor_preview: bool = true
-@export_range(0, 5, 1) var preview_radius: int = 2
+@export_range(0, 5, 1) var preview_radius: int = 1
 @export_tool_button("Generate Editor Preview", "World") var generate_preview_action = generate_editor_preview
 @export_tool_button("Clear Editor Preview", "Clear") var clear_preview_action = clear_editor_preview
 
@@ -43,6 +43,16 @@ func _ready() -> void:
 	_material.roughness = 1.0
 	# Prevent the generated terrain from disappearing because of triangle winding.
 	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if Engine.is_editor_hint():
+		if show_editor_preview:
+			generate_editor_preview()
+	else:
+		# Editor preview chunks are saved with the scene so they remain visible
+		# after reopening it. Remove those baked preview nodes before runtime streaming.
+		for child in get_children():
+			if child.has_meta("editor_terrain_preview"):
+				child.free()
+		_chunks.clear()
 
 func _configure_noise() -> void:
 	_noise.seed = world_seed
