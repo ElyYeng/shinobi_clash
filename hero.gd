@@ -3,7 +3,9 @@ extends RefCounted
 ## Loads the character model you drop into res://assets/ (.glb / .gltf),
 ## auto-fits it to the player's size and maps its animations by name.
 
-const ASSET_DIR := "res://assets/naruto"
+const ASSET_DIR := "res://assets/character"
+const CUSTOM_MODEL_FILE := "character costum test1.glb"
+const LEGACY_ASSET_DIR := "res://assets/naruto"
 const TARGET_HEIGHT := 1.75
 const CREDIT := 'Model: "Naruto Rigged (HatchXR)" by nitwit.friends (CC-BY-4.0)'
 const MANUAL_SCALE := 0.0        # set >0 to override auto-scale
@@ -32,6 +34,7 @@ const FALLBACKS := {
 }
 
 static var _scene: PackedScene = null
+static var _using_custom_model := false
 static var _searched := false
 static var _printed := false
 static var credit := ""
@@ -40,13 +43,15 @@ static var credit := ""
 static func create(appearance: Dictionary = {}) -> Node3D:
 	if not _searched:
 		_searched = true
-		var path := _scan(ASSET_DIR, 2)
+		var custom_path := ASSET_DIR.path_join(CUSTOM_MODEL_FILE)
+		var path := custom_path if ResourceLoader.exists(custom_path) else _scan(LEGACY_ASSET_DIR, 2)
 		if path != "":
 			_scene = load(path) as PackedScene
+			_using_custom_model = path == custom_path
 			print("[Hero] loaded model: ", path)
-			credit = CREDIT
+			credit = "Custom character model" if _using_custom_model else CREDIT
 		else:
-			print("[Hero] no .glb/.gltf in res://assets - using placeholder model")
+			print("[Hero] character model missing - using placeholder model"))
 	if _scene == null:
 		return null
 	var inst := _scene.instantiate() as Node3D
@@ -61,9 +66,35 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	Fx.toonify_model(inst)
 	_setup_anims(wrapper, inst)
 	var chosen := appearance if not appearance.is_empty() else GameData.character_appearance
-	_apply_wearables(inst, chosen)
+	if _using_custom_model:
+		_apply_custom_model_parts(inst, chosen)
+	else:
+		_apply_wearables(inst, chosen)
 	return wrapper
 
+
+## The supplied GLB contains two hair meshes, two shirt meshes and two pants
+## meshes, all authored for the same Mixamo skeleton. Toggle the actual meshes
+## instead of adding primitive clothing overlays.
+static func _apply_custom_model_parts(inst: Node3D, appearance: Dictionary) -> void:
+	var short_hair := inst.find_child("SK_CHR_Man_ShortSpikyHair_05mo", true, false) as Node3D
+	var spiky_hair := inst.find_child("SK_CHR_Man_SpikyHair_08mo", true, false) as Node3D
+	if short_hair != null:
+		short_hair.visible = str(appearance.get("hair_style", "spiky")) == "short"
+	if spiky_hair != null:
+		spiky_hair.visible = str(appearance.get("hair_style", "spiky")) != "short"
+	var shirt_a := inst.find_child("Male_Lobby_Top_Cos_NB_Yellow", true, false) as Node3D
+	var shirt_b := inst.find_child("Mesh_0147.rip.053", true, false) as Node3D
+	if shirt_a != null:
+		shirt_a.visible = str(appearance.get("shirt_style", "shirt_a")) == "shirt_a"
+	if shirt_b != null:
+		shirt_b.visible = str(appearance.get("shirt_style", "shirt_a")) == "shirt_b"
+	var pants_a := inst.find_child("Male_Lobby_Bottom_Cos_NB_Yellow", true, false) as Node3D
+	var pants_b := inst.find_child("Mesh_0147.rip.110", true, false) as Node3D
+	if pants_a != null:
+		pants_a.visible = str(appearance.get("pants_style", "pants_a")) == "pants_a"
+	if pants_b != null:
+		pants_b.visible = str(appearance.get("pants_style", "pants_a")) == "pants_b"
 
 ## Experimental modular wearables for the existing rig. These are separate
 ## meshes attached to the character's actual bones, so they follow its animations.
