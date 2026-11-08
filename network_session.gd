@@ -255,6 +255,33 @@ func broadcast_ability(move_id: String, color: Color) -> void:
 	else:
 		_request_ability_visual.rpc_id(1, move_id, color)
 
+
+func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_projectile_visual.rpc(1, origin, velocity, speed, size, color, long_shape, aoe)
+	else:
+		_request_projectile_visual.rpc_id(1, origin, velocity, speed, size, color, long_shape, aoe)
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_show_remote_projectile(sender, origin, velocity, speed, size, color, long_shape, aoe)
+	_broadcast_projectile_visual.rpc(sender, origin, velocity, speed, size, color, long_shape, aoe)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe)
+
+func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].play_projectile(origin, velocity, speed, size, color, long_shape, aoe)
+
 @rpc("any_peer", "call_remote", "reliable")
 func _request_ability_visual(move_id: String, color: Color) -> void:
 	if not multiplayer.is_server():
