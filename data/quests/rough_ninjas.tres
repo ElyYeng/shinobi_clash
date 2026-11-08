@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_def")
 id = "rough_ninjas"
+repeatable = true
 title = "Rough Ninjas"
 giver = "kakashi"
 type = "hunt"
