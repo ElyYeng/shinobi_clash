@@ -26,6 +26,8 @@ var _remote_clones: Dictionary = {}
 var _next_clone_summon_id := 1
 var _raid_boss: Kurama
 var _raid_sync_timer := 0.0
+var _quest_manager: Quests
+var _party_quest_states: Dictionary = {}
 
 func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -66,6 +68,8 @@ func join(address: String, port: int = DEFAULT_PORT, display_name: String = "Shi
 func disconnect_session() -> void:
 	_raid_boss = null
 	_raid_sync_timer = 0.0
+	_quest_manager = null
+	_party_quest_states.clear()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
@@ -100,6 +104,8 @@ func _process(delta: float) -> void:
 		return
 	_sync_timer = 0.0
 	_sync_shadow_clone_transforms()
+	if multiplayer.is_server() and session_mode == "coop":
+		_sync_quest_enemy_states()
 	if multiplayer.is_server() and session_mode == "raid" and _raid_boss != null and is_instance_valid(_raid_boss):
 		_raid_sync_timer += delta
 		if _raid_sync_timer >= 0.1:
@@ -311,6 +317,7 @@ func _server_accept_party(member_id: int, inviter_id: int) -> void:
 	_pending_party_invites.erase(member_id)
 	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_apply_party_state(_party_leader.keys(), _party_leader.values())
+	_send_party_quest_state_to_member(member_id, leader)
 
 @rpc("authority", "call_remote", "reliable")
 func _broadcast_party_state(ids: Array, leaders: Array) -> void:
@@ -362,6 +369,243 @@ func _party_size(leader_id: int) -> int:
 			count += 1
 	return count
 
+func local_party_leader() -> int:
+	if not is_active():
+		return 1
+	var local_id := multiplayer.get_unique_id()
+	return int(_party_leader.get(local_id, local_id))
+
+func register_quest_manager(manager: Quests) -> void:
+	_quest_manager = manager
+	if not is_active() or session_mode != "coop":
+		return
+	var leader := local_party_leader()
+	if _party_quest_states.has(leader):
+		var state: Dictionary = _party_quest_states[leader]
+		manager.apply_shared_quest_state(str(state.get("id", "")), str(state.get("state", "")), int(state.get("progress", 0)))
+
+func request_party_quest_accept(quest_id: String) -> void:
+	if not is_active() or session_mode != "coop":
+		return
+	if multiplayer.is_server():
+		_server_party_quest_accept(1, quest_id)
+	else:
+		_request_party_quest_accept.rpc_id(1, quest_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_quest_accept(quest_id: String) -> void:
+	if multiplayer.is_server():
+		_server_party_quest_accept(multiplayer.get_remote_sender_id(), quest_id)
+
+func _server_party_quest_accept(sender_id: int, quest_id: String) -> void:
+	if not _known_players.has(sender_id):
+		return
+	Quests.ensure_loaded()
+	if not Quests.DEFS.has(quest_id):
+		return
+	var leader := int(_party_leader.get(sender_id, sender_id))
+	if _party_quest_states.has(leader):
+		var existing: Dictionary = _party_quest_states[leader]
+		if str(existing.get("id", "")) != "":
+			_publish_party_quest_state(leader, str(existing["id"]), str(existing["state"]), int(existing["progress"]))
+			return
+	_publish_party_quest_state(leader, quest_id, "active", 0)
+
+func request_party_quest_ready(quest_id: String) -> void:
+	if not is_active() or session_mode != "coop" or quest_id == "":
+		return
+	if multiplayer.is_server():
+		_server_party_quest_ready(1, quest_id)
+	else:
+		_request_party_quest_ready.rpc_id(1, quest_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_quest_ready(quest_id: String) -> void:
+	if multiplayer.is_server():
+		_server_party_quest_ready(multiplayer.get_remote_sender_id(), quest_id)
+
+func _server_party_quest_ready(sender_id: int, quest_id: String) -> void:
+	if not _known_players.has(sender_id):
+		return
+	var leader := int(_party_leader.get(sender_id, sender_id))
+	if not _party_quest_states.has(leader):
+		return
+	var state: Dictionary = _party_quest_states[leader]
+	if str(state.get("id", "")) != quest_id or str(state.get("state", "")) != "active":
+		return
+	_publish_party_quest_state(leader, quest_id, "ready", int(state.get("progress", 0)))
+
+func _publish_party_quest_state(leader_id: int, quest_id: String, state: String, progress: int) -> void:
+	_party_quest_states[leader_id] = {"id": quest_id, "state": state, "progress": progress}
+	if _same_party(1, leader_id) and _quest_manager != null and is_instance_valid(_quest_manager):
+		_quest_manager.apply_shared_quest_state(quest_id, state, progress)
+	for id in _known_players:
+		var peer_id := int(id)
+		if peer_id != 1 and _same_party(peer_id, leader_id):
+			_receive_party_quest_state.rpc_id(peer_id, leader_id, quest_id, state, progress)
+
+@rpc("authority", "call_remote", "reliable")
+func _receive_party_quest_state(leader_id: int, quest_id: String, state: String, progress: int) -> void:
+	if not _same_party(multiplayer.get_unique_id(), leader_id):
+		return
+	_party_quest_states[leader_id] = {"id": quest_id, "state": state, "progress": progress}
+	if _quest_manager != null and is_instance_valid(_quest_manager):
+		_quest_manager.apply_shared_quest_state(quest_id, state, progress)
+
+func _send_party_quest_state_to_member(peer_id: int, leader_id: int) -> void:
+	if not _party_quest_states.has(leader_id):
+		return
+	var state: Dictionary = _party_quest_states[leader_id]
+	_receive_party_quest_state.rpc_id(peer_id, leader_id, str(state.get("id", "")), str(state.get("state", "")), int(state.get("progress", 0)))
+
+func request_party_quest_turn_in(quest_id: String) -> void:
+	if not is_active() or session_mode != "coop" or quest_id == "":
+		return
+	if multiplayer.is_server():
+		_server_party_quest_turn_in(1, quest_id, GameData.level)
+	else:
+		_request_party_quest_turn_in.rpc_id(1, quest_id, GameData.level)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_quest_turn_in(quest_id: String, player_level: int) -> void:
+	if multiplayer.is_server():
+		_server_party_quest_turn_in(multiplayer.get_remote_sender_id(), quest_id, player_level)
+
+func _server_party_quest_turn_in(sender_id: int, quest_id: String, player_level: int) -> void:
+	if not _known_players.has(sender_id):
+		return
+	var leader := int(_party_leader.get(sender_id, sender_id))
+	if not _party_quest_states.has(leader):
+		return
+	var state: Dictionary = _party_quest_states[leader]
+	if str(state.get("id", "")) != quest_id or str(state.get("state", "")) != "ready":
+		return
+	Quests.ensure_loaded()
+	var d: Dictionary = Quests.DEFS.get(quest_id, {})
+	if d.is_empty():
+		return
+	var base_level := clampi(player_level, 1, GameData.MAX_LEVEL)
+	var xp := int(d.get("xp", 0))
+	for i in int(d.get("levels", 0)):
+		xp += GameData.xp_needed(base_level + i)
+	var spins := int(d.get("reward", 0))
+	_party_quest_states.erase(leader)
+	for id in _known_players:
+		var peer_id := int(id)
+		if not _same_party(peer_id, leader):
+			continue
+		if peer_id == 1:
+			if _quest_manager != null and is_instance_valid(_quest_manager):
+				_quest_manager.apply_party_quest_reward(quest_id, xp, spins)
+		else:
+			_receive_party_quest_reward.rpc_id(peer_id, quest_id, xp, spins)
+
+@rpc("authority", "call_remote", "reliable")
+func _receive_party_quest_reward(quest_id: String, xp: int, spins: int) -> void:
+	if _quest_manager != null and is_instance_valid(_quest_manager):
+		_quest_manager.apply_party_quest_reward(quest_id, xp, spins)
+	_party_quest_states.erase(local_party_leader())
+
+func quest_enemy_killed(enemy_id: String, leader_id: int) -> void:
+	if not is_active() or session_mode != "coop" or not multiplayer.is_server():
+		return
+	_remove_quest_enemy.rpc(enemy_id)
+	_grant_party_quest_kill_reward(leader_id)
+	if not _party_quest_states.has(leader_id):
+		return
+	var state: Dictionary = _party_quest_states[leader_id]
+	var quest_id := str(state.get("id", ""))
+	if quest_id == "" or str(state.get("state", "")) != "active":
+		return
+	Quests.ensure_loaded()
+	var d: Dictionary = Quests.DEFS.get(quest_id, {})
+	if d.is_empty() or not ["kill", "hunt"].has(str(d.get("type", ""))):
+		return
+	var progress := mini(int(state.get("progress", 0)) + 1, int(d.get("count", 1)))
+	var next_state := "ready" if progress >= int(d.get("count", 1)) else "active"
+	_publish_party_quest_state(leader_id, quest_id, next_state, progress)
+
+func _grant_party_quest_kill_reward(leader_id: int) -> void:
+	for id in _known_players:
+		var peer_id := int(id)
+		if not _same_party(peer_id, leader_id):
+			continue
+		if peer_id == 1:
+			_apply_local_party_quest_kill_reward()
+		else:
+			_party_quest_kill_reward.rpc_id(peer_id)
+
+func _apply_local_party_quest_kill_reward() -> void:
+	if _local_player == null:
+		return
+	_local_player.kills += 1
+	_local_player.on_kill(false)
+	_local_player.add_mode(10.0)
+	_local_player.chakra = minf(_local_player.max_chakra, _local_player.chakra + 10.0)
+
+@rpc("authority", "call_remote", "reliable")
+func _party_quest_kill_reward() -> void:
+	_apply_local_party_quest_kill_reward()
+
+func request_quest_enemy_damage(enemy_id: String, amount: float, knock: Vector3) -> void:
+	if not is_active() or session_mode != "coop" or enemy_id == "":
+		return
+	if multiplayer.is_server():
+		_server_quest_enemy_damage(1, enemy_id, amount, knock)
+	else:
+		_request_quest_enemy_damage.rpc_id(1, enemy_id, amount, knock)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_quest_enemy_damage(enemy_id: String, amount: float, knock: Vector3) -> void:
+	if multiplayer.is_server():
+		_server_quest_enemy_damage(multiplayer.get_remote_sender_id(), enemy_id, amount, knock)
+
+func _server_quest_enemy_damage(sender_id: int, enemy_id: String, amount: float, knock: Vector3) -> void:
+	if not _known_players.has(sender_id):
+		return
+	var enemy: Enemy
+	for candidate in get_tree().get_nodes_in_group("quest_enemies"):
+		if candidate is Enemy and (candidate as Enemy).network_quest_id == enemy_id:
+			enemy = candidate as Enemy
+			break
+	if enemy == null or enemy.network_quest_mirror or not _same_party(sender_id, enemy.network_quest_party_leader):
+		return
+	var attacker_pos := Vector3.ZERO
+	if sender_id == 1:
+		if _local_player == null:
+			return
+		attacker_pos = _local_player.global_position
+	elif _avatars.has(sender_id) and is_instance_valid(_avatars[sender_id]):
+		attacker_pos = _avatars[sender_id].global_position
+	else:
+		return
+	if attacker_pos.distance_to(enemy.global_position) > 55.0:
+		return
+	enemy.take_damage(clampf(amount, 1.0, 150.0), knock.limit_length(18.0))
+
+func _sync_quest_enemy_states() -> void:
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if not node is Enemy:
+			continue
+		var enemy := node as Enemy
+		if enemy.network_quest_id == "" or enemy.network_quest_mirror:
+			continue
+		var yaw := enemy.model.rotation.y if enemy.model != null else 0.0
+		_quest_enemy_state.rpc(enemy.network_quest_id, enemy.global_position, yaw, enemy.health)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _quest_enemy_state(enemy_id: String, pos: Vector3, yaw: float, hp: float) -> void:
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
+			(node as Enemy).apply_quest_network_state(pos, yaw, hp)
+			return
+
+@rpc("authority", "call_remote", "reliable")
+func _remove_quest_enemy(enemy_id: String) -> void:
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
+			(node as Enemy).queue_free()
+			return
 
 ## Shared Kurama raid. Host simulates the boss; clients receive authoritative snapshots.
 func register_raid_boss(boss: Kurama) -> void:
