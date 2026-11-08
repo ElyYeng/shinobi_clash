@@ -713,6 +713,8 @@ func _toggle_power() -> void:
 	pmode = m
 	mode_tick = 0.0
 	var col: Color = m["col"]
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_power_state(true, col)
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
 	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
@@ -729,6 +731,8 @@ func _toggle_power() -> void:
 func _power_off() -> void:
 	if not powered:
 		return
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_power_state(false, Color.WHITE)
 	powered = false
 	pmode = {}
 	if pmode_fx != null and is_instance_valid(pmode_fx):
