@@ -12,6 +12,8 @@ var color := Color(0.8, 0.8, 0.85)
 var long_shape := false
 var target: Node3D = null
 var done := false
+var network_attacker_id := 0
+var network_damage_enabled := false
 
 func _ready() -> void:
 	var col := CollisionShape3D.new()
@@ -72,7 +74,12 @@ func _physics_process(delta: float) -> void:
 	global_position += velocity * delta
 
 func _on_body(b: Node3D) -> void:
-	if done or b is Player:
+	if done:
+		return
+	if b is Player:
+		if network_damage_enabled and NetworkSession.is_active() and b == NetworkSession._local_player:
+			NetworkSession.request_projectile_player_hit(network_attacker_id, damage, global_position)
+		_explode()
 		return
 	if aoe > 0.0:
 		for e: Enemy in get_tree().get_nodes_in_group("enemies"):
