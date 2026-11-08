@@ -46,9 +46,11 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 		# Check the standardized filename first, then earlier names used in setup instructions.
 		if custom_path != "":
 			_scene = load(custom_path) as PackedScene
-			if _using_custom_model:
+			if _scene != null:
 				print("[Hero] loaded user's main Mixamo character: ", custom_path)
 				credit = CREDIT
+			else:
+				push_error("[Hero] Could not load the custom character scene at %s." % custom_path)
 		else:
 			_scene = null
 			push_warning("[Hero] User Mixamo GLB not found. Install character_main.glb under res://assets/character/. Current characters will use the temporary placeholder.")
