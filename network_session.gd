@@ -256,6 +256,40 @@ func broadcast_ability(move_id: String, color: Color) -> void:
 		_request_ability_visual.rpc_id(1, move_id, color)
 
 
+
+## Replicate shadow-clone spawns. Remote copies are visual-only to avoid duplicate AI damage.
+func broadcast_shadow_clones(spawn_positions: Array[Vector3], lifetime: float) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_shadow_clones.rpc(1, spawn_positions, lifetime)
+	else:
+		_request_shadow_clones.rpc_id(1, spawn_positions, lifetime)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_shadow_clones(spawn_positions: Array[Vector3], lifetime: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_spawn_remote_clones(sender, spawn_positions, lifetime)
+	_broadcast_shadow_clones.rpc(sender, spawn_positions, lifetime)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_shadow_clones(peer_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
+	_spawn_remote_clones(peer_id, spawn_positions, lifetime)
+
+func _spawn_remote_clones(peer_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
+	if peer_id == multiplayer.get_unique_id() or _game_root == null or not is_instance_valid(_game_root):
+		return
+	for spawn_pos in spawn_positions:
+		var clone := Clone.new()
+		clone.life = clampf(lifetime, 0.5, 20.0)
+		clone.cosmetic_only = true
+		_game_root.add_child(clone)
+		clone.global_position = spawn_pos
+
 func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float) -> void:
 	if not is_active():
 		return
