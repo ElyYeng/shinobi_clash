@@ -750,7 +750,7 @@ func _page_party() -> Array:
 	return out
 
 func _show_party_invite(inviter_id: int, inviter_name: String) -> void:
-	var old := root.get_node_or_null("PartyInvitePopup")
+	var old := get_node_or_null("PartyInvitePopup")
 	if old != null:
 		old.queue_free()
 	var panel := Panel.new()
@@ -762,7 +762,7 @@ func _show_party_invite(inviter_id: int, inviter_name: String) -> void:
 	sb.set_border_width_all(5)
 	sb.border_color = INK
 	panel.add_theme_stylebox_override("panel", sb)
-	root.add_child(panel)
+	add_child(panel)
 	var title := Label.new()
 	title.text = "PARTY INVITATION"
 	title.position = Vector2(12, 12)
