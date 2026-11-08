@@ -375,14 +375,19 @@ func local_party_leader() -> int:
 	var local_id := multiplayer.get_unique_id()
 	return int(_party_leader.get(local_id, local_id))
 
-func register_quest_manager(manager: Quests) -> void:
+func register_quest_manager(manager: Quests) -> bool:
 	_quest_manager = manager
 	if not is_active() or session_mode != "coop":
-		return
+		return false
 	var leader := local_party_leader()
 	if _party_quest_states.has(leader):
 		var state: Dictionary = _party_quest_states[leader]
 		manager.apply_shared_quest_state(str(state.get("id", "")), str(state.get("state", "")), int(state.get("progress", 0)))
+		return true
+	if multiplayer.is_server() and GameData.quest_active != "":
+		_publish_party_quest_state(leader, GameData.quest_active, GameData.quest_state, GameData.quest_progress)
+		return true
+	return false
 
 func request_party_quest_accept(quest_id: String) -> void:
 	if not is_active() or session_mode != "coop":
