@@ -26,6 +26,23 @@ func _ready() -> void:
 	target_position = global_position
 	_last_position = global_position
 
+
+## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
+func play_ability(move_id: String, color: Color) -> void:
+	if model != null:
+		Hero.play(model, "jutsu", true)
+	var root := get_parent()
+	if root != null:
+		Vfx.burst(root, global_position + Vector3.UP, color, 30, 8.0, 0.28, 0.55, 0.0)
+		Vfx.shockwave(root, global_position + Vector3.UP * 0.2, color, 3.5, 0.4)
+	if name_tag != null:
+		name_tag.text = "%s  •  %s" % [display_name, move_id]
+		var timer := get_tree().create_timer(1.2)
+		timer.timeout.connect(func() -> void:
+			if is_instance_valid(name_tag):
+				name_tag.text = display_name
+		)
+
 func set_network_transform(pos: Vector3, yaw: float) -> void:
 	target_position = pos
 	target_yaw = yaw
