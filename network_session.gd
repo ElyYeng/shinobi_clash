@@ -413,6 +413,17 @@ func register_quest_manager(manager: Quests) -> bool:
 			return true
 	return false
 
+func _notify_party_quest_rejected(peer_id: int, message: String) -> void:
+	if peer_id == 1:
+		if _quest_manager != null and is_instance_valid(_quest_manager) and _quest_manager.hud != null:
+			_quest_manager.hud.toast(message)
+	else:
+		_party_quest_notice.rpc_id(peer_id, message)
+
+@rpc("authority", "call_remote", "reliable")
+func _party_quest_notice(message: String) -> void:
+	if _quest_manager != null and is_instance_valid(_quest_manager) and _quest_manager.hud != null:
+		_quest_manager.hud.toast(message)
 func request_party_quest_accept(quest_id: String) -> void:
 	if not is_active() or session_mode != "coop":
 		return
@@ -433,6 +444,15 @@ func _server_party_quest_accept(sender_id: int, quest_id: String) -> void:
 	if not Quests.DEFS.has(quest_id):
 		return
 	var leader := int(_party_leader.get(sender_id, sender_id))
+	# The world currently owns one quest-enemy simulation manager, so prevent
+	# two different squads from overwriting each other's shared objective.
+	for other_leader in _party_quest_states:
+		if int(other_leader) == leader:
+			continue
+		var other_state: Dictionary = _party_quest_states[other_leader]
+		if str(other_state.get("id", "")) != "":
+			_notify_party_quest_rejected(sender_id, "Another party is already completing a shared quest. Try again when they finish.")
+			return
 	if _party_quest_states.has(leader):
 		var existing: Dictionary = _party_quest_states[leader]
 		if str(existing.get("id", "")) != "":
