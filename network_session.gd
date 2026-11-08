@@ -568,7 +568,7 @@ func _server_quest_enemy_damage(sender_id: int, enemy_id: String, amount: float,
 		if candidate is Enemy and (candidate as Enemy).network_quest_id == enemy_id:
 			enemy = candidate as Enemy
 			break
-	if enemy == null or enemy.network_quest_mirror or not _same_party(sender_id, enemy.network_quest_party_leader):
+	if enemy == null or enemy.health <= 0.0 or enemy.network_quest_defeated or enemy.network_quest_mirror or not _same_party(sender_id, enemy.network_quest_party_leader):
 		return
 	var attacker_pos := Vector3.ZERO
 	if sender_id == 1:
