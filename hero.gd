@@ -34,12 +34,13 @@ const FALLBACKS := {
 
 static var _scene: PackedScene = null
 static var _searched := false
+static var _warned_missing := false
 static var _printed := false
 static var credit := ""
 
 ## Returns a Node3D wrapper (forward = -Z, feet at y=0) or null if no model found.
 static func create(appearance: Dictionary = {}) -> Node3D:
-	if not _searched:
+	if not _searched or _scene == null:
 		_searched = true
 		var custom_path := _resolve_custom_model_path()
 		# The user's Mixamo rig is the only supported main character model.
@@ -53,7 +54,9 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 				push_error("[Hero] Could not load the custom character scene at %s." % custom_path)
 		else:
 			_scene = null
-			push_warning("[Hero] User Mixamo GLB not found. Install character_main.glb under res://assets/character/. Current characters will use the temporary placeholder.")
+			if not _warned_missing:
+				push_warning("[Hero] User Mixamo GLB not found. Install character_main.glb under res://assets/character/. Current characters will use the temporary placeholder.")
+				_warned_missing = true
 	if _scene == null:
 		return null
 	var inst := _scene.instantiate() as Node3D
