@@ -130,6 +130,10 @@ func _on_kurama_defeated() -> void:
 	GameData.save()
 	hud.victory = true
 	hud.toast("Kurama defeated!  +5 spins")
+	# Only the host starts the transition; the reliable RPC moves the entire
+	# raid party together and keeps NetworkSession/party membership alive.
+	if NetworkSession.is_active() and NetworkSession.session_mode == "raid" and multiplayer.is_server():
+		NetworkSession.complete_kurama_raid()
 
 # ---------------------------------------------------------------- Mode: OPEN WORLD
 func _start_world() -> void:
