@@ -405,6 +405,8 @@ func _melee() -> void:
 		var reach := 3.2 * e.k
 		if to.length() < reach and (to.length() < 0.8 or facing.dot(to.normalized()) > 0.3):
 			e.take_damage(dmg, facing * knock)
+	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
+		NetworkSession.try_hit_players(dmg, facing * knock)
 	if not _play_once("attack", attack_cd + 0.1, combo - 1):
 		Fx.swing(arm)
 
