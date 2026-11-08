@@ -16,7 +16,7 @@ const BTN := Color(0.22, 0.62, 0.12)
 const BODY_TEXT := Color(0.16, 0.1, 0.05)
 const SCROLL_SIZE := Vector2(900, 580)
 const TABS := ["Stats", "Ninja Tools", "Element", "Bloodline", "Sub-Ability", "Companions",
-	"Travel", "Mastery", "Cheats", "Customs", "Controls"]
+	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party"]
 const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight"}
 const MODE_ORDER := ["fight", "world", "kurama"]
 
@@ -296,8 +296,8 @@ func _ready() -> void:
 	# tabs
 	for i in TABS.size():
 		var t := BrushTab.new()
-		t.setup(TABS[i], 205.0, 34.0, 0.0 if i % 2 == 0 else 26.0)
-		t.position = Vector2(34, 158 + i * 35)
+		t.setup(TABS[i], 205.0, 31.0, 0.0 if i % 2 == 0 else 26.0)
+		t.position = Vector2(34, 158 + i * 32)
 		t.pressed.connect(_select_tab.bind(i))
 		scroll.add_child(t)
 		tab_nodes.append(t)
@@ -325,6 +325,8 @@ func _ready() -> void:
 	scroll.add_child(bl_page)
 	bl_page.visible = false
 	root.visible = false
+	if NetworkSession.is_active() and not NetworkSession.party_invite_received.is_connected(_show_party_invite):
+		NetworkSession.party_invite_received.connect(_show_party_invite)
 
 func _rect(r: Rect2, col: Color) -> ColorRect:
 	var c := ColorRect.new()
@@ -714,6 +716,7 @@ func _build_items(i: int) -> Array:
 		"Cheats": return _page_cheats()
 		"Customs": return _page_customs()
 		"Controls": return _page_controls()
+		"Party": return _page_party()
 	return []
 
 const STAT_INFO := {
@@ -723,6 +726,77 @@ const STAT_INFO := {
 	"stamina": ["Stamina", "+%d max stamina per point", Color(0.95, 0.5, 0.1), "S"],
 	"bloodline": ["Bloodline", "+%d%% bloodline ability damage per point", Color(0.9, 0.1, 0.15), "B"],
 }
+
+func _page_party() -> Array:
+	if not NetworkSession.is_active():
+		return [_item("Not connected", "Join a multiplayer session first", Color(0.6, 0.55, 0.45), "!", "Host or join from the Multiplayer option on the main menu.")]
+	var out: Array = []
+	var my_id := multiplayer.get_unique_id()
+	var leader := int(NetworkSession._party_leader.get(my_id, my_id))
+	out.append(_item("Your Party", "%d / 4 members" % NetworkSession._party_size(leader), Color(0.8, 0.65, 0.2), "P", "Invite connected players below. Party members cannot damage each other."))
+	for id in NetworkSession._known_players:
+		var peer_id := int(id)
+		if peer_id == my_id:
+			continue
+		var in_party := NetworkSession._same_party(my_id, peer_id)
+		var nm := str(NetworkSession._known_players[id])
+		var lv := int(NetworkSession._known_levels.get(id, 1))
+		var acts: Array = []
+		if in_party:
+			acts.append(_act("IN PARTY", func() -> void: pass, "", true))
+		else:
+			acts.append(_act("INVITE", NetworkSession.invite_to_party.bind(peer_id), "", NetworkSession._party_size(leader) >= 4))
+		out.append(_item(nm, "Level %d  •  %s" % [lv, "PARTY MEMBER" if in_party else "CONNECTED"], Color(0.25, 0.7, 0.35) if in_party else Color(0.35, 0.55, 0.8), "N", "Player ID: %d\n%s" % [peer_id, "You are already in the same party." if in_party else "Send this player a party invitation."], {"actions": acts}))
+	return out
+
+func _show_party_invite(inviter_id: int, inviter_name: String) -> void:
+	var old := root.get_node_or_null("PartyInvitePopup")
+	if old != null:
+		old.queue_free()
+	var panel := Panel.new()
+	panel.name = "PartyInvitePopup"
+	panel.position = (get_viewport_rect().size - Vector2(340, 170)) / 2.0
+	panel.size = Vector2(340, 170)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = PARCH
+	sb.set_border_width_all(5)
+	sb.border_color = INK
+	panel.add_theme_stylebox_override("panel", sb)
+	root.add_child(panel)
+	var title := Label.new()
+	title.text = "PARTY INVITATION"
+	title.position = Vector2(12, 12)
+	title.size = Vector2(316, 32)
+	_style_label(title, 23, INK, 3)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+	var msg := Label.new()
+	msg.text = "%s invited you to their party." % inviter_name
+	msg.position = Vector2(12, 52)
+	msg.size = Vector2(316, 35)
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_color_override("font_color", BODY_TEXT)
+	msg.add_theme_font_size_override("font_size", 16)
+	panel.add_child(msg)
+	var accept := Button.new()
+	accept.text = "ACCEPT"
+	accept.position = Vector2(24, 108)
+	accept.size = Vector2(132, 42)
+	_style_green(accept)
+	accept.pressed.connect(func() -> void:
+		NetworkSession.accept_party_invite(inviter_id)
+		panel.queue_free()
+		_reload_page())
+	panel.add_child(accept)
+	var decline := Button.new()
+	decline.text = "DECLINE"
+	decline.position = Vector2(184, 108)
+	decline.size = Vector2(132, 42)
+	_style_green(decline)
+	decline.pressed.connect(func() -> void:
+		NetworkSession.decline_party_invite(inviter_id)
+		panel.queue_free())
+	panel.add_child(decline)
 
 func _page_stats() -> Array:
 	var q := GameData.quests_done.size()
