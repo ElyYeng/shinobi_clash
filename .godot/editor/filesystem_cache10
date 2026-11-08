@@ -3,7 +3,7 @@
 ability_bar.gd::GDScript::6745162455798817200::1794094488::0::1::::AbilityBar<>Control<><>0<>0<><>::
 bloodline.gd::GDScript::7467067005513776309::1794092507::0::1::::Bloodline<>RefCounted<><>0<>0<><>::
 boss_shot.gd::GDScript::815507746886068423::1794083170::0::1::::BossShot<>Node3D<><>0<>0<><>::
-character_creator.gd::GDScript::7075450280636038207::1794176330::0::1::::<>CanvasLayer<><>0<>0<><>::
+character_creator.gd::GDScript::7075450280636038207::1794177426::0::1::::<>CanvasLayer<><>0<>0<><>::
 clone.gd::GDScript::3957002576662749997::1794172112::0::1::::Clone<>Node3D<><>0<>0<><>::
 CREDITS.md::TextFile::-1::1794083170::0::1::::<><><>0<>0<><>::
 dialog.gd::GDScript::1676796941261360923::1794083170::0::1::::DialogBox<>CanvasLayer<><>0<>0<><>::
@@ -12,12 +12,12 @@ enemy.gd::GDScript::7687718952522186214::1794155293::0::1::::Enemy<>CharacterBod
 export_presets.cfg::TextFile::-1::1794152740::0::1::::<><><>0<>0<><>::
 FIXES.md::TextFile::-1::1794083805::0::1::::<><><>0<>0<><>::
 fx.gd::GDScript::7775042515393488424::1794096907::0::1::::Fx<>RefCounted<><>0<>0<><>::
-gamedata.gd::GDScript::6328727983613246987::1794174677::0::1::::GameData<>RefCounted<><>0<>0<><>::
+gamedata.gd::GDScript::6328727983613246987::1794177426::0::1::::GameData<>RefCounted<><>0<>0<><>::
 game_map.gd::GDScript::5908773717250999369::1794101210::0::1::::GameMap<>Node3D<><>0<>0<><>::
 game_menu.gd::GDScript::809656356807400689::1794150816::0::1::::GameMenu<>CanvasLayer<><>0<>0<><>::
 grass_patch.gd::GDScript::5064263771892012885::1794100078::0::1::::GrassPatch<>Node3D<><>0<>1<><>::
 grass_texture_data.gd::GDScript::1440622627459748026::1794168571::0::1::::<>RefCounted<><>0<>0<><>::
-hero.gd::GDScript::5177824147629990275::1794174677::0::1::::Hero<>RefCounted<><>0<>0<><>::
+hero.gd::GDScript::5177824147629990275::1794177426::0::1::::Hero<>RefCounted<><>0<>0<><>::
 hud.gd::GDScript::4700722380694721419::1794094489::0::1::::HUD<>CanvasLayer<><>0<>0<><>::
 kurama.gd::GDScript::7696684015130423931::1794152277::0::1::::Kurama<>Enemy<><>0<>0<><>::
 main.gd::GDScript::7144483804951604481::1794155686::0::1::::<>Node3D<><>0<>0<><>::
@@ -53,17 +53,17 @@ vfx.gd::GDScript::614237826759111886::1794098514::0::1::::Vfx<>RefCounted<><>0<>
 world_terrain.gd::GDScript::1364128919977764962::1794172112::0::1::::<>Node3D<><>0<>1<><>::
 ::res://assets/::1794173455
 PUT_YOUR_MODEL_HERE.txt::TextFile::-1::1794173455::0::1::::<><><>0<>0<><>::
-::res://assets/character/::1794177108
-character_main.glb::PackedScene::4164685748347679495::1794177222::1794177237::1::::<><><>0<>0<>61a136f653ed331847ceaf6b25639da5<>res://.godot/imported/character_main.glb-0757196d80ccdcc7981ddf5768e712b1.scn::uid://cx3jjuo5fvp4::::res://assets/character/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png<>uid://lje8mmep16cp::::res://assets/character/character_main_T_CHR_Eye_BC.png<>uid://dhtc5wu4flos::::res://assets/character/character_main_T_CHR_Man_Vest_01_BC.png<>uid://dly3gjx1p40ep::::res://assets/character/character_main_Male_Bottom_Cos_NB_Yellow_D.png<>uid://bhqveanxlcdrc::::res://assets/character/character_main_Male_Top_Cos_NB_Yellow_D.png<>uid://0ya57dqc2dhq::::res://assets/character/character_main_shoe d.png<>uid://d16rehn32j20s::::res://assets/character/character_main_top d.png<>uid://dgjx0ytiqxkhw::::res://assets/character/character_main_bottom d.png
+::res://assets/character/::1794179227
+character_main.glb::PackedScene::4164685748347679495::1794180246::1794180251::1::::<><><>0<>0<>61a136f653ed331847ceaf6b25639da5<>res://.godot/imported/character_main.glb-0757196d80ccdcc7981ddf5768e712b1.scn::uid://cx3jjuo5fvp4::::res://assets/character/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png<>uid://lje8mmep16cp::::res://assets/character/character_main_T_CHR_Eye_BC.png<>uid://dhtc5wu4flos::::res://assets/character/character_main_T_CHR_Man_Vest_01_BC.png<>uid://dly3gjx1p40ep::::res://assets/character/character_main_Male_Bottom_Cos_NB_Yellow_D.png<>uid://bhqveanxlcdrc::::res://assets/character/character_main_Male_Top_Cos_NB_Yellow_D.png<>uid://0ya57dqc2dhq::::res://assets/character/character_main_shoe d.png<>uid://d16rehn32j20s::::res://assets/character/character_main_top d.png<>uid://dgjx0ytiqxkhw::::res://assets/character/character_main_bottom d.png
 README.txt::TextFile::-1::1794174677::0::1::::<><><>0<>0<><>::
-character_main_Male_Bottom_Cos_NB_Yellow_D.png::CompressedTexture2D::7982595697199172179::1794174386::1794177237::1::::<><><>0<>0<>ef3ef29d4e6bee1f9cf465240c93a0c2<>res://.godot/imported/character_main_Male_Bottom_Cos_NB_Yellow_D.png-6f5a6a2128fde188602b1f5835c52b21.s3tc.ctex::
-character_main_T_CHR_Eye_BC.png::CompressedTexture2D::790959127995520911::1794174386::1794177237::1::::<><><>0<>0<>13f69dccfa9778419d13311c50b7108e<>res://.godot/imported/character_main_T_CHR_Eye_BC.png-e67800c20492b3dc559ead4109b12415.s3tc.ctex::
-character_main_T_CHR_Man_Vest_01_BC.png::CompressedTexture2D::226175980276761618::1794174386::1794177237::1::::<><><>0<>0<>0ace15e59bf98db1c7bd7a1b5762e696<>res://.godot/imported/character_main_T_CHR_Man_Vest_01_BC.png-00009932eed0760e61c7922ccb6acc90.s3tc.ctex::
-character_main_Male_Top_Cos_NB_Yellow_D.png::CompressedTexture2D::2912054854390254000::1794174386::1794177237::1::::<><><>0<>0<>1d0b430509762eaa8450f6928c6fa90b<>res://.godot/imported/character_main_Male_Top_Cos_NB_Yellow_D.png-98323fb72bef61abacd089dc430f82bb.s3tc.ctex::
-character_main_shoe d.png::CompressedTexture2D::1804321416977713346::1794174386::1794177237::1::::<><><>0<>0<>0e4aaf4219e6bb57af4fb50481da5b8c<>res://.godot/imported/character_main_shoe d.png-173ee33117388922917b07d3cf5e12e0.s3tc.ctex::
-character_main_top d.png::CompressedTexture2D::9049207417151214856::1794174386::1794177237::1::::<><><>0<>0<>93d9176c5885c044c08da4bc4cc3fae2<>res://.godot/imported/character_main_top d.png-416a233d35d8868d29b922249d7cbd8b.s3tc.ctex::
-character_main_bottom d.png::CompressedTexture2D::7600416938672754468::1794174387::1794177237::1::::<><><>0<>0<>c5dc9b6e055b84c09d9d5daf07ead68b<>res://.godot/imported/character_main_bottom d.png-5d89418511a135d90a05aa13bd3234ef.s3tc.ctex::
-character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png::CompressedTexture2D::189575027844691639::1794177107::1794177237::1::::<><><>0<>0<>1bf8c9cdc320d451ff40458affefbd2a<>res://.godot/imported/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png-509ca37be805e9f915e19658bf9238fe.s3tc.ctex::
+character_main_Male_Bottom_Cos_NB_Yellow_D.png::CompressedTexture2D::7982595697199172179::1794174386::1794180250::1::::<><><>0<>0<>ef3ef29d4e6bee1f9cf465240c93a0c2<>res://.godot/imported/character_main_Male_Bottom_Cos_NB_Yellow_D.png-6f5a6a2128fde188602b1f5835c52b21.s3tc.ctex::
+character_main_T_CHR_Eye_BC.png::CompressedTexture2D::790959127995520911::1794174386::1794180250::1::::<><><>0<>0<>13f69dccfa9778419d13311c50b7108e<>res://.godot/imported/character_main_T_CHR_Eye_BC.png-e67800c20492b3dc559ead4109b12415.s3tc.ctex::
+character_main_T_CHR_Man_Vest_01_BC.png::CompressedTexture2D::226175980276761618::1794174386::1794180250::1::::<><><>0<>0<>0ace15e59bf98db1c7bd7a1b5762e696<>res://.godot/imported/character_main_T_CHR_Man_Vest_01_BC.png-00009932eed0760e61c7922ccb6acc90.s3tc.ctex::
+character_main_Male_Top_Cos_NB_Yellow_D.png::CompressedTexture2D::2912054854390254000::1794174386::1794180250::1::::<><><>0<>0<>1d0b430509762eaa8450f6928c6fa90b<>res://.godot/imported/character_main_Male_Top_Cos_NB_Yellow_D.png-98323fb72bef61abacd089dc430f82bb.s3tc.ctex::
+character_main_shoe d.png::CompressedTexture2D::1804321416977713346::1794174386::1794180250::1::::<><><>0<>0<>0e4aaf4219e6bb57af4fb50481da5b8c<>res://.godot/imported/character_main_shoe d.png-173ee33117388922917b07d3cf5e12e0.s3tc.ctex::
+character_main_top d.png::CompressedTexture2D::9049207417151214856::1794174386::1794180250::1::::<><><>0<>0<>93d9176c5885c044c08da4bc4cc3fae2<>res://.godot/imported/character_main_top d.png-416a233d35d8868d29b922249d7cbd8b.s3tc.ctex::
+character_main_bottom d.png::CompressedTexture2D::7600416938672754468::1794174387::1794180250::1::::<><><>0<>0<>c5dc9b6e055b84c09d9d5daf07ead68b<>res://.godot/imported/character_main_bottom d.png-5d89418511a135d90a05aa13bd3234ef.s3tc.ctex::
+character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png::CompressedTexture2D::189575027844691639::1794177107::1794180250::1::::<><><>0<>0<>1bf8c9cdc320d451ff40458affefbd2a<>res://.godot/imported/character_main_T_CHR_HeadGear_Metal_Konoha_01_BC.png-509ca37be805e9f915e19658bf9238fe.s3tc.ctex::
 ::res://assets/icons/::1794148044
 base_armor.png::CompressedTexture2D::6480369987268773053::1794094488::1794148044::1::::<><><>0<>0<>0acb683f7feb00507694393c080078f2<>res://.godot/imported/base_armor.png-9f2dd197f01e21085640e44e27e1c2a4.ctex::
 base_clones.png::CompressedTexture2D::4951208684277569463::1794094488::1794148044::1::::<><><>0<>0<>d44f23562534cd53bf4439a14165620b<>res://.godot/imported/base_clones.png-cd64cb8f282ecdf766488744fdccabec.ctex::
