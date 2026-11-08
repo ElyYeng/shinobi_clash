@@ -245,6 +245,34 @@ func _apply_player_damage(amount: float, knockback: Vector3) -> void:
 	if _local_player != null:
 		_local_player.take_damage(amount, knockback)
 
+
+## Broadcast a successful ability cast so every peer can render its remote visual.
+func broadcast_ability(move_id: String, color: Color) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_broadcast_ability_visual.rpc(1, move_id, color)
+	else:
+		_request_ability_visual.rpc_id(1, move_id, color)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_ability_visual(move_id: String, color: Color) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_show_remote_ability(sender, move_id, color)
+	_broadcast_ability_visual.rpc(sender, move_id, color)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_ability_visual(peer_id: int, move_id: String, color: Color) -> void:
+	_show_remote_ability(peer_id, move_id, color)
+
+func _show_remote_ability(peer_id: int, move_id: String, color: Color) -> void:
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].play_ability(move_id, color)
+
 func _on_connection_failed() -> void:
 	is_host = false
 	connection_failed.emit("Could not connect. Check the host's Radmin IP, UDP port 7000, and firewall.")
