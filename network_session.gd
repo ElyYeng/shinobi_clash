@@ -131,13 +131,15 @@ func _request_join(requested_name: String, requested_level: int) -> void:
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1))})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id))})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
 	_known_levels[sender] = clampi(requested_level, 1, 9999)
-	_party_leader[sender] = sender
+	_party_leader[sender] = 1 if session_mode == "raid" else sender
 	_spawn_remote_local(sender, safe_name, int(_known_levels[sender]))
 	_spawn_remote.rpc(sender, safe_name, int(_known_levels[sender]))
+	if session_mode == "raid":
+		_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_join_accepted.rpc_id(sender, session_mode)
 
 @rpc("authority", "call_remote", "reliable")
@@ -148,6 +150,7 @@ func _receive_roster(roster: Array) -> void:
 		var lv := int(entry.get("level", 1))
 		_known_players[id] = nm
 		_known_levels[id] = lv
+		_party_leader[id] = int(entry.get("party_leader", id))
 		if id != multiplayer.get_unique_id():
 			_spawn_remote_local(id, nm, lv)
 
