@@ -43,18 +43,19 @@ static var credit := ""
 static func create(appearance: Dictionary = {}) -> Node3D:
 	if not _searched:
 		_searched = true
-		var custom_path := ASSET_DIR.path_join(CUSTOM_MODEL_FILE)
-		# Use the supplied Mixamo character as the sole main rig.
-		# Never silently fall back to the old Naruto model.
-		if ResourceLoader.exists(custom_path):
+		var custom_path := _resolve_custom_model_path()
+		# The user's Mixamo rig is the only supported main character model.
+		# Check the standardized filename first, then earlier names used in setup instructions.
+		if custom_path != "":
 			_scene = load(custom_path) as PackedScene
-			_using_custom_model = true
-			print("[Hero] loaded main Mixamo character: ", custom_path)
-			credit = CREDIT
+			_using_custom_model = _scene != null
+			if _using_custom_model:
+				print("[Hero] loaded user's main Mixamo character: ", custom_path)
+				credit = CREDIT
 		else:
 			_scene = null
 			_using_custom_model = false
-			push_warning("[Hero] Main character GLB missing at %s; using gameplay placeholder until it is installed." % custom_path)
+			push_warning("[Hero] User Mixamo GLB not found. Install character.glb under res://assets/character/. Current characters will use the temporary placeholder.")
 	if _scene == null:
 		return null
 	var inst := _scene.instantiate() as Node3D
@@ -79,26 +80,51 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 ## The supplied GLB contains two hair meshes, two shirt meshes and two pants
 ## meshes, all authored for the same Mixamo skeleton. Toggle the actual meshes
 ## instead of adding primitive clothing overlays.
-static func _apply_custom_model_parts(inst: Node3D, appearance: Dictionary) -> void:
-	# Hair 1 = the short-spiky mesh; Hair 2 = the larger spiky mesh.
-	var hair_style := str(appearance.get("hair_style", "spiky"))
-	var short_hair := inst.find_child("SK_CHR_Man_ShortSpikyHair_05mo", true, false) as MeshInstance3D
-	var spiky_hair := inst.find_child("SK_CHR_Man_SpikyHair_08mo", true, false) as MeshInstance3D
-	if short_hair != null:
-		short_hair.visible = hair_style == "short"
-		_tint_mesh(short_hair, Color.from_string(str(appearance.get("hair_color", "#20202A")), Color(0.12, 0.12, 0.16)))
-	if spiky_hair != null:
-		spiky_hair.visible = hair_style != "short"
-		_tint_mesh(spiky_hair, Color.from_string(str(appearance.get("hair_color", "#20202A")), Color(0.12, 0.12, 0.16)))
+static func _resolve_custom_model_path() -> String:
+	var candidates := [
+		ASSET_DIR.path_join(CUSTOM_MODEL_FILE),
+		ASSET_DIR.path_join("character costum test1(3).glb"),
+		ASSET_DIR.path_join("character costum test1(2).glb"),
+		ASSET_DIR.path_join("character costum test1.glb")
+	]
+	for path in candidates:
+		if ResourceLoader.exists(path):
+			return path
+	# As a final convenience, accept another GLB placed in the character-only folder.
+	return _scan(ASSET_DIR, 1)
 
-	# Shirt 1 / 2 and Pants 1 / 2 are the actual skinned meshes in the supplied GLB.
+
+static func _find_mesh(root: Node, mesh_id: String, old_node_name: String = "") -> MeshInstance3D:
+	for node in root.find_children("*", "MeshInstance3D", true, false):
+		var part := node as MeshInstance3D
+		if part.mesh == null:
+			continue
+		var resource_id := part.mesh.resource_name.to_lower()
+		if resource_id == mesh_id.to_lower() or (old_node_name != "" and part.name == old_node_name):
+			return part
+	return null
+
+
+## Uses the exact mesh resource names exported in the latest user-supplied GLB:
+## hair1/hair2, shirt1/shirt2, pants1/pants2. Each skinned part shares the Mixamo rig.
+static func _apply_custom_model_parts(inst: Node3D, appearance: Dictionary) -> void:
+	var hair_choice := str(appearance.get("hair_style", "short"))
+	var hair_1 := _find_mesh(inst, "hair1", "SK_CHR_Man_ShortSpikyHair_05mo")
+	var hair_2 := _find_mesh(inst, "hair2", "SK_CHR_Man_SpikyHair_08mo")
+	if hair_1 != null:
+		hair_1.visible = hair_choice == "short" or hair_choice == "hair_1"
+		_tint_mesh(hair_1, Color.from_string(str(appearance.get("hair_color", "#E6B52E")), Color(0.9, 0.72, 0.2)))
+	if hair_2 != null:
+		hair_2.visible = not (hair_choice == "short" or hair_choice == "hair_1")
+		_tint_mesh(hair_2, Color.from_string(str(appearance.get("hair_color", "#E6B52E")), Color(0.9, 0.72, 0.2)))
+
 	var shirt_choice := str(appearance.get("shirt_style", "shirt_1"))
 	if shirt_choice == "shirt_a":
 		shirt_choice = "shirt_1"
 	elif shirt_choice == "shirt_b":
 		shirt_choice = "shirt_2"
-	var shirt_1 := inst.find_child("Male_Lobby_Top_Cos_NB_Yellow", true, false) as MeshInstance3D
-	var shirt_2 := inst.find_child("Mesh_0147.rip.053", true, false) as MeshInstance3D
+	var shirt_1 := _find_mesh(inst, "shirt1", "Mesh_0147.rip.053")
+	var shirt_2 := _find_mesh(inst, "shirt2", "Male_Lobby_Top_Cos_NB_Yellow")
 	if shirt_1 != null:
 		shirt_1.visible = shirt_choice == "shirt_1"
 	if shirt_2 != null:
@@ -109,20 +135,27 @@ static func _apply_custom_model_parts(inst: Node3D, appearance: Dictionary) -> v
 		pants_choice = "pants_1"
 	elif pants_choice == "pants_b":
 		pants_choice = "pants_2"
-	var pants_1 := inst.find_child("Male_Lobby_Bottom_Cos_NB_Yellow", true, false) as MeshInstance3D
-	var pants_2 := inst.find_child("Mesh_0147.rip.110", true, false) as MeshInstance3D
+	var pants_1 := _find_mesh(inst, "pants1", "Mesh_0147.rip.110")
+	var pants_2 := _find_mesh(inst, "pants2", "Male_Lobby_Bottom_Cos_NB_Yellow")
 	if pants_1 != null:
 		pants_1.visible = pants_choice == "pants_1"
 	if pants_2 != null:
 		pants_2.visible = pants_choice == "pants_2"
 
-	# Keep the face/body meshes visible; the head mesh is separate from both hair options.
-	var face := inst.find_child("SK_CHR_Face.mo", true, false) as MeshInstance3D
-	var bald_face := inst.find_child("SK_CHR_Face_bald", true, false) as MeshInstance3D
-	if face != null:
-		face.visible = true
-	if bald_face != null:
-		bald_face.visible = false
+	# Keep the user's face, rear-head and footwear meshes as authored.
+	var shoes := _find_mesh(inst, "shoes", "Mesh_0145.rip")
+	if shoes != null:
+		shoes.visible = true
+	for required_name in ["hair1", "hair2", "shirt1", "shirt2", "pants1", "pants2"]:
+		var found := false
+		for node in inst.find_children("*", "MeshInstance3D", true, false):
+			var part := node as MeshInstance3D
+			if part.mesh != null and part.mesh.resource_name.to_lower() == required_name:
+				found = true
+				break
+		if not found:
+			push_warning("[Hero] Expected customization mesh '%s' was not found in the imported GLB." % required_name)
+
 
 static func _tint_mesh(mesh_instance: MeshInstance3D, tint: Color) -> void:
 	if mesh_instance == null or mesh_instance.mesh == null:
