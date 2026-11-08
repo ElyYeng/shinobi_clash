@@ -1309,6 +1309,8 @@ func _quest_target() -> Vector3:
 func _to_title() -> void:
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if NetworkSession.is_active():
+		NetworkSession.disconnect_session()
 	get_tree().change_scene_to_file("res://menu.tscn")
 
 func _switch_mode(mode: String) -> void:
