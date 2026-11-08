@@ -8,6 +8,7 @@ var target_yaw := 0.0
 var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
+var power_fx: Node3D
 
 func _ready() -> void:
 	add_to_group("network_players")
@@ -59,6 +60,18 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 	var root := get_parent()
 	if root != null:
 		root.add_child(shot)
+
+func set_powered_visual(enabled: bool, color: Color) -> void:
+	if enabled:
+		if power_fx != null and is_instance_valid(power_fx):
+			power_fx.queue_free()
+		power_fx = Node3D.new()
+		add_child(power_fx)
+		Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
+	else:
+		if power_fx != null and is_instance_valid(power_fx):
+			power_fx.queue_free()
+		power_fx = null
 
 func set_network_transform(pos: Vector3, yaw: float) -> void:
 	target_position = pos
