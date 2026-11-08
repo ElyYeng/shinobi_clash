@@ -89,7 +89,7 @@ static func _apply_wearables(inst: Node3D, appearance: Dictionary) -> void:
 		var cap := SphereMesh.new()
 		cap.radius = 0.18 * unit_scale
 		cap.height = 0.27 * unit_scale
-		_add_wear_mesh(hair_attachment, "HairCap", cap, hair, Vector3(0, 0.11, 0) * unit_scale, Vector3.ONE)
+		_add_wear_mesh(hair_attachment, "HairCap", cap, hair, Vector3(0, 0.11, 0) * unit_scale, Vector3.ZERO)
 		if style == "spiky":
 			var spike_positions := [
 				Vector3(-0.10, 0.22, 0.00), Vector3(-0.04, 0.26, 0.03),
