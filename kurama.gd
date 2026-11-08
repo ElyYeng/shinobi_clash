@@ -76,7 +76,7 @@ func apply_raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, b
 	health = hp
 	phase = boss_phase
 	_update_label()
-	var incoming_state := State.values()[clampi(boss_state, 0, State.size() - 1)]
+	var incoming_state: int = int(State.values()[clampi(boss_state, 0, State.size() - 1)])
 	if incoming_state == State.DEAD and state != State.DEAD:
 		_die()
 		return
