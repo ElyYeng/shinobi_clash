@@ -95,6 +95,7 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 	var root := get_parent()
 	if root != null:
 		root.add_child(shot)
+		shot.global_position = origin
 
 func set_powered_visual(enabled: bool, color: Color) -> void:
 	if enabled:
