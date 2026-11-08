@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "nine_tails"
+title = "Legend of the Nine Tails"
+giver = "hermit"
+requires = "bandits"
+type = "kurama"
+reward_spins = 5
+reward_xp = 300
+offer = "Long ago a great fox with nine tails was sealed away. If you are brave enough, go and face it - pick the Kurama Boss Fight (menu M > Travel > Switch Mode, or the main menu) - then come tell me how it ended."
+remind = "Open the menu (M), go to Travel and use Switch Mode (or Main-Menu) to reach the Kurama Boss Fight. Defeat the beast, then come back to me."
+turn = "You defeated the Nine-Tailed Beast?! Then the legends were true. This is yours."

@@ -8,6 +8,9 @@ var damage := 8.0
 var is_boss := false
 var aggro_range := 0.0   # 0 = always hunts the player; >0 = idles until the player is this close
 var aggroed := false
+var display_name := ""                       # shown above the health bar (quest targets)
+var body_color := Color(0.25, 0.25, 0.32)
+var band_color := Color(0.6, 0.6, 0.65)
 
 var atk_cd := 1.0
 var windup := 0.0
@@ -33,7 +36,7 @@ func _setup() -> void:
 	col.shape = cap
 	col.position.y = 0.95 * k
 	add_child(col)
-	model = Fx.make_ninja(Color(0.5, 0.1, 0.1) if is_boss else Color(0.25, 0.25, 0.32), Color(0.6, 0.6, 0.65), Color(1.0, 0.15, 0.08))
+	model = Fx.make_ninja(Color(0.5, 0.1, 0.1) if is_boss else body_color, Color(0.6, 0.6, 0.65) if is_boss else band_color, Color(1.0, 0.15, 0.08))
 	model.scale = Vector3.ONE * k
 	add_child(model)
 	arm = model.get_node("Arm")
@@ -49,6 +52,8 @@ func _setup() -> void:
 func _update_label() -> void:
 	var n := int(ceil(clampf(health / max_health, 0.0, 1.0) * 10.0))
 	label.text = "█".repeat(n) + "░".repeat(10 - n)
+	if display_name != "":
+		label.text = display_name + "\n" + label.text
 	label.modulate = Color(1, 0.3, 0.3) if is_boss else Color(1, 0.9, 0.9)
 
 func _physics_process(delta: float) -> void:

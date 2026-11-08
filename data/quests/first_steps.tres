@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "first_steps"
+title = "First Steps"
+giver = "elder"
+order = 0
+type = "goto"
+pos = Vector3(70, 0, -60)
+place = "Old Training Stone"
+radius = 5.0
+reward_spins = 1
+reward_xp = 300
+offer = "Young one, there is an old training stone to the north-east. Visit it and feel the chakra of those who trained before you."
+remind = "The Old Training Stone is north-east of here. Follow the golden beam of light."
+turn = "You made it! The old ways live on in you. Take this - a bloodline spin."

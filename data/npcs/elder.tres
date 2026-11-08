@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Elder Hayate"
+pos = Vector3(0, 0, -14)
+greeting = "Peace has held for many years. Walk freely, shinobi."
+body_color = Color(0.4, 0.25, 0.55, 1)
+band_color = Color(0.9, 0.85, 0.65, 1)

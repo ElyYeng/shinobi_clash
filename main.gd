@@ -159,6 +159,7 @@ func _start_world() -> void:
 	dialog.bind(player)
 	quests = Quests.new()
 	add_child(quests)
+	Quests.ensure_loaded()
 	for id in Quests.NPCS:
 		var d: Dictionary = Quests.NPCS[id]
 		var n := Npc.new()
@@ -168,6 +169,10 @@ func _start_world() -> void:
 		n.band_color = d["band"]
 		n.greeting = d["greet"]
 		n.position = d["pos"]
+		n.model_path = d["model"]
+		n.model_height = d["model_height"]
+		n.model_yaw_deg = d["model_yaw"]
+		n.outline = d["outline"]
 		add_child(n)
 		npcs[id] = n
 	quests.setup(player, hud, self)
@@ -213,9 +218,8 @@ func _talk(npc: Npc) -> void:
 	if not act.is_empty():
 		var is_ready := GameData.quest_state == "ready"
 		if is_ready and act["giver"] == id:
-			var rw := int(act["reward"])
 			dialog.open(npc.display_name, str(act["turn"]),
-				[["Complete quest  (+%d spin%s)" % [rw, "" if rw == 1 else "s"], quests.turn_in]])
+				[["Complete quest  (%s)" % Quests.reward_text(act), quests.turn_in]])
 		elif not is_ready and act["type"] == "deliver" and act["target"] == id:
 			dialog.open(npc.display_name, str(act["deliver_text"]), [["Deliver the message", quests.deliver_done]])
 		elif act["giver"] == id:
@@ -226,8 +230,7 @@ func _talk(npc: Npc) -> void:
 	var qid := quests.available_for(id)
 	if qid != "":
 		var q: Dictionary = Quests.DEFS[qid]
-		var rw2 := int(q["reward"])
-		var txt := "%s\n\n[Quest: %s   Reward: %d spin%s]" % [q["offer"], q["title"], rw2, "" if rw2 == 1 else "s"]
+		var txt := "%s\n\n[Quest: %s   Reward: %s]" % [q["offer"], q["title"], Quests.reward_text(q)]
 		dialog.open(npc.display_name, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
 	else:
 		dialog.open(npc.display_name, npc.greeting + "\n\n(I have no more work for you right now.)", [["Goodbye", none]])

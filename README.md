@@ -104,3 +104,19 @@ Every move shows a picture on the hotbar and in the menus: `assets/icons/<move>.
 `el_fire_0.png`, `base_clones.png`, and `mode_uchiha.png` for a power-up. To use your own art, replace the PNG with the same
 name (square, transparent corners look best), or set `"icon": "res://path/to/image.png"` on an ability in bloodline.gd /
 element_data.gd. Godot imports new images when you open the project.
+
+## Quests and NPCs (modular)
+Every quest and every NPC is its own resource file, loaded automatically when the game starts:
+- `data/quests/<id>.tres` (QuestDef, fields documented in `quest_def.gd`)
+- `data/npcs/<id>.tres` (NpcDef, fields documented in `npc_def.gd`; the file name is the NPC id)
+
+**To add a quest:** duplicate a file in `data/quests`, give it a new `id`, set the `giver` (an NPC file name) and edit it in
+the Inspector. Nothing else to register. Objective types: `goto`, `deliver`, `kill`, `hunt` (named enemies that spawn at
+`pos`, with their own health, damage, speed and colours), `kurama`. Rewards: `reward_spins`, `reward_levels` (whole levels with
+their stat points; your XP progress is kept) and `reward_xp`. `requires` chains quests, `order` sorts several quests from one NPC.
+
+**To add an NPC:** add a file in `data/npcs`. Leave `model` empty for the placeholder ninja or point it at a .glb / .gltf / .tscn;
+it is scaled to `model_height` and plays its first animation as idle. If a model turns black, set `outline = false`.
+
+**Kakashi** (open world, next to the Elder) gives *Rough Ninjas*: defeat 3 Rough Ninjas in the south-west fields, then return
+to him for +2 levels. His model is `assets/kakashi/kakashiwithidle.glb`.

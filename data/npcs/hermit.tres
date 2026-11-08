@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Hermit Sora"
+pos = Vector3(115, 0, -105)
+greeting = "The wind carries old stories. Some of them still growl."
+body_color = Color(0.55, 0.15, 0.15, 1)
+band_color = Color(0.9, 0.7, 0.2, 1)

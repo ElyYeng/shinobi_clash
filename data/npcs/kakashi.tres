@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Kakashi"
+pos = Vector3(9, 0, -9)
+greeting = "Yo. Don't mind me, I'm just catching up on some reading."
+body_color = Color(0.2, 0.3, 0.25, 1)
+band_color = Color(0.75, 0.75, 0.8, 1)
+model = "res://assets/kakashi/kakashiwithidle.glb"
+outline = false

@@ -78,18 +78,20 @@ void fragment() { ALBEDO = vec3(0.06, 0.04, 0.05); }
 	return _outline
 
 ## Converts every material on an imported model to cel shading + outline.
-static func toonify_model(root: Node) -> void:
+## Toon-shades every StandardMaterial3D in a model. outline = false skips the ink outline
+## (use it for models whose normals point inwards, where the outline would cover the whole body).
+static func toonify_model(root: Node, outline := true) -> void:
 	for n in root.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
 		if mi.mesh == null:
 			continue
 		for i in mi.mesh.get_surface_count():
-			var key := "m%d" % mi.mesh.surface_get_material(i).get_instance_id() if mi.mesh.surface_get_material(i) else ""
+			var key := "m%d%s" % [mi.mesh.surface_get_material(i).get_instance_id(), "" if outline else "n"] if mi.mesh.surface_get_material(i) else ""
 			if key == "" or not mi.mesh.surface_get_material(i) is StandardMaterial3D:
 				continue
 			if not _mats.has(key):
 				var m := mi.mesh.surface_get_material(i).duplicate() as StandardMaterial3D
-				toonify(m)
+				toonify(m, outline)
 				_mats[key] = m
 			mi.set_surface_override_material(i, _mats[key])
 

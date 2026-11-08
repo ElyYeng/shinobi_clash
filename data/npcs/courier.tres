@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Courier Rin"
+pos = Vector3(-30, 0, -95)
+greeting = "Fast feet, light bag. That is the courier's way."
+body_color = Color(0.25, 0.45, 0.8, 1)
+band_color = Color(0.95, 0.95, 0.95, 1)

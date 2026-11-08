@@ -7,6 +7,11 @@ var display_name := "Villager"
 var body_color := Color(0.3, 0.5, 0.7)
 var band_color := Color(0.9, 0.9, 0.9)
 var greeting := "Hello."
+var model_path := ""        # .glb / .gltf / .tscn; empty = placeholder ninja
+var model_height := 1.85
+var model_yaw_deg := 180.0
+var outline := true
+var label_y := 2.6
 var model: Node3D
 var marker: Label3D
 
@@ -18,7 +23,9 @@ func _ready() -> void:
 	col.shape = cap
 	col.position.y = 0.95
 	add_child(col)
-	model = Fx.make_ninja(body_color, band_color)
+	model = _load_model()
+	if model == null:
+		model = Fx.make_ninja(body_color, band_color)
 	add_child(model)
 	var nl := Label3D.new()
 	nl.text = display_name
@@ -27,7 +34,7 @@ func _ready() -> void:
 	nl.font_size = 40
 	nl.outline_size = 10
 	nl.pixel_size = 0.005
-	nl.position.y = 2.6
+	nl.position.y = label_y
 	add_child(nl)
 	marker = Label3D.new()
 	marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -35,9 +42,50 @@ func _ready() -> void:
 	marker.font_size = 96
 	marker.outline_size = 18
 	marker.pixel_size = 0.01
-	marker.position.y = 3.4
+	marker.position.y = label_y + 0.8
 	add_child(marker)
 	set_marker("")
+
+## Loads a real character model: scaled to model_height, feet on the ground, first animation looped as idle.
+func _load_model() -> Node3D:
+	if model_path == "" or not ResourceLoader.exists(model_path):
+		if model_path != "":
+			push_warning("[Npc] %s: model not found: %s" % [display_name, model_path])
+		return null
+	var scene := load(model_path) as PackedScene
+	if scene == null:
+		return null
+	var inst := scene.instantiate() as Node3D
+	var wrapper := Node3D.new()
+	var fixer := Node3D.new()
+	fixer.rotation.y = deg_to_rad(model_yaw_deg)
+	wrapper.add_child(fixer)
+	fixer.add_child(inst)
+	var box := AABB()
+	var first := true
+	for n in inst.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		# Skinned meshes are posed by their bones, which already undo any armature scale
+		# (common in Blender exports), so their own bounds are the real size.
+		var skinned := mi.skin != null or mi.skeleton != NodePath("")
+		var b := mi.get_aabb() if skinned else Hero._rel(mi, fixer) * mi.get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	if not first and box.size.y > 0.001:
+		var sc := model_height / box.size.y
+		inst.scale *= sc
+		inst.position = Vector3(-(box.position.x + box.size.x / 2.0) * sc, -box.position.y * sc, -(box.position.z + box.size.z / 2.0) * sc)
+		label_y = model_height + 0.55
+	Fx.toonify_model(inst, outline)
+	var aps := inst.find_children("*", "AnimationPlayer", true, false)
+	if not aps.is_empty():
+		var ap := aps[0] as AnimationPlayer
+		for nm in ap.get_animation_list():
+			if String(nm).to_lower() != "reset":
+				ap.get_animation(nm).loop_mode = Animation.LOOP_LINEAR
+				ap.play(nm)
+				break
+	return wrapper
 
 func set_marker(text: String, color := Color(1.0, 0.9, 0.2)) -> void:
 	marker.text = text
@@ -46,7 +94,7 @@ func set_marker(text: String, color := Color(1.0, 0.9, 0.2)) -> void:
 
 func _process(delta: float) -> void:
 	if marker.visible:
-		marker.position.y = 3.4 + sin(Time.get_ticks_msec() / 300.0) * 0.12
+		marker.position.y = label_y + 0.8 + sin(Time.get_ticks_msec() / 300.0) * 0.12
 	var p := get_tree().get_first_node_in_group("player") as Node3D
 	if p == null:
 		return

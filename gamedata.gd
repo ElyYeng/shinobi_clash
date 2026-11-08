@@ -69,6 +69,7 @@ static func load_data() -> void:
 		return
 	_loaded = true
 	_default_binds()
+	Quests.ensure_loaded()
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)

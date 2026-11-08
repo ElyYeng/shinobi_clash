@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "parcel"
+title = "Lost Parcel"
+giver = "courier"
+type = "goto"
+pos = Vector3(170, 0, 140)
+place = "Dropped Parcel"
+radius = 5.0
+reward_spins = 1
+reward_xp = 300
+offer = "I dropped a parcel somewhere far to the south-east and I cannot leave my post. Could you find it?"
+remind = "Follow the beam to the south-east. The parcel should be right under it."
+turn = "You found it?! You are a lifesaver. A spin for your trouble!"

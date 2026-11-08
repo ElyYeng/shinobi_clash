@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Scout Mika"
+pos = Vector3(75, 0, 45)
+greeting = "I keep watch over the eastern fields. Nothing gets past me."
+body_color = Color(0.2, 0.5, 0.35, 1)
+band_color = Color(0.8, 0.8, 0.9, 1)

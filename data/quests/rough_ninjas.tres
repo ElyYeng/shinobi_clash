@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "rough_ninjas"
+title = "Rough Ninjas"
+giver = "kakashi"
+type = "hunt"
+pos = Vector3(-55, 0, 75)
+count = 3
+enemy_name = "Rough Ninja"
+enemy_health = 90.0
+enemy_damage = 9.0
+enemy_speed = 4.6
+enemy_color = Color(0.34, 0.26, 0.18, 1)
+enemy_band = Color(0.12, 0.12, 0.14, 1)
+reward_levels = 2
+reward_xp = 0
+offer = "Yo. Three rough ninjas have been bothering travellers out in the south-west fields. I'd go myself, but... this book won't read itself. Take care of them for me?"
+remind = "The three rough ninjas are south-west of here - look for the golden beam. Don't let your guard down."
+turn = "All three? Not bad at all. You're more capable than you look. Here - consider this a lesson well learned."

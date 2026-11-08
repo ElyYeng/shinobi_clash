@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Instructor Daichi"
+pos = Vector3(-65, 0, 35)
+greeting = "Strength is built one rep at a time."
+body_color = Color(0.8, 0.45, 0.1, 1)
+band_color = Color(0.2, 0.2, 0.25, 1)

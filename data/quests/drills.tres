@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "drills"
+title = "Chakra Drills"
+giver = "trainer"
+requires = "letter"
+type = "kill"
+pos = Vector3(120, 0, 100)
+count = 8
+reward_spins = 2
+reward_xp = 300
+offer = "Talk is cheap. Prove yourself against eight sparring shinobi waiting in the south-east."
+remind = "The sparring shinobi wait in the south-east. Defeat eight of them."
+turn = "Eight down. Your footwork improved already. Take another spin."
