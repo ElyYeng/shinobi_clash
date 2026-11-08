@@ -228,6 +228,8 @@ func _join_rejected(message: String) -> void:
 func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
+	if _party_leader.has(peer_id):
+		_server_leave_party(peer_id)
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
 	_party_leader.erase(peer_id)
@@ -355,14 +357,21 @@ func _server_leave_party(member_id: int) -> void:
 	for id in _party_leader:
 		if int(_party_leader[id]) == old_leader and int(id) != member_id:
 			members.append(int(id))
+	var promoted_leader := old_leader
 	if member_id == old_leader and not members.is_empty():
 		members.sort()
-		var promoted := members[0]
+		promoted_leader = members[0]
 		for id in members:
-			_party_leader[id] = promoted
+			_party_leader[id] = promoted_leader
+		if _party_quest_states.has(old_leader):
+			_party_quest_states[promoted_leader] = _party_quest_states[old_leader]
+			_party_quest_states.erase(old_leader)
 	_party_leader[member_id] = member_id
 	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_apply_party_state(_party_leader.keys(), _party_leader.values())
+	if promoted_leader != old_leader and _party_quest_states.has(promoted_leader):
+		var shared: Dictionary = _party_quest_states[promoted_leader]
+		_publish_party_quest_state(promoted_leader, str(shared.get("id", "")), str(shared.get("state", "")), int(shared.get("progress", 0)))
 
 func _party_size(leader_id: int) -> int:
 	var count := 0
