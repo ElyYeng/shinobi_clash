@@ -46,7 +46,7 @@ func _ready() -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
-	if aoe > 0.0:
+	if aoe > 0.0 and visual_kind != "rasenshuriken":
 		# fireball: bright core, flame trail and a light that flickers across the scenery
 		var halo := MeshInstance3D.new()
 		var hs := SphereMesh.new()
@@ -104,7 +104,8 @@ func _build_rasenshuriken_visual() -> void:
 		var found := false
 		for node in visual_model.find_children("*", "MeshInstance3D", true, false):
 			var mesh_instance := node as MeshInstance3D
-			var mesh_bounds := mesh_instance.transform * mesh_instance.get_aabb()
+			var relative_transform := visual_model.global_transform.affine_inverse() * mesh_instance.global_transform
+			var mesh_bounds := relative_transform * mesh_instance.get_aabb()
 			bounds = mesh_bounds if not found else bounds.merge(mesh_bounds)
 			found = true
 		var max_dimension := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z)) if found else 1.5
