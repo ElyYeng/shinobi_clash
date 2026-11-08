@@ -64,6 +64,17 @@ static var mastery := {}               # bloodline id (or "el:<Element>" for ele
 static var keybinds := {}
 static var open_customize := false     # main menu opens the spin screen straight away (from the M menu)
 
+## Cosmetic-only character creator selections. Colors are saved as HTML strings for JSON.
+static var character_appearance := {
+	"hair_style": "spiky",
+	"hair_color": "#20202A",
+	"top_color": "#D65A24",
+	"pants_color": "#343C52",
+	"shoes_color": "#20202A",
+	"headband_color": "#343C52",
+	"show_headband": true
+}
+
 static func load_data() -> void:
 	if _loaded:
 		return
@@ -95,6 +106,11 @@ static func load_data() -> void:
 		owned = d.get("owned", ["none"])
 		equipped = str(d.get("equipped", "none"))
 		kurama_defeated = bool(d.get("kurama_defeated", false))
+		var appearance_data = d.get("character_appearance", {})
+		if appearance_data is Dictionary:
+			for key in character_appearance:
+				if appearance_data.has(key):
+					character_appearance[key] = appearance_data[key]
 		quests_done = d.get("quests_done", [])
 		quest_active = str(d.get("quest_active", ""))
 		quest_state = str(d.get("quest_state", ""))
@@ -171,7 +187,7 @@ static func save() -> void:
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
-			"keybinds": keybinds}))
+			"keybinds": keybinds, "character_appearance": character_appearance}))
 
 # ------------------------------------------------------------------ keybinds
 ## Fills any missing hotbar key with its default move.
