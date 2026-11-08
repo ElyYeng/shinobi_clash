@@ -97,9 +97,11 @@ func _load_map() -> void:
 		var old_grass := map.get_node_or_null("Grass")
 		if old_grass != null:
 			old_grass.free()
-		var terrain := WORLD_TERRAIN_SCRIPT.new()
-		terrain.name = "WorldTerrain"
-		map.add_child(terrain)
+		var terrain := map.get_node_or_null("WorldTerrain")
+		if terrain == null:
+			terrain = WORLD_TERRAIN_SCRIPT.new()
+			terrain.name = "WorldTerrain"
+			map.add_child(terrain)
 	add_child(map)
 
 # ---------------------------------------------------------------- Mode: FIGHT
