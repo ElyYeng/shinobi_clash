@@ -67,8 +67,8 @@ static var open_customize := false     # main menu opens the spin screen straigh
 ## Cosmetic-only character creator selections. Colors are saved as HTML strings for JSON.
 static var character_appearance := {
 	"hair_style": "spiky",
-	"hair_color": "#20202A",
-	"hair_hue": 0.0,
+	"hair_color": "#E6B52E",
+	"hair_hue": 0.12,
 	"shirt_style": "shirt_1",
 	"pants_style": "pants_1"
 }
