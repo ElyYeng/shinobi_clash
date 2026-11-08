@@ -378,11 +378,15 @@ func _refresh_party_hud() -> void:
 	if NetworkSession.is_active():
 		var my_id := multiplayer.get_unique_id()
 		var leader := int(NetworkSession._party_leader.get(my_id, my_id))
-		for id in NetworkSession._known_players:
-			if NetworkSession._same_party(my_id, int(id)):
-				signature += "%d:%s:%d;" % [int(id), str(NetworkSession._known_players[id]), int(NetworkSession._known_levels.get(id, 1))]
+		if NetworkSession._party_size(leader) > 1:
+			for id in NetworkSession._known_players:
+				if NetworkSession._same_party(my_id, int(id)):
+					signature += "%d:%s:%d;" % [int(id), str(NetworkSession._known_players[id]), int(NetworkSession._known_levels.get(id, 1))]
+	if signature == party_hud_signature:
+		return
 	party_hud_signature = signature
 	for child in party_hud_list.get_children():
+		party_hud_list.remove_child(child)
 		child.queue_free()
 	if not NetworkSession.is_active() or signature.is_empty():
 		party_hud.visible = false
