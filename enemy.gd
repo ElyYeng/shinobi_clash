@@ -50,7 +50,12 @@ func _setup() -> void:
 	_update_label()
 
 func _update_label() -> void:
-	var n := int(ceil(clampf(health / max_health, 0.0, 1.0) * 10.0))
+	# Some special enemies (including Kurama) create their own model/setup.
+	# Their label may not exist yet when the first multiplayer snapshot arrives.
+	if not is_instance_valid(label):
+		return
+	var safe_max_health := maxf(max_health, 1.0)
+	var n := int(ceil(clampf(health / safe_max_health, 0.0, 1.0) * 10.0))
 	label.text = "█".repeat(n) + "░".repeat(10 - n)
 	if display_name != "":
 		label.text = display_name + "\n" + label.text
