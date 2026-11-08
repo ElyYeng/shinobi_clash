@@ -69,8 +69,11 @@ func _update_label() -> void:
 
 func _physics_process(delta: float) -> void:
 	if network_quest_mirror:
+		var old_position := global_position
 		var blend := 1.0 - exp(-14.0 * delta)
 		global_position = global_position.lerp(_quest_net_position, blend)
+		if delta > 0.0:
+			velocity = (global_position - old_position) / delta
 		if model != null:
 			model.rotation.y = lerp_angle(model.rotation.y, _quest_net_yaw, blend)
 		if _quest_net_health >= 0.0 and absf(health - _quest_net_health) > 0.01:
@@ -85,8 +88,6 @@ func apply_quest_network_state(pos: Vector3, yaw: float, hp: float) -> void:
 	_quest_net_position = pos
 	_quest_net_yaw = yaw
 	_quest_net_health = hp
-	if _quest_net_position == Vector3.ZERO and global_position == Vector3.ZERO:
-		global_position = pos
 
 
 ## Procedural run bob + forward lean for the placeholder ninjas (skipped for models with real animations).
