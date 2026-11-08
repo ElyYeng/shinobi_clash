@@ -257,6 +257,22 @@ func _party_invite(inviter_id: int, inviter_name: String, leader_id: int) -> voi
 	_pending_party_invites[leader_id] = inviter_id
 	party_invite_received.emit(inviter_id, inviter_name)
 
+func decline_party_invite(inviter_id: int) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_pending_party_invites.erase(1)
+	else:
+		_request_decline_party.rpc_id(1, inviter_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_decline_party(inviter_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if int(_pending_party_invites.get(sender, -1)) == int(_party_leader.get(inviter_id, inviter_id)):
+		_pending_party_invites.erase(sender)
+
 func accept_party_invite(inviter_id: int) -> void:
 	if not is_active():
 		return
