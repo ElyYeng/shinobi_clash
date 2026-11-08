@@ -46,6 +46,13 @@ func _ready() -> void:
 	custom_btn = _button(vb, "", "", Color(0.85, 0.3, 0.9))
 	custom_btn.pressed.disconnect(_play.bind(""))
 	custom_btn.pressed.connect(_open_customize)
+	var multi_btn := Button.new()
+	multi_btn.text = "5   MULTIPLAYER  -  Host or join friends over Radmin VPN"
+	multi_btn.custom_minimum_size = Vector2(580, 58)
+	multi_btn.add_theme_font_size_override("font_size", 20)
+	_style_button(multi_btn, Color(0.25, 0.75, 0.95))
+	multi_btn.pressed.connect(_open_multiplayer)
+	vb.add_child(multi_btn)
 	_spacer(vb, 6)
 	var quit := Button.new()
 	quit.text = "Quit"
@@ -77,6 +84,9 @@ func _refresh_info() -> void:
 	stat.text = "Shinobi LV %d    Bloodline: %s    Quests done: %d / %d    Kurama: %s" % [
 		GameData.level, Bloodline.get_def(GameData.equipped)["name"], GameData.quests_done.size(), Quests.DEFS.size(),
 		"DEFEATED" if GameData.kurama_defeated else "undefeated"]
+
+func _open_multiplayer() -> void:
+	get_tree().change_scene_to_file("res://multiplayer_lobby.tscn")
 
 func _open_customize() -> void:
 	if spin != null and not spin.root.visible:
@@ -145,3 +155,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_play("world")
 			KEY_4:
 				_open_customize()
+			KEY_5:
+				_open_multiplayer()
