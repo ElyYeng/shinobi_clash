@@ -1,4 +1,4 @@
-[gd_scene format=4 uid="uid://dj2gvgx4jykfx"]
+[gd_scene format=4 uid="uid://c8jwedtek8rkc"]
 
 [ext_resource type="Script" uid="uid://cqgiv0wj4q4g0" path="res://game_map.gd" id="1_j2yjm"]
 [ext_resource type="PackedScene" uid="uid://b0pl8epam0gs0" path="res://maps/tree1.glb" id="3_jhtt0"]
@@ -620,989 +620,989 @@ play_half = 246.0
 [node name="WorldTerrain" type="Node3D" parent="." unique_id=1772534447]
 script = ExtResource("10_worldterrain")
 
-[node name="Chunk_-1_-1" type="Node3D" parent="WorldTerrain" unique_id=1661461681]
+[node name="Chunk_-1_-1" type="Node3D" parent="WorldTerrain" unique_id=195928123]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 0, -64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=154241963]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1252950706]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_y2voo")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1743180538]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1703117315]
 
-[node name="@CollisionShape3D@41609" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/TerrainCollision" unique_id=1095571383]
+[node name="@CollisionShape3D@26113" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/TerrainCollision" unique_id=2039943270]
 shape = SubResource("ConcavePolygonShape3D_gl62a")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1939607906]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1042119026]
 transform = Transform3D(0.9372756, 0, -0.3485893, 0, 1, 0, 0.3485893, 0, 0.9372756, 46.999836, 2.7294164, 7.2832355)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00" unique_id=437816294 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00" unique_id=1063993361 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.3612566, 0, 0, 0, 7.3612566, 0, 0, 0, 7.3612566, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00/tree1" unique_id=741055697]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00/tree1" unique_id=799015745]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41610" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00" unique_id=2017651556]
+[node name="@CollisionShape3D@26114" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_00" unique_id=727115489]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_dyepv")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1067703845]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=813091287]
 transform = Transform3D(-0.33442956, 0, 0.9424207, 0, 1, 0, -0.9424207, 0, -0.33442956, 31.967123, 1.0095054, 8.445607)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01" unique_id=335080150 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01" unique_id=274173700 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.92801, 0, 0, 0, 9.92801, 0, 0, 0, 9.92801, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01/tree1" unique_id=501404264]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01/tree1" unique_id=1748235294]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41611" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01" unique_id=107214379]
+[node name="@CollisionShape3D@26115" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_01" unique_id=400696420]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_qy3pc")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=90320390]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=657105956]
 transform = Transform3D(-0.9040147, 0, -0.42750135, 0, 1, 0, 0.42750135, 0, -0.9040147, 13.5574465, -2.6361394, 44.941826)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02" unique_id=2091352772 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02" unique_id=166237034 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.780856, 0, 0, 0, 9.780856, 0, 0, 0, 9.780856, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02/tree1" unique_id=1575903379]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02/tree1" unique_id=2071261997]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41612" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02" unique_id=1587453189]
+[node name="@CollisionShape3D@26116" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_02" unique_id=1303268786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_u5g3q")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=625889017]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1160803691]
 transform = Transform3D(0.69976753, 0, 0.7143706, 0, 1, 0, -0.7143706, 0, 0.69976753, 37.697197, -2.4122076, 54.069355)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03" unique_id=391997355 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03" unique_id=1755739129 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.436589, 0, 0, 0, 8.436589, 0, 0, 0, 8.436589, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03/tree1" unique_id=2111454465]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03/tree1" unique_id=300938463]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41613" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03" unique_id=1677499626]
+[node name="@CollisionShape3D@26117" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_03" unique_id=410675445]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_m8k50")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=320537375]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=414678840]
 transform = Transform3D(-0.5589532, 0, 0.8291992, 0, 1, 0, -0.8291992, 0, -0.5589532, 25.945068, -2.5455012, 47.13622)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04" unique_id=1918024938 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04" unique_id=117707245 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.739161, 0, 0, 0, 9.739161, 0, 0, 0, 9.739161, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04/tree1" unique_id=577655318]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04/tree1" unique_id=363594656]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41614" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04" unique_id=947846339]
+[node name="@CollisionShape3D@26118" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_04" unique_id=211179139]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_x0ia5")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=358316639]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_-1" unique_id=1347210196]
 transform = Transform3D(0.89476186, 0, 0.4465436, 0, 1, 0, -0.4465436, 0, 0.89476186, 31.893122, -2.2813406, 42.066433)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05" unique_id=1635264085 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05" unique_id=1727496690 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.607421, 0, 0, 0, 9.607421, 0, 0, 0, 9.607421, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05/tree1" unique_id=1759668067]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05/tree1" unique_id=1542650206]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41615" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05" unique_id=203501855]
+[node name="@CollisionShape3D@26119" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_-1/Tree_05" unique_id=328151171]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_j4esi")
 
-[node name="Chunk_0_-1" type="Node3D" parent="WorldTerrain" unique_id=988040431]
+[node name="Chunk_0_-1" type="Node3D" parent="WorldTerrain" unique_id=1005042908]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1545463361]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1255781689]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_3n3r7")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=66981581]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=885045192]
 
-[node name="@CollisionShape3D@41616" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/TerrainCollision" unique_id=1299939053]
+[node name="@CollisionShape3D@26120" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/TerrainCollision" unique_id=303023022]
 shape = SubResource("ConcavePolygonShape3D_ejhyg")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=777392739]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=415610602]
 transform = Transform3D(-0.10906604, 0, -0.9940345, 0, 1, 0, 0.9940345, 0, -0.10906604, 41.330364, 3.0296443, 6.5700464)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_00" unique_id=1298135632 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_00" unique_id=276405636 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.118781, 0, 0, 0, 7.118781, 0, 0, 0, 7.118781, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_00/tree1" unique_id=1889899037]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_00/tree1" unique_id=450925906]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41617" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_00" unique_id=680856725]
+[node name="@CollisionShape3D@26121" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_00" unique_id=273368553]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ltbwc")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1428524685]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1080056908]
 transform = Transform3D(0.44626945, 0, 0.89489865, 0, 1, 0, -0.89489865, 0, 0.44626945, 22.206089, 4.200385, 43.87433)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_01" unique_id=1581045421 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_01" unique_id=232830893 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.45107, 0, 0, 0, 8.45107, 0, 0, 0, 8.45107, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_01/tree1" unique_id=822986997]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_01/tree1" unique_id=218346728]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41618" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_01" unique_id=1807291014]
+[node name="@CollisionShape3D@26122" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_01" unique_id=556166117]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_7gj2v")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=318144202]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=979827700]
 transform = Transform3D(0.1543945, 0, 0.9880093, 0, 1, 0, -0.9880093, 0, 0.1543945, 52.802395, 3.778491, 25.474459)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_02" unique_id=2024024590 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_02" unique_id=1169907348 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.707532, 0, 0, 0, 9.707532, 0, 0, 0, 9.707532, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_02/tree1" unique_id=1002584484]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_02/tree1" unique_id=2016799754]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41619" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_02" unique_id=464095429]
+[node name="@CollisionShape3D@26123" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_02" unique_id=974141422]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_jceff")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=298659814]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1190720306]
 transform = Transform3D(0.15900096, 0, 0.9872784, 0, 1, 0, -0.9872784, 0, 0.15900096, 17.841553, 4.059927, 35.8403)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_03" unique_id=85661863 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_03" unique_id=239968436 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.188575, 0, 0, 0, 7.188575, 0, 0, 0, 7.188575, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_03/tree1" unique_id=512546034]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_03/tree1" unique_id=1996042013]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41620" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_03" unique_id=1768450603]
+[node name="@CollisionShape3D@26124" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_03" unique_id=794051279]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_74ddi")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1287408409]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=17273165]
 transform = Transform3D(0.84828645, 0, 0.5295376, 0, 1, 0, -0.5295376, 0, 0.84828645, 18.505194, 4.293219, 31.469511)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_04" unique_id=362695163 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_04" unique_id=1986911371 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.4692, 0, 0, 0, 9.4692, 0, 0, 0, 9.4692, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_04/tree1" unique_id=1154648153]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_04/tree1" unique_id=363956239]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41621" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_04" unique_id=1018274475]
+[node name="@CollisionShape3D@26125" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_04" unique_id=1302299377]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_yv6xn")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1070509895]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_-1" unique_id=1107174898]
 transform = Transform3D(0.886683, 0, -0.46237785, 0, 1, 0, 0.46237785, 0, 0.886683, 6.2168493, 2.3219075, 35.772877)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_05" unique_id=1956897732 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_-1/Tree_05" unique_id=1802348478 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.489561, 0, 0, 0, 9.489561, 0, 0, 0, 9.489561, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_05/tree1" unique_id=1435321083]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_-1/Tree_05/tree1" unique_id=1317818399]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41622" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_05" unique_id=201977850]
+[node name="@CollisionShape3D@26126" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_-1/Tree_05" unique_id=265933095]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_54xoo")
 
-[node name="Chunk_1_-1" type="Node3D" parent="WorldTerrain" unique_id=158282447]
+[node name="Chunk_1_-1" type="Node3D" parent="WorldTerrain" unique_id=271319572]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 0, -64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1063643091]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1" unique_id=263691449]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_4cgca")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1464391850]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1322148085]
 
-[node name="@CollisionShape3D@41623" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/TerrainCollision" unique_id=454269873]
+[node name="@CollisionShape3D@26127" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/TerrainCollision" unique_id=532448414]
 shape = SubResource("ConcavePolygonShape3D_sjm0u")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=641299539]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1674730072]
 transform = Transform3D(-0.19221586, 0, 0.9813527, 0, 1, 0, -0.9813527, 0, -0.19221586, 58.36872, 2.7060742, 47.910404)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_00" unique_id=765698047 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_00" unique_id=372339687 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.569006, 0, 0, 0, 7.569006, 0, 0, 0, 7.569006, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_00/tree1" unique_id=321766173]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_00/tree1" unique_id=1442897318]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41624" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_00" unique_id=1467775088]
+[node name="@CollisionShape3D@26128" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_00" unique_id=644364298]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_p6wga")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=885487704]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1429785028]
 transform = Transform3D(-0.13183817, 0, -0.99127126, 0, 1, 0, 0.99127126, 0, -0.13183817, 14.924913, 1.8950051, 20.429316)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_01" unique_id=376978271 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_01" unique_id=32835415 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.480221, 0, 0, 0, 8.480221, 0, 0, 0, 8.480221, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_01/tree1" unique_id=2144886889]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_01/tree1" unique_id=1108882143]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41625" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_01" unique_id=1091163578]
+[node name="@CollisionShape3D@26129" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_01" unique_id=666510805]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_x04s0")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1558036728]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=451054853]
 transform = Transform3D(-0.8907935, 0, -0.45440835, 0, 1, 0, 0.45440835, 0, -0.8907935, 26.560093, 2.300972, 35.14219)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_02" unique_id=1830992737 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_02" unique_id=203535909 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.0050626, 0, 0, 0, 7.0050626, 0, 0, 0, 7.0050626, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_02/tree1" unique_id=767812758]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_02/tree1" unique_id=1110828363]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41626" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_02" unique_id=1500934082]
+[node name="@CollisionShape3D@26130" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_02" unique_id=517559230]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_hkoha")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1629156553]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=111363526]
 transform = Transform3D(0.8112948, 0, -0.5846372, 0, 1, 0, 0.5846372, 0, 0.8112948, 28.883774, 1.2553997, 23.90435)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_03" unique_id=591610679 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_03" unique_id=765792048 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.769234, 0, 0, 0, 9.769234, 0, 0, 0, 9.769234, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_03/tree1" unique_id=908480549]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_03/tree1" unique_id=1444078210]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41627" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_03" unique_id=2104819229]
+[node name="@CollisionShape3D@26131" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_03" unique_id=1774643019]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ywu82")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=697236793]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=845167966]
 transform = Transform3D(0.49093288, 0, -0.8711974, 0, 1, 0, 0.8711974, 0, 0.49093288, 34.36708, 1.6074501, 6.272175)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_04" unique_id=203362264 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_04" unique_id=140103445 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.511833, 0, 0, 0, 9.511833, 0, 0, 0, 9.511833, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_04/tree1" unique_id=1412795024]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_04/tree1" unique_id=1512308811]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41628" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_04" unique_id=902505130]
+[node name="@CollisionShape3D@26132" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_04" unique_id=1312493646]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_lt5hs")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1487411403]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1635959173]
 transform = Transform3D(-0.96777624, 0, 0.25181168, 0, 1, 0, -0.25181168, 0, -0.96777624, 28.400883, 2.0907226, 34.329975)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_05" unique_id=1632696407 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_05" unique_id=1135447391 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.544426, 0, 0, 0, 8.544426, 0, 0, 0, 8.544426, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_05/tree1" unique_id=1282820637]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_05/tree1" unique_id=1574796751]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41629" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_05" unique_id=2060425941]
+[node name="@CollisionShape3D@26133" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_05" unique_id=1167669497]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_118iu")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1538823782]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_-1" unique_id=1546395552]
 transform = Transform3D(0.8043096, 0, 0.59421045, 0, 1, 0, -0.59421045, 0, 0.8043096, 31.810158, 2.8129687, 45.525597)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_06" unique_id=1369970838 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_-1/Tree_06" unique_id=1734669001 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.441702, 0, 0, 0, 9.441702, 0, 0, 0, 9.441702, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_06/tree1" unique_id=1194249307]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_-1/Tree_06/tree1" unique_id=1179349650]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41630" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_06" unique_id=2115154715]
+[node name="@CollisionShape3D@26134" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_-1/Tree_06" unique_id=297242531]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_rb2wp")
 
-[node name="Chunk_-1_0" type="Node3D" parent="WorldTerrain" unique_id=328857655]
+[node name="Chunk_-1_0" type="Node3D" parent="WorldTerrain" unique_id=1651879176]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 0, 0)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0" unique_id=61892825]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0" unique_id=629985277]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_18a14")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=143870239]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=39854587]
 
-[node name="@CollisionShape3D@41631" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/TerrainCollision" unique_id=2022141056]
+[node name="@CollisionShape3D@26135" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/TerrainCollision" unique_id=1753614073]
 shape = SubResource("ConcavePolygonShape3D_nk3iu")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=356969439]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=130415779]
 transform = Transform3D(-0.770371, 0, -0.63759583, 0, 1, 0, 0.63759583, 0, -0.770371, 27.611145, -3.3218768, 17.487522)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_00" unique_id=285654849 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_00" unique_id=1331322097 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.539834, 0, 0, 0, 9.539834, 0, 0, 0, 9.539834, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_00/tree1" unique_id=1949702273]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_00/tree1" unique_id=1402080095]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41632" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_00" unique_id=717027367]
+[node name="@CollisionShape3D@26136" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_00" unique_id=1952238134]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_stm43")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=693581453]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=1199392720]
 transform = Transform3D(0.090861194, 0, 0.99586356, 0, 1, 0, -0.99586356, 0, 0.090861194, 41.39287, -3.7245576, 48.34121)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_02" unique_id=1340994025 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_02" unique_id=1170540187 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.1088505, 0, 0, 0, 8.1088505, 0, 0, 0, 8.1088505, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_02/tree1" unique_id=97927632]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_02/tree1" unique_id=1490909718]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41633" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_02" unique_id=1882292825]
+[node name="@CollisionShape3D@26137" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_02" unique_id=1309133637]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_68bxr")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=1347128938]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=2000401779]
 transform = Transform3D(-0.2410169, 0, 0.9705209, 0, 1, 0, -0.9705209, 0, -0.2410169, 5.523476, -2.372641, 10.278344)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_03" unique_id=961614853 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_03" unique_id=2042749824 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.176405, 0, 0, 0, 7.176405, 0, 0, 0, 7.176405, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_03/tree1" unique_id=1714137610]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_03/tree1" unique_id=1080879286]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41634" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_03" unique_id=994732768]
+[node name="@CollisionShape3D@26138" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_03" unique_id=1494657162]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_x0g54")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=195645927]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=1581741606]
 transform = Transform3D(-0.5882127, 0, 0.8087062, 0, 1, 0, -0.8087062, 0, -0.5882127, 9.082891, -2.4855654, 22.897741)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_04" unique_id=878906425 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_04" unique_id=645590875 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.181896, 0, 0, 0, 9.181896, 0, 0, 0, 9.181896, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_04/tree1" unique_id=427258407]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_04/tree1" unique_id=734045596]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41635" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_04" unique_id=162667550]
+[node name="@CollisionShape3D@26139" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_04" unique_id=748693654]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_xjxrb")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=466593707]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=1695563212]
 transform = Transform3D(-0.995021, 0, -0.099665925, 0, 1, 0, 0.099665925, 0, -0.995021, 54.535175, -2.0994759, 41.649452)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_05" unique_id=1298153343 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_05" unique_id=1649559991 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.851018, 0, 0, 0, 7.851018, 0, 0, 0, 7.851018, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_05/tree1" unique_id=1367612253]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_05/tree1" unique_id=922682063]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41636" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_05" unique_id=960238209]
+[node name="@CollisionShape3D@26140" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_05" unique_id=1529834135]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_tivwq")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=636788619]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_0" unique_id=479022655]
 transform = Transform3D(-0.40701717, 0, -0.9134205, 0, 1, 0, 0.9134205, 0, -0.40701717, 38.638187, -2.9300342, 18.462378)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_06" unique_id=33989201 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_0/Tree_06" unique_id=2017111871 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.635807, 0, 0, 0, 9.635807, 0, 0, 0, 9.635807, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_06/tree1" unique_id=34948859]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_0/Tree_06/tree1" unique_id=435368842]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41637" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_06" unique_id=1542564291]
+[node name="@CollisionShape3D@26141" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_0/Tree_06" unique_id=1759980444]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_f5wb5")
 
-[node name="Chunk_0_0" type="Node3D" parent="WorldTerrain" unique_id=1127707680]
+[node name="Chunk_0_0" type="Node3D" parent="WorldTerrain" unique_id=1803492707]
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0" unique_id=29599949]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0" unique_id=527805432]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_qv48p")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=1615842765]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=1714538478]
 
-[node name="@CollisionShape3D@41638" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/TerrainCollision" unique_id=1841308149]
+[node name="@CollisionShape3D@26142" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/TerrainCollision" unique_id=130207575]
 shape = SubResource("ConcavePolygonShape3D_vfbkn")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=142828951]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=807881370]
 transform = Transform3D(-0.9219894, 0, 0.3872151, 0, 1, 0, -0.3872151, 0, -0.9219894, 27.562988, 2.0335827, 30.579273)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_01" unique_id=1451465429 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_01" unique_id=569450347 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.984407, 0, 0, 0, 7.984407, 0, 0, 0, 7.984407, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_01/tree1" unique_id=1612495618]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_01/tree1" unique_id=720006661]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41639" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_01" unique_id=1059542618]
+[node name="@CollisionShape3D@26143" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_01" unique_id=1848122690]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_xygh4")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=680338685]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=1897845967]
 transform = Transform3D(-0.8277521, 0, -0.5610939, 0, 1, 0, 0.5610939, 0, -0.8277521, 38.17237, 4.2225413, 12.294983)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_03" unique_id=1719532504 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_03" unique_id=2060276446 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.741908, 0, 0, 0, 7.741908, 0, 0, 0, 7.741908, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_03/tree1" unique_id=1348384820]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_03/tree1" unique_id=1004868062]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41640" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_03" unique_id=909116637]
+[node name="@CollisionShape3D@26144" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_03" unique_id=2041078605]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_dmjo2")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=987131984]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=371554672]
 transform = Transform3D(-0.5784447, 0, -0.8157216, 0, 1, 0, 0.8157216, 0, -0.5784447, 49.068752, 4.2883267, 16.847324)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_04" unique_id=1221914203 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_04" unique_id=561784291 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.130058, 0, 0, 0, 8.130058, 0, 0, 0, 8.130058, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_04/tree1" unique_id=691350540]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_04/tree1" unique_id=464052028]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41641" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_04" unique_id=1635978142]
+[node name="@CollisionShape3D@26145" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_04" unique_id=907584143]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_yrlb7")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=766989319]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=317653515]
 transform = Transform3D(0.57168704, 0, -0.82047176, 0, 1, 0, 0.82047176, 0, 0.57168704, 24.858246, 2.8106987, 15.870475)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_05" unique_id=1525584735 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_05" unique_id=854617153 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.654037, 0, 0, 0, 8.654037, 0, 0, 0, 8.654037, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_05/tree1" unique_id=1778225266]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_05/tree1" unique_id=362909328]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41642" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_05" unique_id=1220226775]
+[node name="@CollisionShape3D@26146" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_05" unique_id=198846714]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_07kyl")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=1391980530]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_0_0" unique_id=703874357]
 transform = Transform3D(-0.21149586, 0, -0.9773789, 0, 1, 0, 0.9773789, 0, -0.21149586, 10.042221, 0.11545351, 42.02582)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_06" unique_id=229382383 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_0/Tree_06" unique_id=510148210 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.262695, 0, 0, 0, 8.262695, 0, 0, 0, 8.262695, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_06/tree1" unique_id=1780502797]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_0/Tree_06/tree1" unique_id=271933237]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41643" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_06" unique_id=1267616073]
+[node name="@CollisionShape3D@26147" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_0/Tree_06" unique_id=207560943]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_4l2wo")
 
-[node name="Chunk_1_0" type="Node3D" parent="WorldTerrain" unique_id=224622865]
+[node name="Chunk_1_0" type="Node3D" parent="WorldTerrain" unique_id=687382674]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 0, 0)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0" unique_id=414560977]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0" unique_id=512987726]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_tqs7i")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1761536464]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1754390912]
 
-[node name="@CollisionShape3D@41644" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/TerrainCollision" unique_id=822075783]
+[node name="@CollisionShape3D@26148" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/TerrainCollision" unique_id=728175036]
 shape = SubResource("ConcavePolygonShape3D_xy7rv")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1405851227]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1197983339]
 transform = Transform3D(0.99743235, 0, -0.07161472, 0, 1, 0, 0.07161472, 0, 0.99743235, 56.939438, 0.8332044, 48.402523)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_00" unique_id=984799118 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_00" unique_id=1042675471 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.023105, 0, 0, 0, 9.023105, 0, 0, 0, 9.023105, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_00/tree1" unique_id=873530655]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_00/tree1" unique_id=1877317451]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41645" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_00" unique_id=632084416]
+[node name="@CollisionShape3D@26149" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_00" unique_id=1085335370]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_qpmlo")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1243149303]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=954950526]
 transform = Transform3D(-0.15539931, 0, 0.98785174, 0, 1, 0, -0.98785174, 0, -0.15539931, 52.17159, 0.57525337, 28.18667)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_01" unique_id=497784878 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_01" unique_id=1993498258 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.83918, 0, 0, 0, 8.83918, 0, 0, 0, 8.83918, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_01/tree1" unique_id=768360829]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_01/tree1" unique_id=1193734269]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41646" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_01" unique_id=1923714307]
+[node name="@CollisionShape3D@26150" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_01" unique_id=1657665052]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_mp7xl")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1455278380]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1238897726]
 transform = Transform3D(-0.86256, 0, -0.5059548, 0, 1, 0, 0.5059548, 0, -0.86256, 25.37008, 2.7964272, 27.58851)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_02" unique_id=870295697 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_02" unique_id=623552509 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.201267, 0, 0, 0, 9.201267, 0, 0, 0, 9.201267, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_02/tree1" unique_id=412861737]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_02/tree1" unique_id=761836405]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41647" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_02" unique_id=1743786831]
+[node name="@CollisionShape3D@26151" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_02" unique_id=862450836]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_u4l4f")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1762322313]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1283427343]
 transform = Transform3D(-0.17739421, 0, -0.98413986, 0, 1, 0, 0.98413986, 0, -0.17739421, 43.710644, 1.2586939, 54.421394)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_03" unique_id=1622831655 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_03" unique_id=345548775 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.309931, 0, 0, 0, 7.309931, 0, 0, 0, 7.309931, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_03/tree1" unique_id=362936028]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_03/tree1" unique_id=1733813039]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41648" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_03" unique_id=1104064270]
+[node name="@CollisionShape3D@26152" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_03" unique_id=1407215889]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ck67n")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1796217569]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=92651454]
 transform = Transform3D(0.4486676, 0, -0.89369875, 0, 1, 0, 0.89369875, 0, 0.4486676, 37.32756, 1.5229472, 24.434168)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_04" unique_id=1043045163 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_04" unique_id=1658676876 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.873295, 0, 0, 0, 8.873295, 0, 0, 0, 8.873295, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_04/tree1" unique_id=626037195]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_04/tree1" unique_id=1204566103]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41649" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_04" unique_id=467228135]
+[node name="@CollisionShape3D@26153" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_04" unique_id=348063796]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_hodp8")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1923589451]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=736771287]
 transform = Transform3D(0.3533135, 0, -0.935505, 0, 1, 0, 0.935505, 0, 0.3533135, 37.502068, 1.5459094, 58.964993)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_05" unique_id=1493040369 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_05" unique_id=612753869 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.86147, 0, 0, 0, 8.86147, 0, 0, 0, 8.86147, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_05/tree1" unique_id=952465536]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_05/tree1" unique_id=450230557]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41650" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_05" unique_id=951449245]
+[node name="@CollisionShape3D@26154" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_05" unique_id=813645846]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_5nf17")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=1086912663]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_0" unique_id=653357405]
 transform = Transform3D(-0.49296123, 0, 0.87005126, 0, 1, 0, -0.87005126, 0, -0.49296123, 47.44225, 0.9752707, 49.504944)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_06" unique_id=1261515886 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_0/Tree_06" unique_id=74480188 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.090281, 0, 0, 0, 9.090281, 0, 0, 0, 9.090281, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_06/tree1" unique_id=494312079]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_0/Tree_06/tree1" unique_id=751400494]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41651" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_06" unique_id=2085645754]
+[node name="@CollisionShape3D@26155" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_0/Tree_06" unique_id=1189976413]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_tpr8j")
 
-[node name="Chunk_-1_1" type="Node3D" parent="WorldTerrain" unique_id=1227856978]
+[node name="Chunk_-1_1" type="Node3D" parent="WorldTerrain" unique_id=1737211633]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 0, 64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1" unique_id=340563022]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1255052620]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_r522a")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1431187396]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=637016607]
 
-[node name="@CollisionShape3D@41652" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/TerrainCollision" unique_id=60293698]
+[node name="@CollisionShape3D@26156" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/TerrainCollision" unique_id=1732129055]
 shape = SubResource("ConcavePolygonShape3D_cgat6")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1859749839]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=157971818]
 transform = Transform3D(-0.05933468, 0, -0.99823815, 0, 1, 0, 0.99823815, 0, -0.05933468, 55.94216, -4.23043, 57.34375)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_00" unique_id=941518257 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_00" unique_id=2022159221 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.667763, 0, 0, 0, 7.667763, 0, 0, 0, 7.667763, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_00/tree1" unique_id=1195323078]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_00/tree1" unique_id=1235617304]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41653" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_00" unique_id=989150949]
+[node name="@CollisionShape3D@26157" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_00" unique_id=227077664]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_6jeug")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1553490753]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=621052156]
 transform = Transform3D(0.75046504, 0, -0.6609102, 0, 1, 0, 0.6609102, 0, 0.75046504, 30.864002, -5.365912, 27.237843)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_01" unique_id=1851846657 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_01" unique_id=1108514047 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.257567, 0, 0, 0, 7.257567, 0, 0, 0, 7.257567, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_01/tree1" unique_id=1215946050]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_01/tree1" unique_id=438160455]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41654" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_01" unique_id=614093137]
+[node name="@CollisionShape3D@26158" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_01" unique_id=408780564]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ctk51")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1877272807]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=999811714]
 transform = Transform3D(-0.9969949, 0, -0.077467084, 0, 1, 0, 0.077467084, 0, -0.9969949, 33.172787, -5.236108, 5.420986)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_02" unique_id=1277092847 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_02" unique_id=2066697033 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.946097, 0, 0, 0, 9.946097, 0, 0, 0, 9.946097, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_02/tree1" unique_id=88833206]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_02/tree1" unique_id=813818913]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41655" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_02" unique_id=1301633849]
+[node name="@CollisionShape3D@26159" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_02" unique_id=1935181969]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_quton")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=45117903]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1874206186]
 transform = Transform3D(0.9769075, 0, -0.21366279, 0, 1, 0, 0.21366279, 0, 0.9769075, 46.223503, -4.5989757, 26.12383)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_03" unique_id=234254160 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_03" unique_id=44259190 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.543305, 0, 0, 0, 8.543305, 0, 0, 0, 8.543305, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_03/tree1" unique_id=1967324041]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_03/tree1" unique_id=843629341]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41656" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_03" unique_id=1732168039]
+[node name="@CollisionShape3D@26160" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_03" unique_id=674860822]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ncfwd")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1056895524]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1968029674]
 transform = Transform3D(-0.8443109, 0, -0.5358536, 0, 1, 0, 0.5358536, 0, -0.8443109, 51.490166, -4.3833404, 32.367508)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_04" unique_id=2081526600 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_04" unique_id=714884163 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.926608, 0, 0, 0, 9.926608, 0, 0, 0, 9.926608, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_04/tree1" unique_id=1318337329]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_04/tree1" unique_id=1227121821]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41657" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_04" unique_id=211544359]
+[node name="@CollisionShape3D@26161" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_04" unique_id=1951233898]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_74vji")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1729371538]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1650424621]
 transform = Transform3D(0.010958886, 0, 0.99994, 0, 1, 0, -0.99994, 0, 0.010958886, 47.46778, -4.217629, 49.302094)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_05" unique_id=1669767279 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_05" unique_id=984051888 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.7729893, 0, 0, 0, 7.7729893, 0, 0, 0, 7.7729893, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_05/tree1" unique_id=402345870]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_05/tree1" unique_id=741859086]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41658" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_05" unique_id=1891319203]
+[node name="@CollisionShape3D@26162" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_05" unique_id=685752934]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_qin3i")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=1604950089]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_-1_1" unique_id=85072798]
 transform = Transform3D(-0.66733426, 0, 0.74475837, 0, 1, 0, -0.74475837, 0, -0.66733426, 26.72477, -5.1844654, 25.796059)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_06" unique_id=788983461 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_-1_1/Tree_06" unique_id=1344408925 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.8772993, 0, 0, 0, 7.8772993, 0, 0, 0, 7.8772993, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_06/tree1" unique_id=178694340]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_-1_1/Tree_06/tree1" unique_id=31385417]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41659" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_06" unique_id=1951840188]
+[node name="@CollisionShape3D@26163" type="CollisionShape3D" parent="WorldTerrain/Chunk_-1_1/Tree_06" unique_id=1711311154]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_6omsd")
 
-[node name="Chunk_0_1" type="Node3D" parent="WorldTerrain" unique_id=884344957]
+[node name="Chunk_0_1" type="Node3D" parent="WorldTerrain" unique_id=1660530068]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1" unique_id=625108714]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1" unique_id=1034618202]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_7grlo")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=323715507]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1154067365]
 
-[node name="@CollisionShape3D@41660" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/TerrainCollision" unique_id=512408955]
+[node name="@CollisionShape3D@26164" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/TerrainCollision" unique_id=1027295368]
 shape = SubResource("ConcavePolygonShape3D_cilnn")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1720782926]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=701908965]
 transform = Transform3D(0.9915751, 0, 0.12953295, 0, 1, 0, -0.12953295, 0, 0.9915751, 7.1107254, -4.693535, 34.730583)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_00" unique_id=796393882 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_00" unique_id=1196375174 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.715588, 0, 0, 0, 9.715588, 0, 0, 0, 9.715588, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_00/tree1" unique_id=1525053357]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_00/tree1" unique_id=999507846]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41661" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_00" unique_id=522691058]
+[node name="@CollisionShape3D@26165" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_00" unique_id=1784880187]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_86ubw")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=463082205]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=43466896]
 transform = Transform3D(0.81506467, 0, -0.57936996, 0, 1, 0, 0.57936996, 0, 0.81506467, 6.2351685, -3.9824598, 24.987257)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_01" unique_id=1644408636 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_01" unique_id=1813892433 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.132327, 0, 0, 0, 8.132327, 0, 0, 0, 8.132327, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_01/tree1" unique_id=2134693840]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_01/tree1" unique_id=853274984]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41662" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_01" unique_id=1054726846]
+[node name="@CollisionShape3D@26166" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_01" unique_id=892200718]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_6v2g5")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=438586277]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1334553575]
 transform = Transform3D(-0.8936522, 0, 0.44876018, 0, 1, 0, -0.44876018, 0, -0.8936522, 35.12051, -2.2314672, 38.923805)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_02" unique_id=1291446015 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_02" unique_id=163437000 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.075951, 0, 0, 0, 7.075951, 0, 0, 0, 7.075951, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_02/tree1" unique_id=1171775932]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_02/tree1" unique_id=1678243037]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41663" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_02" unique_id=1473838111]
+[node name="@CollisionShape3D@26167" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_02" unique_id=839241106]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_o6mh6")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1260279889]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=2110886103]
 transform = Transform3D(-0.27799907, 0, 0.96058136, 0, 1, 0, -0.96058136, 0, -0.27799907, 55.62388, -1.3879772, 38.747295)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_03" unique_id=701473942 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_03" unique_id=1782880800 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.6152773, 0, 0, 0, 7.6152773, 0, 0, 0, 7.6152773, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_03/tree1" unique_id=1797042052]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_03/tree1" unique_id=1134728101]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41664" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_03" unique_id=201965030]
+[node name="@CollisionShape3D@26168" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_03" unique_id=408657809]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_nwin4")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1120307032]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=539201207]
 transform = Transform3D(-0.44728503, 0, -0.8943915, 0, 1, 0, 0.8943915, 0, -0.44728503, 29.715405, -1.8336135, 14.259783)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_04" unique_id=832197686 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_04" unique_id=117843357 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.407033, 0, 0, 0, 8.407033, 0, 0, 0, 8.407033, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_04/tree1" unique_id=166944162]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_04/tree1" unique_id=410010438]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41665" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_04" unique_id=17877168]
+[node name="@CollisionShape3D@26169" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_04" unique_id=2100473900]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_g0rt6")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1325177617]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=1555876811]
 transform = Transform3D(-0.44466895, 0, 0.895695, 0, 1, 0, -0.895695, 0, -0.44466895, 38.230865, -0.64931655, 6.801136)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_05" unique_id=1857190896 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_05" unique_id=362271528 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.423744, 0, 0, 0, 9.423744, 0, 0, 0, 9.423744, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_05/tree1" unique_id=2051740133]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_05/tree1" unique_id=155305733]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41666" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_05" unique_id=433907482]
+[node name="@CollisionShape3D@26170" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_05" unique_id=392275031]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_r2ck0")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=360761713]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_0_1" unique_id=2098047478]
 transform = Transform3D(0.9029377, 0, 0.4297714, 0, 1, 0, -0.4297714, 0, 0.9029377, 7.178996, -2.5747745, 14.430476)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_06" unique_id=613736947 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_0_1/Tree_06" unique_id=1263514419 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.8997955, 0, 0, 0, 7.8997955, 0, 0, 0, 7.8997955, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_06/tree1" unique_id=221688800]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_0_1/Tree_06/tree1" unique_id=172235337]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41667" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_06" unique_id=1567438335]
+[node name="@CollisionShape3D@26171" type="CollisionShape3D" parent="WorldTerrain/Chunk_0_1/Tree_06" unique_id=975538550]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_ref8m")
 
-[node name="Chunk_1_1" type="Node3D" parent="WorldTerrain" unique_id=1478197114]
+[node name="Chunk_1_1" type="Node3D" parent="WorldTerrain" unique_id=988950522]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 64, 0, 64)
 metadata/editor_terrain_preview = true
 
-[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1" unique_id=1808535460]
+[node name="TerrainMesh" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1" unique_id=727959830]
 material_override = SubResource("StandardMaterial3D_50uj7")
 mesh = SubResource("ArrayMesh_m6x4c")
 
-[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=1850361826]
+[node name="TerrainCollision" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=1950697364]
 
-[node name="@CollisionShape3D@41668" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/TerrainCollision" unique_id=1684507479]
+[node name="@CollisionShape3D@26172" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/TerrainCollision" unique_id=814311230]
 shape = SubResource("ConcavePolygonShape3D_48vy8")
 
-[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=472873985]
+[node name="Tree_00" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=966873748]
 transform = Transform3D(-0.7802153, 0, -0.62551105, 0, 1, 0, 0.62551105, 0, -0.7802153, 53.867573, 1.8268107, 44.90157)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_00" unique_id=809181451 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_00" unique_id=851282462 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.053728, 0, 0, 0, 8.053728, 0, 0, 0, 8.053728, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_00/tree1" unique_id=1054114422]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_00/tree1" unique_id=892397728]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41669" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_00" unique_id=467334603]
+[node name="@CollisionShape3D@26173" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_00" unique_id=1837759145]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_6ehir")
 
-[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=2053592956]
+[node name="Tree_01" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=2127855144]
 transform = Transform3D(-0.5856424, 0, -0.8105696, 0, 1, 0, 0.8105696, 0, -0.5856424, 53.829975, 0.94216686, 19.303978)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_01" unique_id=392361522 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_01" unique_id=737221680 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.525379, 0, 0, 0, 9.525379, 0, 0, 0, 9.525379, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_01/tree1" unique_id=1156635161]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_01/tree1" unique_id=426303446]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41670" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_01" unique_id=795521850]
+[node name="@CollisionShape3D@26174" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_01" unique_id=1516285875]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_iun32")
 
-[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=245281097]
+[node name="Tree_02" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=542091390]
 transform = Transform3D(0.85352343, 0, 0.5210545, 0, 1, 0, -0.5210545, 0, 0.85352343, 24.54896, -0.67584825, 38.13932)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_02" unique_id=665715943 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_02" unique_id=2097262553 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.704069, 0, 0, 0, 9.704069, 0, 0, 0, 9.704069, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_02/tree1" unique_id=1422348139]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_02/tree1" unique_id=1877786026]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41671" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_02" unique_id=507514189]
+[node name="@CollisionShape3D@26175" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_02" unique_id=1487224267]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_do3ao")
 
-[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=1491181563]
+[node name="Tree_03" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=51110347]
 transform = Transform3D(-0.8969444, 0, -0.44214338, 0, 1, 0, 0.44214338, 0, -0.8969444, 34.291855, -0.076901615, 30.327986)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_03" unique_id=1265724320 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_03" unique_id=1695997262 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(8.926295, 0, 0, 0, 8.926295, 0, 0, 0, 8.926295, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_03/tree1" unique_id=1705224887]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_03/tree1" unique_id=292890977]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41672" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_03" unique_id=1040579152]
+[node name="@CollisionShape3D@26176" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_03" unique_id=1165240274]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_kdj56")
 
-[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=508961061]
+[node name="Tree_04" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=715127976]
 transform = Transform3D(-0.8010965, 0, 0.5985352, 0, 1, 0, -0.5985352, 0, -0.8010965, 27.50429, 0.045203377, 28.124863)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_04" unique_id=672971828 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_04" unique_id=1501389449 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.1138377, 0, 0, 0, 7.1138377, 0, 0, 0, 7.1138377, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_04/tree1" unique_id=1646206338]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_04/tree1" unique_id=1346572110]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41673" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_04" unique_id=205198441]
+[node name="@CollisionShape3D@26177" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_04" unique_id=1266506249]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_f4fse")
 
-[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=940003838]
+[node name="Tree_05" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=101795520]
 transform = Transform3D(0.9767763, 0, 0.21426162, 0, 1, 0, -0.21426162, 0, 0.9767763, 7.8257904, -0.04896392, 28.952871)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_05" unique_id=1402068459 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_05" unique_id=186906578 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(7.568065, 0, 0, 0, 7.568065, 0, 0, 0, 7.568065, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_05/tree1" unique_id=1706431644]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_05/tree1" unique_id=2039648413]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41674" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_05" unique_id=1031932831]
+[node name="@CollisionShape3D@26178" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_05" unique_id=1070846403]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_lhh1o")
 
-[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=1211878181]
+[node name="Tree_06" type="StaticBody3D" parent="WorldTerrain/Chunk_1_1" unique_id=1503119948]
 transform = Transform3D(0.04202226, 0, -0.99911666, 0, 1, 0, 0.99911666, 0, 0.04202226, 9.054588, -0.20415853, 32.412613)
 
-[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_06" unique_id=1677404576 instance=ExtResource("3_jhtt0")]
+[node name="tree1" type="Node3D" parent="WorldTerrain/Chunk_1_1/Tree_06" unique_id=1276411853 instance=ExtResource("3_jhtt0")]
 transform = Transform3D(9.539568, 0, 0, 0, 9.539568, 0, 0, 0, 9.539568, 0, 0, 0)
 
-[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_06/tree1" unique_id=708781752]
+[node name="Mesh_0_002" type="MeshInstance3D" parent="WorldTerrain/Chunk_1_1/Tree_06/tree1" unique_id=2037472016]
 transform = Transform3D(5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0, 5.889294e-05, 0, 0, 0)
 mesh = SubResource("ArrayMesh_q1b2g")
 skeleton = NodePath("")
 
-[node name="@CollisionShape3D@41675" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_06" unique_id=2069513950]
+[node name="@CollisionShape3D@26179" type="CollisionShape3D" parent="WorldTerrain/Chunk_1_1/Tree_06" unique_id=142996856]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 shape = SubResource("CylinderShape3D_0jo3w")
 
