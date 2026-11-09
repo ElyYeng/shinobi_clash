@@ -15,6 +15,7 @@ var network_quest_id := ""
 var network_quest_party_leader := 0
 var network_quest_mirror := false
 var network_quest_defeated := false
+var character_appearance: Dictionary = {}
 var _quest_net_position := Vector3.ZERO
 var _quest_net_yaw := 0.0
 var _quest_net_health := -1.0
@@ -49,12 +50,18 @@ func _ready() -> void:
 	if network_quest_mirror:
 		_quest_net_position = global_position
 		_quest_net_yaw = model.rotation.y if model != null else 0.0
+		if NetworkSession.is_active():
+			NetworkSession.apply_pending_quest_enemy_identity(self)
 
 func _setup() -> void:
 	add_to_group("enemies")
 	max_health = health
 	if not is_boss:
-		_apply_bloodline(Bloodline.roll(false))
+		# A quest mirror waits for the host's identity instead of rolling a local clan.
+		if network_quest_mirror:
+			bloodline_id = "none"
+		else:
+			_apply_bloodline(Bloodline.roll(false))
 	k = 1.6 if is_boss else 1.0
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
@@ -66,7 +73,10 @@ func _setup() -> void:
 	if not is_boss:
 		var hero_model := Hero.create(Hero.DEFAULT_APPEARANCE)
 		if hero_model != null:
-			Hero.randomize_look(hero_model)
+			if network_quest_mirror:
+				character_appearance = Hero.sanitize_appearance(Hero.DEFAULT_APPEARANCE)
+			else:
+				character_appearance = Hero.randomize_look(hero_model)
 			model = hero_model
 			uses_hero = true
 	if model == null:
@@ -124,6 +134,17 @@ func apply_quest_network_state(pos: Vector3, yaw: float, hp: float) -> void:
 	_quest_net_position = pos
 	_quest_net_yaw = yaw
 	_quest_net_health = hp
+
+
+## Applies the host-selected clan and full randomized outfit to a local quest-enemy mirror.
+func apply_quest_network_identity(id: String, appearance: Dictionary, synced_max_health: float) -> void:
+	bloodline_id = id if Bloodline.DEFS.has(id) else "none"
+	character_appearance = Hero.sanitize_appearance(appearance)
+	if synced_max_health > 0.0:
+		max_health = synced_max_health
+	if uses_hero and model != null:
+		Hero.apply_appearance(model, character_appearance)
+	_update_label()
 
 
 ## Procedural run bob + forward lean for the placeholder ninjas (skipped for models with real animations).
