@@ -3,6 +3,10 @@ extends Node3D
 ## Lightweight ragdoll: 11 capsule rigid bodies joined with cone-twist joints that
 ## drive the model's Skeleton3D. Bodies live in world space (unscaled) so the
 ## physics stays stable whatever scale the model was imported at.
+##
+## Network clients use set_network_driven(true) and apply_network_state() so
+## every machine displays the owning player's physics result instead of running
+## an independent simulation.
 
 const LAYER := 16  # physics layer 5: collides with the world, not with itself
 # [bone, segment end bone, radius (m), parent part]
@@ -20,11 +24,16 @@ const PARTS := [
 	["RightLeg", "RightFoot", 0.065, "RightUpLeg"],
 ]
 
+# Each part contributes seven floats: position XYZ followed by quaternion XYZW.
+const NETWORK_FLOATS_PER_PART := 7
+const NETWORK_STATE_SIZE := PARTS.size() * NETWORK_FLOATS_PER_PART
+
 var sk: Skeleton3D
 var parts: Array = []  # [bone_idx, body, offset]
 var life := 0.0
+var network_driven := false
 
-## Turns `model` limp. Returns false if it has no compatible skeleton.
+## Turns `model` limp. Returns null if it has no compatible skeleton.
 static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
 	var sks := model.find_children("*", "Skeleton3D", true, false)
 	if sks.is_empty():
@@ -95,6 +104,55 @@ static func _basis_y(dir: Vector3) -> Basis:
 	var y := dir.normalized()
 	var x := y.cross(Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
 	return Basis(x, y, x.cross(y).normalized()).orthonormalized()
+
+## Switches a remote ragdoll to kinematic/network-controlled bodies.
+func set_network_driven(enabled: bool) -> void:
+	network_driven = enabled
+	for part in parts:
+		var body := part[1] as RigidBody3D
+		body.freeze = enabled
+		if enabled:
+			body.linear_velocity = Vector3.ZERO
+			body.angular_velocity = Vector3.ZERO
+
+## Captures the authoritative body transforms in a compact RPC-safe array.
+func get_network_state() -> PackedFloat32Array:
+	var state := PackedFloat32Array()
+	state.resize(NETWORK_STATE_SIZE)
+	var offset := 0
+	for part in parts:
+		var body := part[1] as RigidBody3D
+		var transform := body.global_transform
+		var q := transform.basis.orthonormalized().get_rotation_quaternion().normalized()
+		state[offset] = transform.origin.x
+		state[offset + 1] = transform.origin.y
+		state[offset + 2] = transform.origin.z
+		state[offset + 3] = q.x
+		state[offset + 4] = q.y
+		state[offset + 5] = q.z
+		state[offset + 6] = q.w
+		offset += NETWORK_FLOATS_PER_PART
+	return state
+
+## Applies a state received from the owning peer. Remote bodies remain frozen
+## so local physics cannot drift away from the replicated pose.
+func apply_network_state(state: PackedFloat32Array) -> void:
+	if state.size() != NETWORK_STATE_SIZE:
+		return
+	if not network_driven:
+		set_network_driven(true)
+	var offset := 0
+	for part in parts:
+		var body := part[1] as RigidBody3D
+		var position := Vector3(state[offset], state[offset + 1], state[offset + 2])
+		var rotation := Quaternion(
+			state[offset + 3],
+			state[offset + 4],
+			state[offset + 5],
+			state[offset + 6]
+		).normalized()
+		body.global_transform = Transform3D(Basis(rotation), position)
+		offset += NETWORK_FLOATS_PER_PART
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(sk):

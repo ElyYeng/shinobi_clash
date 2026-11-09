@@ -5,3 +5,4 @@ res://character_creator.gd
 res://gamedata.gd
 res://maps/open_world.tscn
 res://enemy.gd
+res://ragdoll_sync.gd

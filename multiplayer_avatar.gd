@@ -12,6 +12,8 @@ var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
 var power_fx: Node3D
+var ragdoll: Ragdoll
+var network_ragdoll_started := false
 
 func _ready() -> void:
 	add_to_group("network_players")
@@ -29,7 +31,6 @@ func _ready() -> void:
 	add_child(name_tag)
 	target_position = global_position
 	_last_position = global_position
-
 
 var kurama_fx: Node3D
 var animation_lock := 0.0
@@ -50,7 +51,7 @@ func set_kurama_visual(enabled: bool) -> void:
 		model.scale = Vector3.ONE
 
 func play_combat_animation(state: String, variant: int = 0) -> void:
-	if model == null:
+	if model == null or network_ragdoll_started:
 		return
 	var lock := 0.45
 	if state == "attack":
@@ -60,8 +61,36 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 	Hero.play(model, state, true, variant, lock)
 	animation_lock = lock
 
+## Starts a ragdoll for this remote avatar. The owning player sends the body
+## transforms; this peer never runs a second independent physics simulation.
+func start_network_ragdoll(position: Vector3, yaw: float, launch_velocity: Vector3) -> void:
+	if network_ragdoll_started:
+		return
+	network_ragdoll_started = true
+	global_position = position
+	target_position = position
+	target_yaw = yaw
+	if model == null or not is_instance_valid(model):
+		return
+	model.rotation.y = yaw
+	set_process(false)
+	set_physics_process(false)
+	if name_tag != null:
+		name_tag.visible = false
+	ragdoll = Ragdoll.start(model, self, launch_velocity)
+	if ragdoll != null:
+		ragdoll.set_network_driven(true)
+	else:
+		Hero.play(model, "die", true)
+
+func apply_network_ragdoll_state(state: PackedFloat32Array) -> void:
+	if ragdoll != null and is_instance_valid(ragdoll):
+		ragdoll.apply_network_state(state)
+
 ## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
 func play_ability(move_id: String, color: Color) -> void:
+	if network_ragdoll_started:
+		return
 	if model != null:
 		Hero.play(model, "jutsu", true)
 	var root := get_parent()
@@ -75,7 +104,6 @@ func play_ability(move_id: String, color: Color) -> void:
 			if is_instance_valid(name_tag):
 				name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
 		)
-
 
 ## Spawn a cosmetic projectile on this peer; damage is deliberately zero.
 func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float, shot_size: float, color: Color, long_shape: bool, aoe: float, shot_damage: float, visual_kind: String = "") -> void:
@@ -98,6 +126,8 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 		shot.global_position = origin
 
 func set_powered_visual(enabled: bool, color: Color) -> void:
+	if network_ragdoll_started:
+		return
 	if enabled:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()
@@ -115,10 +145,14 @@ func set_party_member(value: bool) -> void:
 		name_tag.modulate = Color(0.55, 1.0, 0.65) if value else Color.WHITE
 
 func set_network_transform(pos: Vector3, yaw: float) -> void:
+	if network_ragdoll_started:
+		return
 	target_position = pos
 	target_yaw = yaw
 
 func _process(delta: float) -> void:
+	if network_ragdoll_started:
+		return
 	animation_lock = maxf(0.0, animation_lock - delta)
 	global_position = global_position.lerp(target_position, minf(1.0, delta * 14.0))
 	if model != null:
