@@ -15,6 +15,10 @@ var _local_death_sent := false
 var _snapshot_timer := 0.0
 var _pending_starts: Dictionary = {}
 var _pending_states: Dictionary = {}
+var _pending_respawns: Dictionary = {}
+var _tracked_local_player: Player
+var _has_tracked_local_player := false
+var _tracked_player_died := false
 
 func _process(delta: float) -> void:
 	if not NetworkSession.is_active():
@@ -26,10 +30,24 @@ func _process(delta: float) -> void:
 	if local_player == null or not is_instance_valid(local_player):
 		return
 
+	# Main.gd respawns by reloading the scene, which creates a new Player node.
+	# The autoload survives that reload, so detect the instance change and tell
+	# the other peers to replace this player's old ragdoll with a fresh avatar.
+	if not _has_tracked_local_player or local_player != _tracked_local_player:
+		var was_respawned := _has_tracked_local_player and (_tracked_player_died or _local_death_sent)
+		_tracked_local_player = local_player
+		_has_tracked_local_player = true
+		_tracked_player_died = false
+		_local_death_sent = false
+		_snapshot_timer = 0.0
+		if was_respawned:
+			_send_player_respawn(local_player)
+
 	if not local_player.is_dead:
 		_local_death_sent = false
 		_snapshot_timer = 0.0
 		return
+	_tracked_player_died = true
 
 	if not _local_death_sent:
 		_local_death_sent = true
@@ -52,6 +70,52 @@ func _reset_session_state() -> void:
 	_snapshot_timer = 0.0
 	_pending_starts.clear()
 	_pending_states.clear()
+	_pending_respawns.clear()
+	_tracked_local_player = null
+	_has_tracked_local_player = false
+	_tracked_player_died = false
+
+func _send_player_respawn(player: Player) -> void:
+	var position := player.global_position
+	var yaw := player.model.rotation.y if player.model != null else 0.0
+	var peer_id := multiplayer.get_unique_id()
+	if multiplayer.is_server():
+		_broadcast_player_respawn.rpc(peer_id, position, yaw)
+	else:
+		_request_player_respawn.rpc_id(1, position, yaw)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_player_respawn(position: Vector3, yaw: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	if not _is_known_peer(sender_id) or not _valid_spawn(position, yaw):
+		return
+	var safe_yaw := wrapf(yaw, -PI, PI)
+	_apply_remote_player_respawn(sender_id, position, safe_yaw)
+	_broadcast_player_respawn.rpc(sender_id, position, safe_yaw)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_player_respawn(peer_id: int, position: Vector3, yaw: float) -> void:
+	if peer_id == multiplayer.get_unique_id() or not _valid_spawn(position, yaw):
+		return
+	_apply_remote_player_respawn(peer_id, position, wrapf(yaw, -PI, PI))
+
+func _apply_remote_player_respawn(peer_id: int, position: Vector3, yaw: float) -> void:
+	# A respawn supersedes any late snapshots queued for the previous life.
+	_pending_starts.erase(peer_id)
+	_pending_states.erase(peer_id)
+	var avatar := _get_remote_avatar(peer_id)
+	if avatar == null:
+		_pending_respawns[peer_id] = [position, yaw]
+		return
+	if avatar.has_method("reset_network_ragdoll"):
+		avatar.call("reset_network_ragdoll", position, yaw)
+
+func _valid_spawn(position: Vector3, yaw: float) -> bool:
+	return is_finite(position.x) and is_finite(position.y) and is_finite(position.z) \
+		and absf(position.x) <= MAX_COORDINATE and absf(position.y) <= MAX_COORDINATE \
+		and absf(position.z) <= MAX_COORDINATE and is_finite(yaw)
 
 func _send_ragdoll_start(player: Player) -> void:
 	var yaw := player.model.rotation.y if player.model != null else 0.0
@@ -124,16 +188,30 @@ func _broadcast_ragdoll_state(peer_id: int, state: PackedFloat32Array) -> void:
 
 func _apply_remote_ragdoll_state(peer_id: int, state: PackedFloat32Array) -> void:
 	var avatar := _get_remote_avatar(peer_id)
-	if avatar == null or not bool(avatar.get("network_ragdoll_started")):
-		# Unreliable snapshots can arrive before the reliable start event.
-		# Keep only the latest packet and apply it as soon as the avatar exists.
+	if avatar == null:
+		# The remote avatar may still be spawning while the start event arrives.
 		_pending_states[peer_id] = state.duplicate()
+		return
+	if not bool(avatar.get("network_ragdoll_started")):
+		# Ignore a delayed snapshot from a previous life after this player respawned.
 		return
 	if avatar.has_method("apply_network_ragdoll_state"):
 		avatar.call("apply_network_ragdoll_state", state)
 
 func _apply_pending_events() -> void:
 	var known_players: Dictionary = NetworkSession.get("_known_players")
+	for peer_value in _pending_respawns.keys():
+		var peer_id := int(peer_value)
+		if not known_players.has(peer_id):
+			_pending_respawns.erase(peer_value)
+			continue
+		var avatar := _get_remote_avatar(peer_id)
+		if avatar != null:
+			var pending_respawn: Array = _pending_respawns[peer_value]
+			_pending_respawns.erase(peer_value)
+			if avatar.has_method("reset_network_ragdoll"):
+				avatar.call("reset_network_ragdoll", pending_respawn[0], float(pending_respawn[1]))
+
 	for peer_value in _pending_starts.keys():
 		var peer_id := int(peer_value)
 		if not known_players.has(peer_id):

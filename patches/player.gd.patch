@@ -1,0 +1,55 @@
+diff --git a/player.gd b/player.gd
+--- a/player.gd
++++ b/player.gd
+@@ -1,4 +1,5 @@
+ class_name Player
+ extends CharacterBody3D
++const SHARINGAN_EFFECT_SCRIPT := preload("res://sharingan_effect.gd")
+ 
+ const WALK_SPEED := 7.0
+@@ -50,5 +51,6 @@
+ var buffs: Array[Dictionary] = []           # active bloodline buffs / auras
+ var powered := false                        # bloodline power-up (C) is on
+ var pmode: Dictionary = {}                  # Bloodline.mode() while powered
+ var pmode_fx: Node3D = null
++var sharingan_fx: Node3D = null
+ var mode_tick := 0.0
+@@ -705,7 +707,21 @@
+ func _clear_buffs() -> void:
+ 	buffs.clear()
+ 	Enemy.time_scale = 1.0
+ 
++func _set_sharingan_visual(enabled: bool) -> void:
++	if enabled:
++		if sharingan_fx != null and is_instance_valid(sharingan_fx):
++			return
++		if model == null or not is_instance_valid(model):
++			return
++		sharingan_fx = SHARINGAN_EFFECT_SCRIPT.attach_to(model)
++	else:
++		if sharingan_fx != null and is_instance_valid(sharingan_fx):
++			sharingan_fx.call("detach")
++		sharingan_fx = null
++	if NetworkSession.is_active():
++		NetworkSession.broadcast_sharingan_state(enabled)
++
+ ## C (tap) / X: turn the bloodline power-up on or off.
+ func _toggle_power() -> void:
+ 	if is_dead:
+@@ -731,6 +747,8 @@
+ 	var col: Color = m["col"]
+ 	if NetworkSession.is_active():
+ 		NetworkSession.broadcast_power_state(true, col)
++	if id == "uchiha":
++		_set_sharingan_visual(true)
+ 	pmode_fx = Node3D.new()
+ 	add_child(pmode_fx)
+ 	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
+@@ -748,6 +766,7 @@
+ func _power_off() -> void:
+ 	if not powered:
+ 		return
++	_set_sharingan_visual(false)
+ 	if NetworkSession.is_active():
+ 		NetworkSession.broadcast_power_state(false, Color.WHITE)
+ 	powered = false

@@ -87,6 +87,46 @@ func apply_network_ragdoll_state(state: PackedFloat32Array) -> void:
 	if ragdoll != null and is_instance_valid(ragdoll):
 		ragdoll.apply_network_state(state)
 
+
+## Restores this remote player after the owner respawns. Rebuilding the model
+## clears every ragdoll bone pose and restarts its AnimationPlayer cleanly.
+func reset_network_ragdoll(position: Vector3, yaw: float) -> void:
+	if ragdoll != null and is_instance_valid(ragdoll):
+		ragdoll.set_process(false)
+		ragdoll.queue_free()
+	ragdoll = null
+
+	if model != null and is_instance_valid(model):
+		remove_child(model)
+		model.queue_free()
+	model = Hero.create(character_appearance)
+	if model == null:
+		var hue := fposmod(float(peer_id) * 0.173, 1.0)
+		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
+	add_child(model)
+	model.rotation.y = yaw
+	model.scale = Vector3.ONE
+
+	if power_fx != null and is_instance_valid(power_fx):
+		power_fx.queue_free()
+	power_fx = null
+	if kurama_fx != null and is_instance_valid(kurama_fx):
+		kurama_fx.queue_free()
+	kurama_fx = null
+
+	global_position = position
+	target_position = position
+	target_yaw = yaw
+	_last_position = position
+	animation_lock = 0.0
+	network_ragdoll_started = false
+	set_process(true)
+	set_physics_process(true)
+	if name_tag != null:
+		name_tag.visible = true
+		name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
+	Hero.play(model, "idle")
+
 ## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
 func play_ability(move_id: String, color: Color) -> void:
 	if network_ragdoll_started:

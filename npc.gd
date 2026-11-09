@@ -84,6 +84,9 @@ static func build_model(path: String, height: float, yaw_deg: float, use_outline
 		inst.scale *= sc
 		inst.position = Vector3(-(box.position.x + box.size.x / 2.0) * sc, -box.position.y * sc, -(box.position.z + box.size.z / 2.0) * sc)
 		wrapper.set_meta("label_y", height + 0.55)
+	# NPCs can use their own GLBs rather than Hero.create(), so run the same rigid-hair
+	# attachment pass here as well. Skinned hair and existing Head attachments are untouched.
+	Hero.attach_rigid_hair_to_head(inst)
 	Fx.toonify_model(inst, use_outline)
 	var aps := inst.find_children("*", "AnimationPlayer", true, false)
 	if not aps.is_empty():

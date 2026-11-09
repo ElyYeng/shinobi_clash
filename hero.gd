@@ -121,6 +121,9 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	wrapper.add_child(fixer)
 	fixer.add_child(inst)
 	_fit(fixer, inst)
+	# New rigid hair meshes are not necessarily skinned/parented to the head in the GLB.
+	# Attach those meshes to the Head bone so every Hero.create() consumer gets the fix.
+	attach_rigid_hair_to_head(inst)
 	Fx.toonify_model(inst)
 	_setup_anims(wrapper, inst)
 	wrapper.set_meta("hero_parts", _discover_parts(inst))
@@ -192,7 +195,7 @@ static func display_name(id: String) -> String:
 ## Options found on a model created by Hero.create: {"hair": ["hair1", "hair2"], "shirt": [...], ...}
 ## Random outfit for NPCs (bandits / shinobi): picks random hairstyle, shirt and pants from the
 ## meshes the model really has, a random hair colour, random colours for colour-only slots
-## (headband) and a random texture for texture slots. Applies it and returns the look.
+## (headband) and a random texture for texture slots.
 static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null) -> Dictionary:
 	if rng == null:
 		rng = RandomNumberGenerator.new()
@@ -317,7 +320,88 @@ static func _names_of(mi: MeshInstance3D) -> Array:
 	return names
 
 
-## Scans the model once and remembers which MeshInstance3D is which option.
+## Fixes only truly standalone rigid hair meshes that are neither skinned nor assigned a
+## Skeleton3D path and are not already parented to a BoneAttachment3D. Their original imported
+## transform is preserved, then they are made a child of a Head BoneAttachment3D. Meshes with
+## either Skin OR Skeleton3D path are already rig-driven and are always left in their GLB hierarchy.
+## This is shared by players, remote avatars, clones, previews and NPC model loading.
+static func attach_rigid_hair_to_head(inst: Node) -> int:
+	if inst == null:
+		return 0
+	var skeleton_nodes := inst.find_children("*", "Skeleton3D", true, false)
+	if skeleton_nodes.is_empty():
+		return 0
+	var sk := skeleton_nodes[0] as Skeleton3D
+	if sk == null:
+		return 0
+
+	var rigid_hair: Array[MeshInstance3D] = []
+	for node in inst.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		# IMPORTANT: some imported GLB hairs have no Skin resource but DO have a
+		# Skeleton3D path. They are already rig-driven and must never be reparented.
+		# The previous check only tested `skin`, which detached those meshes from
+		# their rig and made characters appear bald or left hair floating elsewhere.
+		if mi == null or mi.mesh == null or mi.skin != null or mi.skeleton != NodePath(""):
+			continue
+		var is_hair := false
+		for raw_name in _names_of(mi):
+			var compact_name := str(raw_name).to_lower().replace("_", "").replace(" ", "")
+			if compact_name.contains("hair") and not compact_name.contains("headband"):
+				is_hair = true
+				break
+		if is_hair:
+			rigid_hair.append(mi)
+	if rigid_hair.is_empty():
+		return 0
+
+	var head_idx := -1
+	for i in sk.get_bone_count():
+		var bone_name := str(sk.get_bone_name(i)).to_lower()
+		bone_name = bone_name.replace("mixamorig:", "").replace("mixamorig_", "")
+		bone_name = bone_name.replace(" ", "").replace("_", "")
+		if bone_name == "head":
+			head_idx = i
+			break
+	if head_idx < 0:
+		push_warning("[Hero] Found rigid hair meshes, but the model has no Head bone. Hair must be parented/weighted to a head bone in the source model.")
+		return 0
+
+	var head_bone_name := sk.get_bone_name(head_idx)
+	var head_world_transform := sk.global_transform * sk.get_bone_global_pose(head_idx)
+	var attached_count := 0
+	for mi in rigid_hair:
+		var ancestor := mi.get_parent()
+		var already_bone_attached := false
+		while ancestor != null and ancestor != sk:
+			# Leave all explicit BoneAttachment3D hierarchies as authored. The
+			# mesh may already be positioned on Head (or a custom head bone alias).
+			if ancestor is BoneAttachment3D:
+				already_bone_attached = true
+				break
+			ancestor = ancestor.get_parent()
+		if already_bone_attached:
+			continue
+
+		# Save the mesh's current world pose before moving it under the head attachment.
+		var original_world_transform := mi.global_transform
+		var attachment := BoneAttachment3D.new()
+		attachment.name = "AutoHairHead_%d" % mi.get_instance_id()
+		attachment.bone_name = head_bone_name
+		sk.add_child(attachment)
+		mi.reparent(attachment, false)
+		mi.transform = head_world_transform.affine_inverse() * original_world_transform
+		# Ragdoll.start() moves this rigid hair mesh under the physics Head body
+		# so it follows the falling head instead of remaining at its last bone pose.
+		mi.set_meta("ragdoll_follow_head", true)
+		attached_count += 1
+
+	if attached_count > 0:
+		print("[Hero] Attached %d rigid hair mesh(es) to bone '%s'." % [attached_count, head_bone_name])
+	return attached_count
+
+
+## Scans the model once and remembers which MeshInstance3D is which.
 static func _discover_parts(inst: Node) -> Dictionary:
 	var regexes := {}
 	var found := {}
@@ -336,7 +420,7 @@ static func _discover_parts(inst: Node) -> Dictionary:
 		found[cat].append({"id": "%s%d" % [cat, number], "num": number, "node": mi})
 	for cat in found:
 		(found[cat] as Array).sort_custom(func(a, b): return int(a["num"]) < int(b["num"]))
-		if found[cat].is_empty():
+		if (found[cat] as Array).is_empty():
 			push_warning("[Hero] No '%s' meshes found in the model (expected names like %s1)." % [cat, cat])
 	return found
 
@@ -530,7 +614,7 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	if aps.is_empty():
 		if not _warned_no_anims:
 			_warned_no_anims = true
-			print("[Hero] the character GLB has no animations, so it stays in its T-pose until idle/run/attack clips are added.")
+			print("[Hero] the character GLB has no animations, so it stays in the T-pose until idle/run/attack clips for this skeleton are added.")
 		return
 	var ap := aps[0] as AnimationPlayer
 	var list := ap.get_animation_list()

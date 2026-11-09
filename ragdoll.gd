@@ -98,6 +98,40 @@ static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
 			j.node_b = body.get_path()
 			j.set_param(ConeTwistJoint3D.PARAM_SWING_SPAN, deg_to_rad(40.0 if p[0] == "Head" else 70.0))
 			j.set_param(ConeTwistJoint3D.PARAM_TWIST_SPAN, deg_to_rad(25.0))
+
+	# Transfer the selected non-skinned hairstyle to the physics Head body.
+	# Hair 1/2 in the original GLB are skin-deformed, but newer hair options can
+	# be rigid MeshInstances that merely sit under a BoneAttachment3D or carry a
+	# Skeleton3D path without a Skin resource. Those meshes keep their last pose
+	# when Ragdoll._process() starts driving the skeleton, so they must follow
+	# the Head RigidBody3D directly.
+	var head_body := bodies.get("Head") as RigidBody3D
+	if head_body != null and model.has_meta("hero_parts"):
+		var hero_parts: Dictionary = model.get_meta("hero_parts")
+		var hair_entries: Array = hero_parts.get("hair", [])
+		var moved_hair_count := 0
+		for entry_variant in hair_entries:
+			var entry: Dictionary = entry_variant
+			var hair := entry.get("node") as MeshInstance3D
+			if hair == null or hair.mesh == null or not hair.is_inside_tree():
+				continue
+			# The active hairstyle only. Hidden alternatives stay in the model tree.
+			if not hair.is_visible_in_tree():
+				continue
+			# A Skin resource means vertices are actually deformed by Skeleton3D;
+			# leave those meshes alone because the ragdoll updates the Head bone.
+			if hair.skin != null:
+				continue
+			# With no Skin, MeshInstance3D.skeleton is only a stale/imported path.
+			# Clear it before changing parents so it cannot point outside the model.
+			hair.skeleton = NodePath("")
+			# Preserve the exact world pose at death, then inherit the Head body's
+			# translation and rotation for every subsequent ragdoll physics frame.
+			hair.reparent(head_body, true)
+			hair.set_meta("ragdoll_attached_to_head_body", true)
+			moved_hair_count += 1
+		if moved_hair_count > 0:
+			print("[Ragdoll] Moved %d rigid hairstyle mesh(es) onto the physics Head body." % moved_hair_count)
 	return r
 
 static func _basis_y(dir: Vector3) -> Basis:
