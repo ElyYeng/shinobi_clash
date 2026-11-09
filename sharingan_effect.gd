@@ -1,82 +1,88 @@
-extends Node3D
+extends CanvasLayer
 class_name SharinganEffect
-## A small, continuously rotating Sharingan decal attached to the character's head bone.
+## One-shot, semi-transparent Sharingan activation overlay in screen space.
+## The emblem fills most of the short screen axis, spins once, then fades out.
 
 const TEXTURE_PATH := "res://assets/effects/sharingan.png"
-const PIXEL_SIZE := 0.0008 # 200 px -> 0.16 m across
-const ROTATION_SPEED := 3.2 # radians per second
-const FACE_OFFSET := Vector3(0.055, 0.035, 0.12)
+const SOUND_PATH := "res://assets/effects/sharingan_activation.mp3"
+const SCREEN_COVERAGE := 0.92
+const FINAL_OPACITY := 0.94
+const SPIN_DURATION := 0.88
 
-var _sprite: Sprite3D
-var _attachment: BoneAttachment3D
+static func play_activation(scene_tree: SceneTree) -> void:
+	if scene_tree == null or scene_tree.root == null:
+		return
+	var effect := SharinganEffect.new()
+	scene_tree.root.add_child(effect)
 
-
-static func attach_to(model: Node3D) -> SharinganEffect:
-	if model == null or not is_instance_valid(model):
-		return null
-
+func _ready() -> void:
+	layer = 128
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var texture := load(TEXTURE_PATH) as Texture2D
 	if texture == null:
-		push_warning("[SharinganEffect] Missing texture: %s" % TEXTURE_PATH)
-		return null
-
-	var skeletons := model.find_children("*", "Skeleton3D", true, false)
-	if skeletons.is_empty():
-		push_warning("[SharinganEffect] Character model has no Skeleton3D; cannot attach the Sharingan.")
-		return null
-
-	var skeleton := skeletons[0] as Skeleton3D
-	var head_bone := _find_head_bone(skeleton)
-	if head_bone == "":
-		push_warning("[SharinganEffect] No Head bone found on character model.")
-		return null
-
-	var attachment := BoneAttachment3D.new()
-	attachment.name = "SharinganHeadAttachment"
-	attachment.bone_name = head_bone
-	skeleton.add_child(attachment)
-
-	var effect := SharinganEffect.new()
-	effect.name = "SpinningSharingan"
-	effect._attachment = attachment
-	attachment.add_child(effect)
-	effect._build_sprite(texture)
-	return effect
-
-
-static func _find_head_bone(skeleton: Skeleton3D) -> String:
-	var fallback := ""
-	for i in skeleton.get_bone_count():
-		var bone_name := skeleton.get_bone_name(i)
-		var key := bone_name.to_lower()
-		if key == "head" or key.ends_with(":head") or key.ends_with("_head"):
-			return bone_name
-		if fallback == "" and key.contains("head") and not key.contains("top") and not key.contains("end"):
-			fallback = bone_name
-	return fallback
-
-
-func _build_sprite(texture: Texture2D) -> void:
-	_sprite = Sprite3D.new()
-	_sprite.name = "SharinganSprite"
-	_sprite.texture = texture
-	_sprite.centered = true
-	_sprite.pixel_size = PIXEL_SIZE
-	_sprite.position = FACE_OFFSET
-	_sprite.no_depth_test = true
-	_sprite.double_sided = true
-	_sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_sprite)
-
-
-func _process(delta: float) -> void:
-	if is_instance_valid(_sprite):
-		_sprite.rotation.z = fposmod(_sprite.rotation.z + ROTATION_SPEED * delta, TAU)
-
-
-## Frees the BoneAttachment3D as well as this effect node.
-func detach() -> void:
-	if is_instance_valid(_attachment):
-		_attachment.queue_free()
-	else:
+		push_warning("[SharinganEffect] Missing image: %s" % TEXTURE_PATH)
 		queue_free()
+		return
+	_play_activation_sound()
+	_build_screen_image(texture)
+	_animate_screen_image()
+
+func _build_screen_image(texture: Texture2D) -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var icon_size := minf(viewport_size.x, viewport_size.y) * SCREEN_COVERAGE
+	var screen := Control.new()
+	screen.name = "SharinganFullScreenOverlay"
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(screen)
+
+	var icon := TextureRect.new()
+	icon.name = "SharinganScreenIcon"
+	icon.texture = texture
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	icon.anchor_left = 0.5
+	icon.anchor_top = 0.5
+	icon.anchor_right = 0.5
+	icon.anchor_bottom = 0.5
+	icon.offset_left = -icon_size * 0.5
+	icon.offset_top = -icon_size * 0.5
+	icon.offset_right = icon_size * 0.5
+	icon.offset_bottom = icon_size * 0.5
+	icon.pivot_offset = Vector2(icon_size * 0.5, icon_size * 0.5)
+	icon.scale = Vector2.ONE * 0.58
+	icon.rotation = deg_to_rad(-22.0)
+	icon.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	screen.add_child(icon)
+	set_meta("screen_icon", icon)
+
+func _animate_screen_image() -> void:
+	var icon := get_meta("screen_icon") as TextureRect
+	if icon == null:
+		queue_free()
+		return
+	var tween := create_tween()
+	tween.set_parallel(true)
+	# Fast entrance, one dramatic spin, and a short fade to reveal gameplay again.
+	tween.tween_property(icon, "rotation", icon.rotation + TAU * 1.0, SPIN_DURATION).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(icon, "scale", Vector2.ONE * 1.0, 0.20).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(icon, "modulate:a", FINAL_OPACITY, 0.10)
+	tween.chain().tween_interval(0.02)
+	tween.chain().tween_property(icon, "modulate:a", 0.0, 0.12)
+	tween.chain().tween_callback(queue_free)
+
+func _play_activation_sound() -> void:
+	var stream := load(SOUND_PATH) as AudioStream
+	if stream == null:
+		push_warning("[SharinganEffect] Missing activation sound: %s" % SOUND_PATH)
+		return
+	# The sound lives outside this short-lived CanvasLayer so it can finish naturally.
+	var audio := AudioStreamPlayer.new()
+	audio.name = "SharinganActivationSound"
+	audio.stream = stream
+	audio.volume_db = -2.0
+	get_tree().root.add_child(audio)
+	audio.finished.connect(audio.queue_free)
+	audio.play()

@@ -10,3 +10,5 @@ res://network_session.gd
 res://ragdoll.gd
 res://clone.gd
 res://npc.gd
+res://sharingan_effect.gd
+res://sharingan_screen_controller.gd
