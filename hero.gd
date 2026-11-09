@@ -190,6 +190,32 @@ static func display_name(id: String) -> String:
 
 
 ## Options found on a model created by Hero.create: {"hair": ["hair1", "hair2"], "shirt": [...], ...}
+## Random outfit for NPCs (bandits / shinobi): picks random hairstyle, shirt and pants from the
+## meshes the model really has, a random hair colour, random colours for colour-only slots
+## (headband) and a random texture for texture slots. Applies it and returns the look.
+static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null) -> Dictionary:
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	var look: Dictionary = DEFAULT_APPEARANCE.duplicate()
+	var options := get_options(model)
+	for cat in CATEGORIES:
+		var ids: Array = options.get(cat, [])
+		if not ids.is_empty():
+			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
+	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)
+	for slot in COLOR_SLOTS:
+		var info: Dictionary = COLOR_SLOTS[slot]
+		var tkey := str(info.get("texture_key", ""))
+		if tkey == "":
+			look[info["key"]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.3, 0.9), rng.randf_range(0.3, 0.9)).to_html(false)
+		else:
+			var choices: Array = [""] + list_slot_textures(slot)
+			look[tkey] = str(choices[rng.randi() % choices.size()])
+	apply_appearance(model, look)
+	return look
+
+
 static func get_options(model: Node3D) -> Dictionary:
 	var out := {}
 	if model == null or not model.has_meta("hero_parts"):
