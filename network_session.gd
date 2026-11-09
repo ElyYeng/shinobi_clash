@@ -30,6 +30,8 @@ var _raid_sync_timer := 0.0
 var _quest_manager: Quests
 var _party_quest_states: Dictionary = {}
 var _server_quest_leader_override := 0
+var _sent_quest_enemy_identities: Dictionary = {}
+var _pending_quest_enemy_identities: Dictionary = {}
 
 func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -74,6 +76,8 @@ func disconnect_session() -> void:
 	_quest_manager = null
 	_party_quest_states.clear()
 	_server_quest_leader_override = 0
+	_sent_quest_enemy_identities.clear()
+	_pending_quest_enemy_identities.clear()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = null
@@ -337,6 +341,7 @@ func _server_accept_party(member_id: int, inviter_id: int) -> void:
 	_pending_party_invites.erase(member_id)
 	_broadcast_party_state.rpc(_party_leader.keys(), _party_leader.values())
 	_apply_party_state(_party_leader.keys(), _party_leader.values())
+	_send_quest_enemy_identities_to_peer(member_id)
 	_send_party_quest_state_to_member(member_id, leader)
 
 @rpc("authority", "call_remote", "reliable")
@@ -501,7 +506,10 @@ func _server_party_quest_abandon(sender_id: int, quest_id: String) -> void:
 	# Drop the shared quest and remove the authoritative enemies for that squad.
 	for node in get_tree().get_nodes_in_group("quest_enemies"):
 		if node is Enemy and (node as Enemy).network_quest_party_leader == leader:
-			_remove_quest_enemy.rpc((node as Enemy).network_quest_id)
+			var enemy_id := (node as Enemy).network_quest_id
+			_sent_quest_enemy_identities.erase(enemy_id)
+			_pending_quest_enemy_identities.erase(enemy_id)
+			_remove_quest_enemy.rpc(enemy_id)
 			node.queue_free()
 	_publish_party_quest_state(leader, "", "", 0)
 
@@ -610,6 +618,8 @@ func _receive_party_quest_reward(quest_id: String, xp: int, spins: int) -> void:
 func quest_enemy_killed(enemy_id: String, leader_id: int) -> void:
 	if not is_active() or session_mode != "coop" or not multiplayer.is_server():
 		return
+	_sent_quest_enemy_identities.erase(enemy_id)
+	_pending_quest_enemy_identities.erase(enemy_id)
 	_remove_quest_enemy.rpc(enemy_id)
 	_grant_party_quest_kill_reward(leader_id)
 	if not _party_quest_states.has(leader_id):
@@ -700,8 +710,62 @@ func _sync_quest_enemy_states() -> void:
 		var enemy := node as Enemy
 		if enemy.network_quest_id == "" or enemy.network_quest_mirror:
 			continue
+		if not _sent_quest_enemy_identities.has(enemy.network_quest_id):
+			_sent_quest_enemy_identities[enemy.network_quest_id] = true
+			_quest_enemy_identity.rpc(enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 		var yaw := enemy.model.rotation.y if enemy.model != null else 0.0
 		_quest_enemy_state.rpc(enemy.network_quest_id, enemy.global_position, yaw, enemy.health)
+
+
+## Reliable, one-time identity packet: bloodline is the clan and appearance contains
+## every Hero customization field (hair, clothes, colours and accessory textures).
+@rpc("authority", "call_remote", "reliable")
+func _quest_enemy_identity(enemy_id: String, bloodline_id: String, appearance: Dictionary, synced_max_health: float) -> void:
+	if enemy_id == "":
+		return
+	var identity := {
+		"bloodline_id": bloodline_id,
+		"appearance": appearance,
+		"max_health": synced_max_health
+	}
+	_pending_quest_enemy_identities[enemy_id] = identity
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
+			(node as Enemy).apply_quest_network_identity(bloodline_id, appearance, synced_max_health)
+			_pending_quest_enemy_identities.erase(enemy_id)
+			return
+
+
+## Keeps identities that arrive before a client has finished creating its quest enemies.
+func apply_pending_quest_enemy_identity(enemy: Enemy) -> void:
+	if enemy == null or enemy.network_quest_id == "":
+		return
+	var enemy_id := enemy.network_quest_id
+	if not _pending_quest_enemy_identities.has(enemy_id):
+		return
+	var identity: Dictionary = _pending_quest_enemy_identities[enemy_id]
+	_pending_quest_enemy_identities.erase(enemy_id)
+	enemy.apply_quest_network_identity(
+		str(identity.get("bloodline_id", "none")),
+		identity.get("appearance", {}),
+		float(identity.get("max_health", 0.0))
+	)
+
+
+## Used when a player joins a party after its enemies have already spawned.
+func _send_quest_enemy_identities_to_peer(peer_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if not node is Enemy:
+			continue
+		var enemy := node as Enemy
+		if enemy.network_quest_id == "" or enemy.network_quest_mirror:
+			continue
+		if not _same_party(peer_id, enemy.network_quest_party_leader):
+			continue
+		_quest_enemy_identity.rpc_id(peer_id, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
+
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _quest_enemy_state(enemy_id: String, pos: Vector3, yaw: float, hp: float) -> void:
@@ -712,6 +776,7 @@ func _quest_enemy_state(enemy_id: String, pos: Vector3, yaw: float, hp: float) -
 
 @rpc("authority", "call_remote", "reliable")
 func _remove_quest_enemy(enemy_id: String) -> void:
+	_pending_quest_enemy_identities.erase(enemy_id)
 	for node in get_tree().get_nodes_in_group("quest_enemies"):
 		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
 			(node as Enemy).queue_free()
