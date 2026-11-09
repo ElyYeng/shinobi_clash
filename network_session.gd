@@ -712,7 +712,11 @@ func _sync_quest_enemy_states() -> void:
 			continue
 		if not _sent_quest_enemy_identities.has(enemy.network_quest_id):
 			_sent_quest_enemy_identities[enemy.network_quest_id] = true
-			_quest_enemy_identity.rpc(enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
+			for peer_id_variant in _known_players:
+				var peer_id := int(peer_id_variant)
+				if peer_id == 1 or not _same_party(peer_id, enemy.network_quest_party_leader):
+					continue
+				_quest_enemy_identity.rpc_id(peer_id, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 		var yaw := enemy.model.rotation.y if enemy.model != null else 0.0
 		_quest_enemy_state.rpc(enemy.network_quest_id, enemy.global_position, yaw, enemy.health)
 
