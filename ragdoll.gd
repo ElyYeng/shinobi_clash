@@ -26,7 +26,7 @@ const PARTS := [
 
 # Each part contributes seven floats: position XYZ followed by quaternion XYZW.
 const NETWORK_FLOATS_PER_PART := 7
-const NETWORK_STATE_SIZE := PARTS.size() * NETWORK_FLOATS_PER_PART
+const NETWORK_STATE_SIZE := 77  # 11 ragdoll parts * 7 floats per transform
 
 var sk: Skeleton3D
 var parts: Array = []  # [bone_idx, body, offset]

@@ -16,7 +16,14 @@ var arm: Node3D
 
 func _ready() -> void:
 	add_to_group("shadow_clones")
-	model = Hero.create()
+	# Local clones use the local player's current look. A remote cosmetic clone
+	# must use the appearance cached for the peer who summoned it, not the
+	# receiving player's GameData.character_appearance.
+	var look: Dictionary = GameData.character_appearance.duplicate(true)
+	if cosmetic_only and network_peer_id > 0:
+		var appearances_by_peer: Dictionary = NetworkSession.get("_known_appearances")
+		look = Hero.sanitize_appearance(appearances_by_peer.get(network_peer_id, {}))
+	model = Hero.create(look)
 	if model == null:
 		model = Fx.make_ninja(Color(0.95, 0.6, 0.25), Color(0.15, 0.3, 0.8))
 	add_child(model)
