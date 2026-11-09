@@ -749,9 +749,10 @@ func apply_pending_quest_enemy_identity(enemy: Enemy) -> void:
 		return
 	var identity: Dictionary = _pending_quest_enemy_identities[enemy_id]
 	_pending_quest_enemy_identities.erase(enemy_id)
+	var pending_appearance: Dictionary = identity.get("appearance", {})
 	enemy.apply_quest_network_identity(
 		str(identity.get("bloodline_id", "none")),
-		identity.get("appearance", {}),
+		pending_appearance,
 		float(identity.get("max_health", 0.0))
 	)
 
