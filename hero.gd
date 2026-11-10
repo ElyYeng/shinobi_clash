@@ -757,8 +757,8 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
 
-## Ground speed (m/s) -> locomotion state. Normal movement (Player.WALK_SPEED 3) plays the walk
-## clip, sprinting (SPRINT_SPEED 6) plays the run clip. Raise/lower WALK_BELOW to taste.
+## Ground speed (m/s) -> locomotion state. Normal movement (Player.WALK_SPEED 2.5) plays the walk
+## clip, sprinting (SPRINT_SPEED 8) plays the run clip. Raise/lower WALK_BELOW to taste.
 const WALK_BELOW := 4.5
 static func move_state(speed: float) -> String:
 	if speed <= 1.0:
@@ -777,7 +777,9 @@ static func _lookup(map: Dictionary, state: String) -> Array:
 ## Plays an animation state; returns its length (0.0 if the model has none).
 ## Locomotion speeds the walk/run clips may be sped up or slowed down to (keeps them sane).
 const ANIM_SPEED_MIN := 0.6
-const ANIM_SPEED_MAX := 3.0
+const ANIM_SPEED_MAX := 3.5
+## Per-clip cap (walk looks hurried above this, even if the feet slide a little).
+const ANIM_SPEED_CAP := {"walk": 1.7}
 
 ## Plays walk/run (or idle) for a model moving at `ground_speed` m/s and sets the playback speed
 ## so the feet move as fast as the body: no sliding or moonwalking. Use instead of play() for
@@ -796,7 +798,7 @@ static func play_move(model: Node3D, state: String, ground_speed: float) -> void
 	if natural <= 0.01:
 		return
 	var scale := model.global_transform.basis.get_scale().x if model.is_inside_tree() else model.scale.x
-	ap.speed_scale = clampf(ground_speed / (natural * maxf(scale, 0.01)), ANIM_SPEED_MIN, ANIM_SPEED_MAX)
+	ap.speed_scale = clampf(ground_speed / (natural * maxf(scale, 0.01)), ANIM_SPEED_MIN, float(ANIM_SPEED_CAP.get(state, ANIM_SPEED_MAX)))
 
 ## How fast (m/s, in the model's own units) the planted foot slides back in clip `anim` at speed
 ## 1.0, i.e. the ground speed the clip was animated for. Measured once per clip by sampling the

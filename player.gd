@@ -1,8 +1,8 @@
 class_name Player
 extends CharacterBody3D
 
-const WALK_SPEED := 3.0      # m/s; walk/run clips are sped up to match (Hero.play_move)
-const SPRINT_SPEED := 6.0
+const WALK_SPEED := 2.5      # m/s; walk/run clips are sped up to match (Hero.play_move)
+const SPRINT_SPEED := 8.0
 const JUMP_VELOCITY := 9.5
 const GRAVITY := 26.0
 const DASH_SPEED := 30.0
