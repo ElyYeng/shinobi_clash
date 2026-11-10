@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lost_scrolls"
+title = "Lost Scrolls"
+giver = "trainer"
+requires = "letter"
+order = 2
+type = "collect"
+pos = Vector3(-95, 0, 125)
+place = "Scattered Scrolls"
+radius = 14.0
+count = 5
+item_name = "Training Scroll"
+reward_spins = 1
+reward_element_spins = 1
+reward_xp = 400
+offer = "A gust of wind tore my training scrolls out of the satchel. They're scattered in the fields to the south-west. Bring back all five?"
+remind = "The scrolls glow faintly - look around the golden beam to the south-west."
+turn = "All five! You've got sharp eyes. Here, an element spin for the trouble."

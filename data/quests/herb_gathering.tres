@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "herb_gathering"
+title = "Medicinal Herbs"
+giver = "courier"
+repeatable = true
+order = 6
+type = "collect"
+pos = Vector3(60, 0, 160)
+place = "Herb Meadow"
+radius = 16.0
+count = 6
+item_name = "Healing Herb"
+reward_xp = 350
+offer = "The clinic is always short on healing herbs. There's a meadow to the south-east - gather six for me? I'll pay every time."
+remind = "Six healing herbs from the meadow to the south-east."
+turn = "Perfect, these are fresh. Come back any time."

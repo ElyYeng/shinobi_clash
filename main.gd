@@ -244,7 +244,7 @@ func _refresh_markers() -> void:
 		if not act.is_empty():
 			if GameData.quest_state == "ready" and act["giver"] == id:
 				m = "?"
-			elif GameData.quest_state == "active" and act["type"] == "deliver" and act["target"] == id:
+			elif quests.talk_target() == id:
 				m = "!"
 				col = Color(0.4, 0.9, 1.0)
 		elif quests.available_for(id) != "":
@@ -279,8 +279,9 @@ func _talk(npc: Npc) -> void:
 		if is_ready and act["giver"] == id:
 			dialog.open(npc.display_name, str(act["turn"]),
 				[["Complete quest  (%s)" % Quests.reward_text(act), quests.turn_in]])
-		elif not is_ready and act["type"] == "deliver" and act["target"] == id:
-			dialog.open(npc.display_name, str(act["deliver_text"]), [["Deliver the message", quests.deliver_done]])
+		elif not is_ready and quests.talk_target() == id:
+			var said := quests.talk_text()
+			dialog.open(npc.display_name, said if said != "" else npc.greeting, [["Continue", quests.talk_done]])
 		elif act["giver"] == id:
 			dialog.open(npc.display_name, str(act["remind"]), [["Okay, I'm on it", none], ["Abandon quest", quests.abandon]])
 		else:

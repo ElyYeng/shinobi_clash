@@ -1462,14 +1462,8 @@ func _quest_target() -> Vector3:
 	var act: Dictionary = qs.active_def()
 	if act.is_empty():
 		return Vector3.INF
-	var pos := Vector3.INF
-	if GameData.quest_state == "ready":
-		pos = Quests.NPCS[act["giver"]]["pos"]
-	elif act.has("pos"):
-		pos = act["pos"]
-	elif act["type"] == "deliver":
-		pos = Quests.NPCS[act["target"]]["pos"]
-	else:
+	var pos: Vector3 = qs.target_position()
+	if pos == Vector3.INF:
 		pos = Quests.NPCS[act["giver"]]["pos"]
 	return pos + Vector3(0, 1, 3)
 

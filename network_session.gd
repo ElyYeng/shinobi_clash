@@ -110,13 +110,13 @@ func _sanitize_appearance(raw: Dictionary) -> Dictionary:
 	# the hair colour onto a fixed palette, so remote players never looked right.)
 	return Hero.sanitize_appearance(raw)
 
+## True only in a real hosted / joined game. (Godot's default peer is an OfflineMultiplayerPeer,
+## not null, so a plain null check was also true in single player.)
 func is_active() -> bool:
-	return multiplayer.multiplayer_peer != null
-
-## True only in a real hosted / joined game. (is_active() is also true in single player, because
-## Godot's default peer is an OfflineMultiplayerPeer, not null.)
-func is_online() -> bool:
 	return multiplayer.multiplayer_peer != null and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer)
+
+func is_online() -> bool:
+	return is_active()
 
 func bind_local_player(player: Player, game_root: Node) -> void:
 	_local_player = player
@@ -571,7 +571,10 @@ func _server_party_quest_ready(sender_id: int, quest_id: String) -> void:
 	var state: Dictionary = _party_quest_states[leader]
 	if str(state.get("id", "")) != quest_id or str(state.get("state", "")) != "active":
 		return
-	_publish_party_quest_state(leader, quest_id, "ready", int(state.get("progress", 0)))
+	# The current step is done: next step, or "ready" after the last one (multi-step quests).
+	Quests.ensure_loaded()
+	var next := Quests.advance(quest_id, int(state.get("progress", 0)))
+	_publish_party_quest_state(leader, quest_id, str(next[0]), int(next[1]))
 
 func _publish_party_quest_state(leader_id: int, quest_id: String, state: String, progress: int) -> void:
 	_party_quest_states[leader_id] = {"id": quest_id, "state": state, "progress": progress}
@@ -665,12 +668,10 @@ func quest_enemy_killed(enemy_id: String, leader_id: int) -> void:
 	if quest_id == "" or str(state.get("state", "")) != "active":
 		return
 	Quests.ensure_loaded()
-	var d: Dictionary = Quests.DEFS.get(quest_id, {})
-	if d.is_empty() or not ["kill", "hunt"].has(str(d.get("type", ""))):
-		return
-	var progress := mini(int(state.get("progress", 0)) + 1, int(d.get("count", 1)))
-	var next_state := "ready" if progress >= int(d.get("count", 1)) else "active"
-	_publish_party_quest_state(leader_id, quest_id, next_state, progress)
+	var next := Quests.after_enemy_kill(quest_id, int(state.get("progress", 0)))
+	if next.is_empty():
+		return   # this step doesn't count kills (e.g. survive waves)
+	_publish_party_quest_state(leader_id, quest_id, str(next[0]), int(next[1]))
 
 func _grant_party_quest_kill_reward(leader_id: int) -> void:
 	for id in _known_players:

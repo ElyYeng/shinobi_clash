@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://quest_step.gd" id="2_step"]
+
+[sub_resource type="Resource" id="Step_1"]
+script = ExtResource("2_step")
+type = "goto"
+pos = Vector3(-150, 0, 40)
+place = "Abandoned Camp"
+radius = 6.0
+text = "Find the patrol's camp in the west"
+
+[sub_resource type="Resource" id="Step_2"]
+script = ExtResource("2_step")
+type = "collect"
+pos = Vector3(-150, 0, 40)
+radius = 12.0
+count = 3
+item_name = "Patrol Badge"
+
+[sub_resource type="Resource" id="Step_3"]
+script = ExtResource("2_step")
+type = "hunt"
+pos = Vector3(-175, 0, 70)
+count = 2
+enemy_name = "Rogue Shinobi"
+enemy_health = 110.0
+enemy_damage = 10.0
+enemy_speed = 4.8
+enemy_color = Color(0.18, 0.18, 0.22, 1)
+enemy_band = Color(0.55, 0.1, 0.12, 1)
+
+[sub_resource type="Resource" id="Step_4"]
+script = ExtResource("2_step")
+type = "deliver"
+target = "elder"
+deliver_text = "The patrol... I see. You did well to bring their badges back. Tell Mika I'll handle the rest."
+
+[resource]
+script = ExtResource("1_def")
+id = "missing_patrol"
+title = "The Missing Patrol"
+giver = "scout"
+requires = "hold_the_bridge"
+order = 4
+reward_spins = 3
+reward_levels = 1
+reward_xp = 500
+offer = "A three-man patrol went quiet near the western cliffs. Find their camp, recover their badges and deal with whoever did this. Then report to the Elder."
+remind = "Follow the trail: their camp, the badges, the rogues - then the Elder."
+turn = "Thank you for bringing them home. The village owes you."
+steps = Array[ExtResource("2_step")]([SubResource("Step_1"), SubResource("Step_2"), SubResource("Step_3"), SubResource("Step_4")])

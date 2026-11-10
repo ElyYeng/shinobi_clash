@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "hold_the_bridge"
+title = "Hold the Line"
+giver = "scout"
+requires = "bandits"
+order = 3
+type = "survive"
+pos = Vector3(150, 0, -20)
+place = "Eastern Watch Post"
+radius = 10.0
+time = 45.0
+enemy_health = 55.0
+enemy_damage = 7.0
+enemy_speed = 4.4
+enemy_color = Color(0.35, 0.2, 0.2, 1)
+enemy_band = Color(0.7, 0.25, 0.2, 1)
+reward_spins = 2
+reward_xp = 600
+offer = "The bandits want revenge. They'll hit the eastern watch post in waves. Hold it for 45 seconds while the guards regroup."
+remind = "Stand at the eastern watch post and keep fighting until the guards arrive - 45 seconds."
+turn = "You held the line alone. The guards won't stop talking about it."

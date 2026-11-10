@@ -3,6 +3,7 @@ extends RefCounted
 ## Visual-quality toolbox: procedural sky, post-processing, particles, glow, grass, lanterns, camera shake.
 ## Everything is generated in code - no extra art assets needed.
 
+## Old built-in sky (fallback only; the real one is res://shaders/sky.gdshader).
 const SKY_SHADER := """shader_type sky;
 uniform vec3 top_color : source_color = vec3(0.2, 0.45, 0.9);
 uniform vec3 horizon_color : source_color = vec3(0.75, 0.85, 0.95);
@@ -865,8 +866,10 @@ static func build_environment(parent: Node, style: String, sun_rot_deg: Vector3,
 	var sun_basis := Basis.from_euler(sun_rot_deg * (PI / 180.0))
 	var toward_sun := sun_basis.z
 
-	var sh := Shader.new()
-	sh.code = SKY_SHADER
+	var sh := load("res://shaders/sky.gdshader") as Shader   # shared with the maps' skies
+	if sh == null:
+		sh = Shader.new()
+		sh.code = SKY_SHADER
 	var sm := ShaderMaterial.new()
 	sm.shader = sh
 	sm.set_shader_parameter("top_color", c["top"])
