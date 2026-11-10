@@ -782,6 +782,12 @@ func gain_xp(n: int) -> void:
 		_toast("LEVEL UP!  LV %d   (+%d stat points - M > Stats)" % [GameData.level, gained * GameData.POINTS_PER_LEVEL])
 
 func _gain_mastery(n: int) -> void:
+	if GameData.equipped2 != "none":   # the second bloodline levels at half speed
+		var r2 := GameData.add_mastery(GameData.equipped2, n / 2)
+		for i in 3:
+			var a2 := Bloodline.ability(GameData.equipped2, i)
+			if not a2.is_empty() and int(r2[0]) < int(a2["lvl"]) and int(r2[1]) >= int(a2["lvl"]):
+				_toast("NEW 2ND BLOODLINE ABILITY: %s  - assign it in M > Bloodline" % a2["name"])
 	var id := GameData.equipped
 	if id == "none":
 		return

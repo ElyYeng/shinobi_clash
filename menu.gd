@@ -104,9 +104,9 @@ func _key_for(mode: String) -> int:
 	return {"kurama": 1, "fight": 2, "world": 3}.get(mode, 0)
 
 func _refresh_info() -> void:
-	var spins := GameData.spins + GameData.element_spins
+	var spins := GameData.spins
 	custom_btn.text = "CUSTOMIZE  (%d)" % spins if spins > 0 else "CUSTOMIZE"
-	custom_btn.set_meta("desc", "Spin bloodlines and elements - %d spins, %d element spins   [4]" % [GameData.spins, GameData.element_spins])
+	custom_btn.set_meta("desc", "Spin bloodlines and elements - %d spins   [4]" % GameData.spins)
 	stat.text = "LV %d   ·   %s   ·   Quests %d/%d   ·   Kurama %s" % [
 		GameData.level, Bloodline.get_def(GameData.equipped)["name"], GameData.quests_done.size(), Quests.DEFS.size(),
 		"defeated" if GameData.kurama_defeated else "undefeated"]

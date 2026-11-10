@@ -80,10 +80,9 @@ static func reward_text(d: Dictionary) -> String:
 	var parts: Array[String] = []
 	if int(d["levels"]) > 0:
 		parts.append("+%d level%s" % [int(d["levels"]), "" if int(d["levels"]) == 1 else "s"])
-	if int(d["reward"]) > 0:
-		parts.append("+%d spin%s" % [int(d["reward"]), "" if int(d["reward"]) == 1 else "s"])
-	if int(d.get("el_spins", 0)) > 0:
-		parts.append("+%d element spin%s" % [int(d["el_spins"]), "" if int(d["el_spins"]) == 1 else "s"])
+	var sp := int(d["reward"]) + int(d.get("el_spins", 0))   # element spins are normal spins now
+	if sp > 0:
+		parts.append("+%d spin%s" % [sp, "" if sp == 1 else "s"])
 	if int(d["xp"]) > 0:
 		parts.append("+%d XP" % int(d["xp"]))
 	return ", ".join(PackedStringArray(parts)) if not parts.is_empty() else "no reward"
@@ -229,8 +228,7 @@ func turn_in() -> void:
 	if d.is_empty():
 		return
 	var reward := int(d["reward"])
-	GameData.spins += reward
-	GameData.element_spins += int(d.get("el_spins", 0))
+	GameData.spins += reward + int(d.get("el_spins", 0))
 	if player != null:
 		var xp := int(d["xp"])
 		for i in int(d["levels"]):   # whole levels; your progress into the current level is kept
@@ -343,8 +341,7 @@ func apply_party_quest_reward(id: String, xp: int, spins: int) -> void:
 	var d: Dictionary = DEFS.get(id, {})
 	if d.is_empty():
 		return
-	GameData.spins += spins
-	GameData.element_spins += int(d.get("el_spins", 0))
+	GameData.spins += spins + int(d.get("el_spins", 0))
 	if player != null and xp > 0:
 		player.gain_xp(xp)
 	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(id):

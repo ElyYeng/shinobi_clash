@@ -8,7 +8,7 @@ const PITY_LIMIT := 20
 ## Spinning a slot REPLACES whatever it held. Slots 1-2 start open; 3-4 are bought with spins.
 const SLOT_COUNT := 4
 const SLOT_UNLOCK_COST := [0, 0, 10, 25]
-## Element slots work the same way, paid with ELEMENT spins. Spinning a slot replaces its element.
+## Element slots work the same way (same spins). Spinning a slot replaces its element.
 const EL_SLOT_UNLOCK_COST := [0, 0, 5, 10]
 const RARITY_ORDER := ["Common", "Rare", "Epic", "Legendary", "Mythic"]
 const ELEMENTS := ["Fire", "Earth", "Lightning", "Water", "Wind"]
@@ -25,8 +25,8 @@ static var mode := "fight"          # "kurama" | "fight" | "world"  (chosen in t
 static var mp_name := "Shinobi"
 static var mp_address := "26.x.x.x"
 static var mp_port := "7000"
-static var spins := 3
-static var element_spins := 3
+static var spins := 6                   # one currency for bloodline AND element spins / slot unlocks
+static var element_spins := 0           # old saves only: merged into spins when loaded
 static var equipped_element := "Fire"   # always el_slots[active_el_slot]; use set_active_el_slot()
 static var owned_elements: Array[String] = ["Fire"]   # the elements in your slots (their jutsu are usable)
 static var el_slots: Array = ["Fire", "none", "none", "none"]
@@ -36,6 +36,8 @@ static var last_el_new := false
 static var pity := 0
 static var owned: Array = ["none"]      # every bloodline ever rolled (codex / achievements)
 static var equipped := "none"           # always slots[active_slot]; use set_active_slot() to change
+static var equipped2 := "none"          # second bloodline (its jutsu are usable too); slots[second_slot]
+static var second_slot := -1            # -1 = no second bloodline
 static var slots: Array = ["none", "none", "none", "none"]
 static var slot_unlocked: Array = [true, true, false, false]
 static var active_slot := 0
@@ -105,7 +107,8 @@ static func load_data() -> void:
 		mp_name = str(d.get("mp_name", mp_name))
 		mp_address = str(d.get("mp_address", mp_address))
 		mp_port = str(d.get("mp_port", mp_port))
-		element_spins = maxi(int(d.get("element_spins", 3)), 0)
+		spins += maxi(int(d.get("element_spins", 0)), 0)   # element spins are normal spins now
+		element_spins = 0
 		pity = maxi(int(d.get("pity", 0)), 0)
 		var saved_elements = d.get("owned_elements", ["Fire"])
 		owned_elements.clear()
@@ -176,6 +179,9 @@ static func _load_slots(d: Dictionary) -> void:
 	active_slot = clampi(int(d.get("active_slot", 0)), 0, SLOT_COUNT - 1)
 	if not slot_unlocked[active_slot]:
 		active_slot = 0
+	second_slot = clampi(int(d.get("second_slot", -1)), -1, SLOT_COUNT - 1)
+	if second_slot == active_slot or (second_slot >= 0 and not slot_unlocked[second_slot]):
+		second_slot = -1
 
 ## Old saves had a collection + one equipped bloodline. Put the equipped one in slot 1
 ## and the best other owned bloodline in slot 2 so nobody loses their roll.
@@ -235,6 +241,23 @@ static func _sync_elements() -> void:
 
 static func _sync_equipped() -> void:
 	equipped = str(slots[active_slot]) if slot_unlocked[active_slot] else "none"
+	equipped2 = "none"
+	if second_slot >= 0 and second_slot != active_slot and slot_unlocked[second_slot]:
+		equipped2 = str(slots[second_slot])
+
+## True if `id` is your main or second bloodline (its jutsu can be used).
+static func is_equipped(id: String) -> bool:
+	return id != "none" and (id == equipped or id == equipped2)
+
+## Makes slot `i` your second bloodline (-1 = none). Its 3 jutsu can go on your hotbar next to
+## the main bloodline's; passive stats and the power-up (C) stay with the main one.
+static func set_second_slot(i: int) -> bool:
+	if i >= SLOT_COUNT or (i >= 0 and (not slot_unlocked[i] or i == active_slot)):
+		return false
+	second_slot = i
+	_sync_equipped()
+	save()
+	return true
 
 static func save() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -248,7 +271,7 @@ static func save() -> void:
 			"kurama_defeated": kurama_defeated, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
-			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
+			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot, "second_slot": second_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
 			"keybinds": keybinds, "character_appearance": character_appearance}))
@@ -418,6 +441,8 @@ static func unlock_slot(i: int) -> bool:
 static func set_active_slot(i: int) -> bool:
 	if i < 0 or i >= SLOT_COUNT or not slot_unlocked[i]:
 		return false
+	if i == second_slot:   # promoting the second bloodline: the old main becomes the second
+		second_slot = active_slot
 	active_slot = i
 	_sync_equipped()
 	save()
@@ -427,9 +452,10 @@ static func set_active_slot(i: int) -> bool:
 ## spin). The slot's old element is replaced. Always a different element than the slot had, and
 ## one that isn't in your other slots while there are any left.
 static func roll_el_slot(i: int) -> String:
-	if i < 0 or i >= SLOT_COUNT or not el_slot_unlocked[i] or element_spins <= 0:
+	if i < 0 or i >= SLOT_COUNT or not el_slot_unlocked[i] or spins <= 0:
 		return ""
-	element_spins -= 1
+	spins -= 1
+	total_spins_used += 1
 	var cur := str(el_slots[i])
 	var fresh: Array[String] = []
 	var others: Array[String] = []
@@ -450,9 +476,9 @@ static func roll_el_slot(i: int) -> String:
 	return result
 
 static func unlock_el_slot(i: int) -> bool:
-	if i < 0 or i >= SLOT_COUNT or el_slot_unlocked[i] or element_spins < EL_SLOT_UNLOCK_COST[i]:
+	if i < 0 or i >= SLOT_COUNT or el_slot_unlocked[i] or spins < EL_SLOT_UNLOCK_COST[i]:
 		return false
-	element_spins -= EL_SLOT_UNLOCK_COST[i]
+	spins -= EL_SLOT_UNLOCK_COST[i]
 	el_slot_unlocked[i] = true
 	save()
 	return true

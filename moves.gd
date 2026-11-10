@@ -94,8 +94,8 @@ static func block(id: String) -> String:
 	match str(s["src"]):
 		"bl":
 			var bname: String = Bloodline.get_def(s["owner"])["name"]
-			if GameData.equipped != s["owner"]:
-				return "Equip %s to use this" % bname
+			if not GameData.is_equipped(s["owner"]):
+				return "Equip %s (main or 2nd) to use this" % bname
 			var lv := GameData.mastery_level(s["owner"])
 			if lv < int(s["lvl"]):
 				return "Needs %s LV %d (now %d)" % [bname, int(s["lvl"]), lv]

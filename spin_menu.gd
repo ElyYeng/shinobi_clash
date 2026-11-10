@@ -375,11 +375,11 @@ func _build_slot(parent: Node, i: int) -> Dictionary:
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	parent.add_child(card)
 	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 8)
+	hb.add_theme_constant_override("separation", 6)
 	card.add_child(hb)
 	var em := Emblem.new()
-	em.custom_minimum_size = Vector2(70, 70)
-	em.pivot_offset = Vector2(35, 35)
+	em.custom_minimum_size = Vector2(58, 58)
+	em.pivot_offset = Vector2(29, 29)
 	em.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hb.add_child(em)
 	var vb := VBoxContainer.new()
@@ -394,14 +394,19 @@ func _build_slot(parent: Node, i: int) -> Dictionary:
 	row.add_theme_constant_override("separation", 4)
 	vb.add_child(row)
 	var spin := UiStyle.ribbon_button(row, "", 13)
+	spin.add_theme_constant_override("h_separation", 0)
 	spin.custom_minimum_size = Vector2(0, 28)
 	spin.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.pressed.connect(_on_slot_pressed.bind(i))
 	var eq := UiStyle.green_button(row, "", 12)
-	eq.custom_minimum_size = Vector2(66, 28)
+	eq.custom_minimum_size = Vector2(54, 28)
 	eq.pressed.connect(_on_equip.bind(i))
-	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq}
+	var second := UiStyle.green_button(row, "2ND", 12)
+	second.custom_minimum_size = Vector2(40, 28)
+	second.tooltip_text = "Second bloodline: its 3 jutsu can go on your hotbar too"
+	second.pressed.connect(_on_second.bind(i))
+	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq, "second": second}
 
 func _build_element_page(page: VBoxContainer) -> void:
 	var grid := GridContainer.new()
@@ -842,10 +847,18 @@ func _card_style(active: bool, locked: bool) -> StyleBoxFlat:
 	sb.set_content_margin_all(8)
 	return sb
 
+## Card look for the second bloodline (blue edge).
+func _card_style2() -> StyleBoxFlat:
+	var sb := _card_style(false, false)
+	sb.bg_color = Color(0.86, 0.88, 0.86)
+	sb.set_border_width_all(3)
+	sb.border_color = Color(0.2, 0.45, 0.8)
+	return sb
+
 func _refresh() -> void:
 	var busy := spinning or auto_running
 	spins_label.text = "%d SPIN%s" % [GameData.spins, "" if GameData.spins == 1 else "S"]
-	el_spins_label.text = "%d ELEMENT SPIN%s" % [GameData.element_spins, "" if GameData.element_spins == 1 else "S"]
+	el_spins_label.visible = false   # one spin currency now
 	for i in GameData.SLOT_COUNT:
 		var ui: Dictionary = slot_ui[i]
 		var em: Emblem = ui["emblem"]
@@ -864,6 +877,7 @@ func _refresh() -> void:
 			spin.text = "UNLOCK (%d)" % cost
 			spin.disabled = busy or GameData.spins < cost
 			eq.visible = false
+			(ui["second"] as Button).visible = false
 			continue
 		var id := str(GameData.slots[i])
 		var d := Bloodline.get_def(id)
@@ -878,8 +892,16 @@ func _refresh() -> void:
 		spin.text = "SPIN" if confirm_slot != i else "REPLACE?"
 		spin.disabled = busy or GameData.spins <= 0
 		eq.visible = true
-		eq.text = "ACTIVE" if active else "EQUIP"
+		eq.text = "MAIN" if active else "EQUIP"
 		eq.disabled = busy or active
+		var is2: bool = i == GameData.second_slot
+		var sb2: Button = ui["second"]
+		sb2.visible = not active and id != "none"
+		sb2.text = "x 2ND" if is2 else "2ND"
+		sb2.disabled = busy
+		if is2:
+			(ui["card"] as PanelContainer).add_theme_stylebox_override("panel", _card_style2())
+			rar.text += "  ·  2ND"
 	_refresh_bloodline_info()
 	auto_pick.disabled = busy
 	if auto_running:
@@ -900,6 +922,8 @@ func _refresh() -> void:
 	plate_info.text = "%s   ·   %s Style   ·   Shinobi LV %d" % [
 		"spin a bloodline" if a == "none" else "%s  ·  LV %d" % [Bloodline.get_def(a)["rarity"], GameData.mastery_level(a)],
 		GameData.equipped_element, GameData.level]
+	if GameData.equipped2 != "none":
+		plate_info.text = "+ %s   ·   " % Bloodline.get_def(GameData.equipped2)["name"] + plate_info.text
 	_update_floor()
 
 func _refresh_bloodline_info() -> void:
@@ -922,6 +946,17 @@ func _refresh_bloodline_info() -> void:
 	var m := Bloodline.mode(a)
 	if not m.is_empty():
 		_move_row(bl_rows, "", "POWER-UP: %s   [C]" % m["name"], Bloodline.MODE_LEVEL, lv, str(m.get("desc", "")), m["col"], Moves.mode_icon(a))
+	var b := GameData.equipped2
+	if b != "none":
+		var lv2 := GameData.mastery_level(b)
+		var t2 := UiStyle.label(bl_rows, "2ND: %s   ·   LV %d" % [str(Bloodline.get_def(b)["name"]).to_upper(), lv2], 18, Color(0.15, 0.35, 0.7))
+		t2.add_theme_constant_override("line_spacing", 0)
+		for k in 3:
+			var ab2 := Bloodline.ability(b, k)
+			var mid2 := "bl:%s:%d" % [b, k]
+			_move_row(bl_rows, mid2, str(ab2["name"]), int(ab2["lvl"]), lv2, str(ab2.get("desc", "")), ab2["col"], Moves.icon(mid2))
+	elif GameData.slots.filter(func(x): return str(x) != "none").size() > 1:
+		UiStyle.label(bl_rows, "Tip: press 2ND on another slot to use its jutsu too.", 12, Color(0.42, 0.36, 0.26))
 
 func _refresh_elements() -> void:
 	var busy := spinning or auto_running
@@ -938,10 +973,10 @@ func _refresh_elements() -> void:
 			badge.locked = true
 			badge.active = false
 			nm.text = "LOCKED"
-			sub.text = "Costs %d element spins" % cost
+			sub.text = "Costs %d spins" % cost
 			sub.add_theme_color_override("font_color", Color(0.65, 0.15, 0.1))
 			spin.text = "UNLOCK (%d)" % cost
-			spin.disabled = busy or GameData.element_spins < cost
+			spin.disabled = busy or GameData.spins < cost
 			eq.visible = false
 			continue
 		var e := str(GameData.el_slots[i])
@@ -956,7 +991,7 @@ func _refresh_elements() -> void:
 		sub.text = "Spin to awaken" if empty else "LV %d" % GameData.mastery_level("el:" + e)
 		sub.add_theme_color_override("font_color", INK if empty else GameData.get_element_color(e).darkened(0.45))
 		spin.text = "SPIN"
-		spin.disabled = busy or GameData.element_spins <= 0
+		spin.disabled = busy or GameData.spins <= 0
 		eq.visible = not empty
 		eq.text = "ACTIVE" if active else "EQUIP"
 		eq.disabled = busy or active
@@ -975,7 +1010,7 @@ func _refresh_elements() -> void:
 		el_auto_btn.disabled = false
 	else:
 		el_auto_btn.text = "AUTO SPIN ELEMENT SLOT %d" % (GameData.active_el_slot + 1)
-		el_auto_btn.disabled = busy or GameData.element_spins <= 0
+		el_auto_btn.disabled = busy or GameData.spins <= 0
 
 # ================================================================== appearance
 func _build_look_options() -> void:
@@ -1111,6 +1146,13 @@ func _on_equip(i: int) -> void:
 		confirm_slot = -1
 		if p:
 			p.apply_bloodline()
+		Sfx.play(self, "poof", -6.0)
+		_refresh()
+
+func _on_second(i: int) -> void:
+	if spinning or auto_running:
+		return
+	if GameData.set_second_slot(-1 if i == GameData.second_slot else i):
 		Sfx.play(self, "poof", -6.0)
 		_refresh()
 
@@ -1256,8 +1298,8 @@ func _on_el_slot_pressed(i: int) -> void:
 			_show_banner("ELEMENT SLOT %d UNLOCKED!" % (i + 1), Color(1.0, 0.9, 0.5), false)
 		_refresh()
 		return
-	if GameData.element_spins <= 0:
-		_show_banner("NO ELEMENT SPINS LEFT", Color(0.9, 0.3, 0.25), false)
+	if GameData.spins <= 0:
+		_show_banner("NO SPINS LEFT", Color(0.9, 0.3, 0.25), false)
 		return
 	await _spin_el_slot(i, false)
 
@@ -1306,7 +1348,7 @@ func _on_el_auto() -> void:
 	auto_stop = false
 	_refresh()
 	var got := ""
-	while not auto_stop and GameData.element_spins > 0:
+	while not auto_stop and GameData.spins > 0:
 		got = await _spin_el_slot(slot, true)
 		if got == "" or got == want:
 			break
@@ -1315,5 +1357,5 @@ func _on_el_auto() -> void:
 	_refresh()
 	if got == want:
 		_show_banner("%s STYLE!" % want.to_upper(), GameData.get_element_color(want), true)
-	elif GameData.element_spins <= 0:
-		_show_banner("OUT OF ELEMENT SPINS", Color(0.9, 0.3, 0.25), false)
+	elif GameData.spins <= 0:
+		_show_banner("OUT OF SPINS", Color(0.9, 0.3, 0.25), false)

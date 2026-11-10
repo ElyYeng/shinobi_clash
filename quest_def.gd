@@ -48,7 +48,7 @@ extends Resource
 @export var reward_spins := 0
 @export var reward_levels := 0       ## whole shinobi levels (with their stat points)
 @export var reward_xp := 300         ## shinobi XP on top
-@export var reward_element_spins := 0
+@export var reward_element_spins := 0   ## (added to spins - there is one spin currency now)
 
 @export_group("Dialog")
 @export_multiline var offer := ""

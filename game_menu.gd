@@ -1063,7 +1063,8 @@ func _col_data(cid: String) -> Dictionary:
 		return d
 	var bd := Bloodline.get_def(id)
 	d.merge({"name": bd["name"], "color": bd["color"], "letter": str(bd["name"]).substr(0, 1), "mkey": id,
-		"lv": GameData.mastery_level(id), "mode": id, "equipped": slot == GameData.active_slot}, true)
+		"lv": GameData.mastery_level(id), "mode": id, "equipped": slot == GameData.active_slot,
+		"second": slot == GameData.second_slot}, true)
 	for i in 3:
 		d["moves"].append("bl:%s:%d" % [id, i])
 	return d
@@ -1160,7 +1161,7 @@ func _build_tree_column(cid: String, x: float) -> void:
 		col.add_child(ic)
 	var eq := Button.new()
 	eq.flat = true
-	eq.text = "[EQUIPPED]" if d["equipped"] else "[EQUIP]"
+	eq.text = "[EQUIPPED]" if d["equipped"] else ("[2ND] MAIN?" if d.get("second", false) else "[EQUIP]")
 	eq.position = Vector2(30, 344)
 	eq.size = Vector2(140, 28)
 	eq.add_theme_font_override("font", font())
