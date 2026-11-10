@@ -80,7 +80,7 @@ static func ribbon_button(parent: Node, text: String, size := 24) -> Button:
 	b.custom_minimum_size = Vector2(0, 50)
 	b.add_theme_font_override("font", GameMenu.font())
 	b.add_theme_font_size_override("font_size", size)
-	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+	for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
 		var sb := StyleBoxFlat.new()
 		sb.skew = Vector2(0.18, 0)
 		sb.content_margin_left = 22
@@ -92,8 +92,10 @@ static func ribbon_button(parent: Node, text: String, size := 24) -> Button:
 				sb.bg_color = Color(0.36, 0.05, 0.04, 0.97)
 				sb.border_width_left = 8
 				sb.border_color = Color(1.0, 0.55, 0.15)
-			"pressed":
+			"pressed", "hover_pressed":
 				sb.bg_color = Color(0.55, 0.08, 0.06, 0.97)
+				sb.border_width_left = 8
+				sb.border_color = Color(1.0, 0.55, 0.15)
 			"disabled":
 				sb.bg_color = Color(0.2, 0.2, 0.2, 0.85)
 		b.add_theme_stylebox_override(st, sb)
@@ -101,6 +103,7 @@ static func ribbon_button(parent: Node, text: String, size := 24) -> Button:
 	b.add_theme_color_override("font_hover_color", Color(1.0, 0.86, 0.45))
 	b.add_theme_color_override("font_focus_color", Color(1.0, 0.86, 0.45))
 	b.add_theme_color_override("font_pressed_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_color_override("font_hover_pressed_color", Color(1.0, 0.86, 0.45))
 	b.add_theme_color_override("font_disabled_color", Color(0.6, 0.6, 0.6))
 	parent.add_child(b)
 	return b
@@ -111,12 +114,12 @@ static func green_button(parent: Node, text: String, size := 17) -> Button:
 	b.text = text
 	b.focus_mode = Control.FOCUS_ALL
 	b.custom_minimum_size = Vector2(0, 42)
-	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
+	for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		var sb := StyleBoxFlat.new()
 		var col := GameMenu.BTN
 		if st == "hover" or st == "focus":
 			col = GameMenu.BTN.lightened(0.15)
-		elif st == "pressed":
+		elif st == "pressed" or st == "hover_pressed":
 			col = GameMenu.BTN.darkened(0.2)
 		elif st == "disabled":
 			col = Color(0.35, 0.4, 0.33)
@@ -128,7 +131,7 @@ static func green_button(parent: Node, text: String, size := 17) -> Button:
 		b.add_theme_stylebox_override(st, sb)
 	b.add_theme_font_override("font", GameMenu.font())
 	b.add_theme_font_size_override("font_size", size)
-	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color", "font_disabled_color"]:
 		b.add_theme_color_override(c, Color.WHITE if c != "font_disabled_color" else Color(0.8, 0.8, 0.8))
 	b.add_theme_color_override("font_outline_color", Color.BLACK)
 	b.add_theme_constant_override("outline_size", 5)

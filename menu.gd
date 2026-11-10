@@ -61,7 +61,7 @@ func _ready() -> void:
 	custom_btn.pressed.connect(_open_customize)
 	var creator_btn := UiStyle.green_button(row, "CHARACTER")
 	creator_btn.pressed.connect(_open_character_creator)
-	_describe(creator_btn, "Character creator - hair, colours, shirt and pants   [6]")
+	_describe(creator_btn, "Your look - hair, colours, shirt and pants   [6]")
 	var multi_btn := UiStyle.green_button(row, "MULTIPLAYER")
 	multi_btn.pressed.connect(_open_multiplayer)
 	_describe(multi_btn, "Host or join friends over Radmin VPN   [5]")
@@ -112,18 +112,15 @@ func _refresh_info() -> void:
 		"defeated" if GameData.kurama_defeated else "undefeated"]
 
 func _open_character_creator() -> void:
-	var script = load("res://character_creator.gd")
-	if script == null:
-		return
-	var creator = script.new()
-	add_child(creator)
+	if spin != null:
+		spin.open("look")
 
 func _open_multiplayer() -> void:
 	get_tree().change_scene_to_file("res://multiplayer_lobby.tscn")
 
 func _open_customize() -> void:
-	if spin != null and not spin.root.visible:
-		spin.toggle()
+	if spin != null:
+		spin.open("bloodline")
 
 func _play(mode: String) -> void:
 	GameData.mode = mode
