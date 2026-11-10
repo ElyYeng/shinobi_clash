@@ -133,6 +133,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	_setup_anims(wrapper, inst)
 	wrapper.set_meta("hero_parts", _discover_parts(inst))
 	wrapper.set_meta("hero_extra", _find_extras(inst))
+	wrapper.set_meta("hero_outfits", _find_outfits(inst))
 	apply_appearance(wrapper, appearance)
 	return wrapper
 
@@ -256,6 +257,9 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 			want = str(entries[0]["id"])
 		for entry in entries:
 			(entry["node"] as MeshInstance3D).visible = entry["id"] == want
+	for oid in model.get_meta("hero_outfits", {}):   # power-up outfits only show during the power-up
+		for cat in model.get_meta("hero_outfits")[oid]:
+			(model.get_meta("hero_outfits")[oid][cat] as MeshInstance3D).visible = false
 	_apply_hair_color(model, Color.html(str(look["hair_color"])), look)
 	for cat in CLOTH_COLORS:
 		var tint := Color.html(str(look[CLOTH_COLORS[cat]]))
@@ -268,6 +272,9 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 ## Power-up look (Bloodline mode "look"). An empty look puts the normal appearance back.
 ##   glow/under/energy/flat - hair and top turn `glow` and glow, pants turn `under` (Uzumaki)
 ##   eyes                   - iris texture for both eyes (Uchiha's Sharingan)
+##   outfit                 - "uzumaki" shows the shirt_uzumaki / pants_uzumaki meshes instead of
+##                            your clothes (those keep their own textures; the glow then only
+##                            goes on what the outfit doesn't replace, e.g. the hair)
 ## e.g. {"glow": "#E3D79A", "under": "#2B261A", "energy": 0.25, "flat": true}
 ## flat = drop the clothes' own textures so the top is one glowing colour (outline keeps the shape).
 static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Dictionary = {}) -> void:
@@ -275,6 +282,11 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 		return
 	apply_appearance(model, appearance)
 	set_eyes(model, Moves.tex(str(look["eyes"])) if look.has("eyes") else null)
+	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
+	for cat in outfit:   # swap in the power-up outfit (it has its own textures and colours)
+		for entry in (model.get_meta("hero_parts") as Dictionary).get(cat, []):
+			(entry["node"] as MeshInstance3D).visible = false
+		(outfit[cat] as MeshInstance3D).visible = true
 	if not look.has("glow"):
 		return
 	var glow := Color.html(str(look.get("glow", "#E3D79A")))
@@ -285,6 +297,8 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 	var extras: Dictionary = model.get_meta("hero_extra", {})
 	var glowing: Array = []
 	for cat in ["hair", "shirt"]:
+		if outfit.has(cat):
+			continue   # the outfit keeps its own colours; only the rest glows
 		for entry in parts.get(cat, []):
 			glowing.append(entry["node"])
 	if extras.has("backhead"):
@@ -301,7 +315,7 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 				m.emission_enabled = true
 				m.emission = glow
 				m.emission_energy_multiplier = energy
-	for entry in parts.get("pants", []):
+	for entry in ([] if outfit.has("pants") else parts.get("pants", [])):
 		var pm := entry["node"] as MeshInstance3D
 		for surface in pm.mesh.get_surface_count():
 			_tint_surface(pm, surface, under, true)
@@ -546,6 +560,28 @@ static func _classify(mi: MeshInstance3D, regexes: Dictionary) -> Array:
 			return LEGACY_NODE_PARTS[nm]
 	return []
 
+
+## Power-up outfits: meshes named <category>_<name> (shirt_uzumaki, pants_uzumaki, hair_...).
+## They are hidden normally; a bloodline mode with look "outfit": "<name>" swaps them in.
+## Returns {"uzumaki": {"shirt": MeshInstance3D, "pants": MeshInstance3D}}.
+static func _find_outfits(inst: Node) -> Dictionary:
+	var out := {}
+	var re := RegEx.create_from_string("^(hair|shirts?|pants)_([a-z][a-z0-9]*)$")
+	for n in inst.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for nm in _names_of(mi):
+			var m := re.search(str(nm))
+			if m == null:
+				continue
+			var cat := m.get_string(1).trim_suffix("s") if m.get_string(1) != "pants" else "pants"
+			var oid := m.get_string(2)
+			if not out.has(oid):
+				out[oid] = {}
+			out[oid][cat] = mi
+			break
+	return out
 
 static func _find_extras(inst: Node) -> Dictionary:
 	var extras := {}
