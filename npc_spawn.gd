@@ -47,7 +47,11 @@ func _rebuild() -> void:
 		if model != null:
 			label_y = float(model.get_meta("label_y", label_y))
 		else:
-			model = Fx.make_ninja(npc.body_color, npc.band_color)
+			model = Npc.character_look(npc.appearance, npc_id() if npc_id() != "" else npc.display_name)
+			if model != null:
+				label_y = 2.3
+			else:
+				model = Fx.make_ninja(npc.body_color, npc.band_color)
 	if model != null:
 		model.set_meta("npc_preview", true)
 		add_child(model)

@@ -5,6 +5,11 @@ signal connection_failed(message: String)
 signal server_disconnected
 signal party_invite_received(inviter_id: int, inviter_name: String)
 signal party_updated
+signal arena_flags_changed   # someone joined / left Ninja Battle or PvP Battle
+
+# PvP arena opt-ins (host-authoritative, mirrored to everyone): peer id -> true
+var arena_ninja: Dictionary = {}   # fights the AI ninjas
+var arena_pvp: Dictionary = {}     # can hurt / be hurt by other PvP players
 
 const DEFAULT_PORT := 7000
 const MAX_PLAYERS := 8
@@ -90,6 +95,8 @@ func disconnect_session() -> void:
 	_known_appearances.clear()
 	_party_leader.clear()
 	_pending_party_invites.clear()
+	arena_ninja.clear()
+	arena_pvp.clear()
 	for avatar in _avatars.values():
 		if is_instance_valid(avatar):
 			avatar.queue_free()
@@ -259,6 +266,11 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_known_levels.erase(peer_id)
 	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
+	if arena_ninja.has(peer_id) or arena_pvp.has(peer_id):
+		arena_ninja.erase(peer_id)
+		arena_pvp.erase(peer_id)
+		_arena_flags.rpc(arena_ninja, arena_pvp)
+		arena_flags_changed.emit()
 	_remove_remote_local(peer_id)
 	_despawn_remote.rpc(peer_id)
 
@@ -278,12 +290,15 @@ func _remove_remote_local(peer_id: int) -> void:
 		_avatars.erase(peer_id)
 
 ## Party system: party leader ID is shared by every member.
-## Party leader value for PvP arena ninjas: they belong to nobody and fight everyone.
-const ARENA_ENEMY := 0
+## Party leader value for PvP arena ninjas (-1: no real party; enemies default to 0).
+const ARENA_ENEMY := -1
 
 ## Can a host-run enemy owned by `leader` target / be hit by `peer_id`?
+## Arena ninjas only fight players who joined Ninja Battle (talk to the arena NPC).
 func enemy_targets(peer_id: int, leader: int) -> bool:
-	return _known_players.has(peer_id) if leader == ARENA_ENEMY else _same_party(peer_id, leader)
+	if leader == ARENA_ENEMY:
+		return _known_players.has(peer_id) and bool(arena_ninja.get(peer_id, false))
+	return _same_party(peer_id, leader)
 
 func _same_party(a_id: int, b_id: int) -> bool:
 	return _party_leader.has(a_id) and _party_leader.has(b_id) and int(_party_leader[a_id]) == int(_party_leader[b_id])
@@ -924,6 +939,8 @@ func _request_projectile_player_hit(attacker_id: int, damage: float, impact_posi
 func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: float, impact_position: Vector3) -> void:
 	if attacker_id == target_id or not _known_players.has(attacker_id) or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
+	if not pvp_allowed(attacker_id, target_id):
+		return
 	var target_pos: Vector3
 	if target_id == 1 and _local_player != null:
 		target_pos = _local_player.global_position
@@ -943,7 +960,7 @@ func try_hit_players(damage: float, knockback: Vector3) -> void:
 	if not is_active() or session_mode != "pvp":
 		return
 	for peer_id in _avatars.keys():
-		if _same_party(multiplayer.get_unique_id(), int(peer_id)):
+		if _same_party(multiplayer.get_unique_id(), int(peer_id)) or not pvp_allowed(multiplayer.get_unique_id(), int(peer_id)):
 			continue
 		if not is_instance_valid(_avatars[peer_id]):
 			continue
@@ -963,6 +980,8 @@ func _request_player_hit(target_id: int, damage: float, knockback: Vector3) -> v
 
 func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3) -> void:
 	if attacker_id == target_id or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
+		return
+	if not pvp_allowed(attacker_id, target_id):
 		return
 	var attacker_pos: Vector3
 	var target_pos: Vector3
@@ -1281,6 +1300,7 @@ func _request_arena_snapshot() -> void:
 			continue
 		_quest_enemy_identity.rpc_id(sender, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 		_spawn_arena_enemy.rpc_id(sender, enemy.network_quest_id, enemy.global_position)
+	_arena_flags.rpc_id(sender, arena_ninja, arena_pvp)
 
 @rpc("authority", "call_remote", "reliable")
 func _clear_arena_enemies() -> void:
@@ -1300,3 +1320,71 @@ func arena_enemy_killed(enemy_id: String, killer_id: int) -> void:
 		_apply_local_party_quest_kill_reward()
 	elif _known_players.has(killer_id):
 		_party_quest_kill_reward.rpc_id(killer_id)
+
+
+## Host: show an enemy's clan projectile on every other screen (harmless copy; the host's
+## real bolt does the damage).
+func broadcast_enemy_bolt(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int) -> void:
+	if is_active() and multiplayer.is_server():
+		_enemy_bolt_fx.rpc(pos, velocity, color, size, homing, target_peer)
+
+@rpc("authority", "call_remote", "unreliable")
+func _enemy_bolt_fx(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int) -> void:
+	if _game_root == null or not is_instance_valid(_game_root):
+		return
+	var bolt := NpcBolt.new()
+	bolt.cosmetic = true
+	bolt.velocity = velocity.limit_length(40.0)
+	bolt.color = color
+	bolt.size = clampf(size, 0.1, 1.0)
+	bolt.homing = homing
+	bolt.target_peer = target_peer
+	_game_root.add_child(bolt)
+	bolt.global_position = pos
+
+
+# ---------------------------------------------------------------- arena opt-ins (arena NPCs)
+## Has this player joined Ninja Battle ("ninja") or PvP Battle ("pvp")?
+func arena_flag(peer_id: int, kind: String) -> bool:
+	return bool((arena_pvp if kind == "pvp" else arena_ninja).get(peer_id, false))
+
+## In the PvP arena two players can only hurt each other if both joined PvP Battle.
+func pvp_allowed(a_id: int, b_id: int) -> bool:
+	return session_mode != "pvp" or (arena_flag(a_id, "pvp") and arena_flag(b_id, "pvp"))
+
+## Local player talks to an arena NPC: join or leave that battle.
+func request_arena_toggle(kind: String) -> void:
+	if not is_active() or session_mode != "pvp":
+		return
+	if multiplayer.is_server():
+		_server_arena_toggle(1, kind)
+	else:
+		_request_arena_toggle.rpc_id(1, kind)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_arena_toggle(kind: String) -> void:
+	if multiplayer.is_server():
+		_server_arena_toggle(multiplayer.get_remote_sender_id(), kind)
+
+func _server_arena_toggle(peer_id: int, kind: String) -> void:
+	if not _known_players.has(peer_id) or not (kind == "ninja" or kind == "pvp"):
+		return
+	var flags := arena_pvp if kind == "pvp" else arena_ninja
+	if bool(flags.get(peer_id, false)):
+		flags.erase(peer_id)
+	else:
+		flags[peer_id] = true
+	_arena_flags.rpc(arena_ninja, arena_pvp)
+	arena_flags_changed.emit()
+
+@rpc("authority", "call_remote", "reliable")
+func _arena_flags(ninja: Dictionary, pvp: Dictionary) -> void:
+	arena_ninja.clear()
+	arena_pvp.clear()
+	for id in ninja:
+		if bool(ninja[id]):
+			arena_ninja[int(id)] = true
+	for id in pvp:
+		if bool(pvp[id]):
+			arena_pvp[int(id)] = true
+	arena_flags_changed.emit()

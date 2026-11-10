@@ -5,6 +5,9 @@
 [ext_resource type="PackedScene" uid="uid://dh5ev52wdy2um" path="res://maps/meshy-model-2026-11-08T02-04-21-930Z.glb" id="3_q5nrs"]
 [ext_resource type="PackedScene" uid="uid://dg6q8ydm8utsp" path="res://maps/meshy-model-2026-11-08T02-40-15-880Z.glb" id="4_sq3sw"]
 [ext_resource type="PackedScene" uid="uid://b0pl8epam0gs0" path="res://maps/tree1.glb" id="5_dnl03"]
+[ext_resource type="Script" path="res://npc_spawn.gd" id="arena_spawn"]
+[ext_resource type="Resource" path="res://data/arena_npcs/ninja_battle.tres" id="arena_ninja"]
+[ext_resource type="Resource" path="res://data/arena_npcs/pvp_battle.tres" id="arena_pvp"]
 
 [sub_resource type="Shader" id="Shader_sq3sw"]
 code = "shader_type sky;
@@ -12485,3 +12488,15 @@ transform = Transform3D(8.393453, 0, 6.2837205, 0, 10.484999, 0, -6.2837205, 0, 
 
 [node name="tree2" parent="." unique_id=4732744 instance=ExtResource("5_dnl03")]
 transform = Transform3D(7.709832, 0, -7.1058908, 0, 10.485, 0, 7.1058908, 0, 7.709832, 8.191298, -0.38658476, -14.390194)
+
+[node name="ArenaNPCs" type="Node3D" parent="."]
+
+[node name="NinjaBattle" type="Marker3D" parent="ArenaNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -5)
+script = ExtResource("arena_spawn")
+npc = ExtResource("arena_ninja")
+
+[node name="PvPBattle" type="Marker3D" parent="ArenaNPCs"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -5)
+script = ExtResource("arena_spawn")
+npc = ExtResource("arena_pvp")

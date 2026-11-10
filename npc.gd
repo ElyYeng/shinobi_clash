@@ -7,7 +7,8 @@ var display_name := "Villager"
 var body_color := Color(0.3, 0.5, 0.7)
 var band_color := Color(0.9, 0.9, 0.9)
 var greeting := "Hello."
-var model_path := ""        # .glb / .gltf / .tscn; empty = placeholder ninja
+var model_path := ""        # .glb / .gltf / .tscn; empty = the game character with `appearance`
+var appearance: Dictionary = {}
 var model_height := 1.85
 var model_yaw_deg := 180.0
 var outline := true
@@ -24,6 +25,10 @@ func _ready() -> void:
 	col.position.y = 0.95
 	add_child(col)
 	model = _load_model()
+	if model == null:
+		model = Npc.character_look(appearance, npc_id if npc_id != "" else display_name)
+		if model != null:
+			label_y = 2.3
 	if model == null:
 		model = Fx.make_ninja(body_color, band_color)
 	add_child(model)
@@ -51,6 +56,22 @@ func _load_model() -> Node3D:
 	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name)
 	if m != null:
 		label_y = float(m.get_meta("label_y", label_y))
+	return m
+
+## The game's character model dressed like the character creator: `look` if given, otherwise a
+## random look seeded by `seed_key` (so an NPC always looks the same). Plays its idle animation.
+## Returns null if the character model isn't installed.
+static func character_look(look: Dictionary, seed_key: String) -> Node3D:
+	var m := Hero.create(Hero.DEFAULT_APPEARANCE)
+	if m == null:
+		return null
+	if look.is_empty():
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(seed_key)
+		Hero.randomize_look(m, rng)
+	else:
+		Hero.apply_appearance(m, Hero.sanitize_appearance(look))
+	Hero.play(m, "idle", true)
 	return m
 
 ## Builds a character model: scaled to `height`, feet on the ground, first animation looped as idle.

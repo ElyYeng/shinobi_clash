@@ -34,6 +34,15 @@ static func build(for_mode: String) -> GameMap:
 		var boss := Marker3D.new()
 		boss.position = Vector3(0, 0, -34)
 		b._add(boss, "BossSpawn")
+	if b.mode == "fight":   # the two PvP arena NPCs (only spawned in a PvP session)
+		b._into("ArenaNPCs")
+		for id in ["ninja_battle", "pvp_battle"]:
+			var def := load("res://data/arena_npcs/%s.tres" % id) as NpcDef
+			if def != null:
+				var asp := NpcSpawn.new()
+				asp.npc = def
+				asp.position = def.pos
+				b._add(asp, def.display_name.replace(" ", ""))
 	if b.mode == "world":   # one draggable NpcSpawn per NPC file
 		b._into("NPCs")
 		Quests.ensure_loaded()

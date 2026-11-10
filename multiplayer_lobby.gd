@@ -14,58 +14,49 @@ func _ready() -> void:
 	_build_ui()
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.035, 0.025, 0.045, 1.0)
+	var bg := MenuBG.new()
 	add_child(bg)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var shade := ColorRect.new()   # dim the scenery a little behind the scroll
+	shade.color = Color(0, 0, 0, 0.35)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var center := CenterContainer.new()
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(620, 0)
-	center.add_child(panel)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 12)
-	panel.add_child(col)
-	var title := Label.new()
-	title.text = "SHINOBI CLASH  |  MULTIPLAYER"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 30)
-	col.add_child(title)
-	name_input = _field(col, "Player name", "Shinobi")
-	address_input = _field(col, "Host Radmin VPN IPv4", "26.x.x.x")
-	port_input = _field(col, "UDP port", "7000")
-	var coop := Button.new()
-	coop.text = "HOST CO-OP WORLD  (up to 8 players)"
-	coop.pressed.connect(_host.bind("coop"))
-	col.add_child(coop)
-	var pvp := Button.new()
-	pvp.text = "HOST PVP ARENA  (up to 8 players)"
-	pvp.pressed.connect(_host.bind("pvp"))
-	col.add_child(pvp)
-	var raid := Button.new()
-	raid.text = "HOST KURAMA RAID  (LEVEL 10+, PARTY CO-OP)"
-	raid.pressed.connect(_host.bind("raid"))
-	col.add_child(raid)
-	var join := Button.new()
-	join.text = "JOIN HOST"
-	join.pressed.connect(_join)
-	col.add_child(join)
-	status_label = Label.new()
-	status_label.text = "Kurama Raid requires Level 10 for every player. Same Radmin VPN network; UDP 7000."
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(status_label)
-	var back := Button.new()
-	back.text = "BACK TO MAIN MENU"
-	back.pressed.connect(_back)
-	col.add_child(back)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 12)
+	center.add_child(outer)
+	UiStyle.title(outer, "MULTIPLAYER", 48)
 
-func _field(parent: Node, hint: String, value: String) -> LineEdit:
-	var field := LineEdit.new()
-	field.placeholder_text = hint
-	field.text = value
-	parent.add_child(field)
-	return field
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	UiStyle.scroll(outer, Vector2(600, 0)).add_child(col)
+	name_input = UiStyle.field(col, "NAME", "Shinobi", "Player name")
+	address_input = UiStyle.field(col, "HOST IP", "26.x.x.x", "Host Radmin VPN IPv4")
+	port_input = UiStyle.field(col, "UDP PORT", "7000")
+	UiStyle.divider(col)
+	UiStyle.label(col, "HOST A GAME", 15, UiStyle.GREEN_DK)
+	var hosts := HBoxContainer.new()
+	hosts.add_theme_constant_override("separation", 8)
+	col.add_child(hosts)
+	for h in [["CO-OP WORLD", "coop"], ["PVP ARENA", "pvp"], ["KURAMA RAID", "raid"]]:
+		var b := UiStyle.green_button(hosts, h[0], 16)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(_host.bind(h[1]))
+	UiStyle.label(col, "OR JOIN A FRIEND", 15, UiStyle.GREEN_DK)
+	var join := UiStyle.ribbon_button(col, "JOIN HOST", 24)
+	join.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	join.pressed.connect(_join)
+	join.grab_focus.call_deferred()
+	status_label = UiStyle.label(col, "Up to 8 players. Kurama Raid needs Level 10 for everyone. Same Radmin VPN network, UDP 7000.", 14, UiStyle.BODY_TEXT)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.custom_minimum_size = Vector2(540, 0)
+
+	var back := UiStyle.text_button(outer, "<  BACK TO MAIN MENU")
+	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	back.pressed.connect(_back)
 
 func _host(mode: String) -> void:
 	if mode == "raid" and GameData.level < 10:

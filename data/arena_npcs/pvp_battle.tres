@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "PvP Battle"
+pos = Vector3(4, 0, -5)
+greeting = "Think you can take on other shinobi? Join the PvP Battle. You can only fight players who joined too - everyone else is safe from you, and you from them."
+appearance = {"hair_color": "#D8D8E0", "headband_color": "#1E3A7A"}

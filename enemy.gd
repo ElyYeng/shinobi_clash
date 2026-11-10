@@ -227,10 +227,10 @@ func _ai(delta: float) -> void:
 			bl_dash_t -= delta
 			velocity.x = bl_dash_dir.x * 26.0
 			velocity.z = bl_dash_dir.z * 26.0
-			if dist < 1.8 and p != null and not bl_dash_hit:
+			if dist < 1.8 and not bl_dash_hit:
 				bl_dash_hit = true
-				p.take_damage(bl_dash_dmg, bl_dash_dir * 10.0)
-		elif bl_cd <= 0.0 and bloodline_id != "none" and p != null and target_peer_id == 1 and dist < 14.0 and dist > 3.0:
+				hurt_peer(target_peer_id, bl_dash_dmg, bl_dash_dir * 10.0)
+		elif bl_cd <= 0.0 and bloodline_id != "none" and dist < 14.0 and dist > 3.0:
 			_bl_begin()
 		elif dist > 2.0 * k:
 			velocity.x = dir.x * spd
@@ -253,7 +253,7 @@ func _strike(p: Player, dir: Vector3, _dist: float, target_peer_id: int, target_
 	if not bl_pending.is_empty():
 		var ability := bl_pending
 		bl_pending = {}
-		_bl_release(ability, p, dir, _dist)
+		_bl_release(ability, dir, _dist, target_peer_id)
 		return
 	Fx.swing(arm)
 	var to := target_pos - global_position
@@ -324,17 +324,50 @@ func _bl_begin() -> void:
 		Hero.play(model, "jutsu", true, 0, 0.8)
 
 
-func _bl_release(a: Dictionary, p: Player, dir: Vector3, dist: float) -> void:
+## Damages one player: the local one directly, a remote one through the host (multiplayer).
+func hurt_peer(peer_id: int, amount: float, knock: Vector3) -> void:
+	if peer_id == 1 or not NetworkSession.is_active():
+		var p := get_tree().get_first_node_in_group("player") as Player
+		if p != null and not p.is_dead:
+			p.take_damage(amount, knock)
+	elif multiplayer.is_server() and network_quest_id != "":
+		NetworkSession.damage_quest_party_member(peer_id, network_quest_party_leader, amount, knock)
+
+## Every player this enemy may hurt, as {peer_id: position}. Single player: just you.
+func targetable_players() -> Dictionary:
+	var out := {}
+	var p := get_tree().get_first_node_in_group("player") as Player
+	var networked := network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server()
+	if p != null and not p.is_dead and (not networked or NetworkSession.enemy_targets(1, network_quest_party_leader)):
+		out[1] = p.global_position
+	if networked:
+		for id in NetworkSession._avatars:
+			var avatar = NetworkSession._avatars[id]
+			if is_instance_valid(avatar) and not bool(avatar.get("network_ragdoll_started")) \
+					and NetworkSession.enemy_targets(int(id), network_quest_party_leader):
+				out[int(id)] = (avatar as Node3D).global_position
+	return out
+
+func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) -> void:
 	var col: Color = a["col"]
 	var kind := str(a["kind"])
 	var is_buff := kind == "buff" or kind == "aura"
 	var dmg := 0.0 if is_buff else float(a["dmg"]) * NPC_DMG * _bl_dmg_mult()
 	Fx.puff(get_parent(), global_position + Vector3.UP, col, 2.5 * k)
 	match kind:
-		"burst", "cone", "target":
+		"burst", "cone":   # hits every player in range (in front of it for a cone)
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)
-			if p != null and dist <= float(a["r"]) and dmg > 0.0:
-				p.take_damage(dmg, dir * float(a["knock"]))
+			if dmg > 0.0:
+				var players := targetable_players()
+				for peer_id in players:
+					var to: Vector3 = (players[peer_id] as Vector3) - global_position
+					to.y = 0.0
+					if to.length() <= float(a["r"]) and (kind == "burst" or to.normalized().dot(dir) > float(a["dot"])):
+						hurt_peer(int(peer_id), dmg, to.normalized() * float(a["knock"]))
+		"target":
+			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)
+			if dist <= float(a["r"]) and dmg > 0.0:
+				hurt_peer(target_peer_id, dmg, dir * float(a["knock"]))
 		"dash":
 			bl_dash_t = 0.25
 			bl_dash_dir = dir
@@ -350,8 +383,12 @@ func _bl_release(a: Dictionary, p: Player, dir: Vector3, dist: float) -> void:
 				bolt.size = float(a["size"])
 				bolt.homing = kind == "homing"
 				bolt.velocity = dir.rotated(Vector3.UP, (i - (count - 1) * 0.5) * gap) * minf(float(a["speed"]), 22.0)
+				bolt.shooter = self
+				bolt.target_peer = target_peer_id
 				get_parent().add_child(bolt)
 				bolt.global_position = global_position + Vector3.UP * 1.2 + dir * 0.8
+				if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
+					NetworkSession.broadcast_enemy_bolt(bolt.global_position, bolt.velocity, col, bolt.size, bolt.homing, target_peer_id)
 		_:
 			bl_buff_t = maxf(float(a["t"]), 4.0)
 			var sp := float(a["speed"])
@@ -366,6 +403,12 @@ func _bl_release(a: Dictionary, p: Player, dir: Vector3, dist: float) -> void:
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	if network_quest_defeated or health <= 0.0:
+		return
+	# PvP arena: the host can only hurt arena ninjas after joining Ninja Battle (remote players
+	# are checked by the host in NetworkSession._server_quest_enemy_damage).
+	if network_quest_id != "" and not network_quest_mirror and last_hit_peer == 1 \
+			and network_quest_party_leader == NetworkSession.ARENA_ENEMY and NetworkSession.is_active() \
+			and not NetworkSession.enemy_targets(1, NetworkSession.ARENA_ENEMY):
 		return
 	if network_quest_mirror and network_quest_id != "":
 		NetworkSession.request_quest_enemy_damage(network_quest_id, amount, knock)

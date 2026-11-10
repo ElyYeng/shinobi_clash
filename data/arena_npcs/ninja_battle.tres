@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Ninja Battle"
+pos = Vector3(-4, 0, -5)
+greeting = "Rogue ninjas are pouring into the arena. Join the Ninja Battle and they'll come for you - and only for those who join."
+appearance = {"hair_color": "#1A1A1A", "headband_color": "#7A1E1E"}

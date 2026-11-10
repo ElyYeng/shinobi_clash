@@ -1,6 +1,8 @@
 class_name NpcBolt
 extends Node3D
-## Small projectile fired by NPC bloodline abilities (fan / homing kinds). Hits the local player.
+## Small projectile fired by NPC bloodline abilities (fan / homing kinds).
+## Single player: hits you. Multiplayer host: hits any player its enemy may target (see
+## Enemy.targetable_players). cosmetic = true: a harmless copy shown on the other players' screens.
 
 var velocity := Vector3.ZERO
 var damage := 10.0
@@ -8,6 +10,9 @@ var color := Color.WHITE
 var size := 0.25
 var homing := false
 var life := 3.0
+var shooter: Enemy = null      # host: the enemy that fired it (decides who it can hit)
+var target_peer := 1           # who a homing bolt chases
+var cosmetic := false
 
 
 func _ready() -> void:
@@ -26,15 +31,44 @@ func _ready() -> void:
 	add_child(mesh)
 
 
+## Player positions this bolt can hit / chase, as {peer_id: chest position}.
+func _targets() -> Dictionary:
+	var out := {}
+	if cosmetic:   # a copy: chase the same player on this screen, hit nobody
+		var me := multiplayer.get_unique_id() if NetworkSession.is_active() else 1
+		if target_peer == me:
+			var p := get_tree().get_first_node_in_group("player") as Player
+			if p != null:
+				out[me] = p.global_position + Vector3.UP
+		elif NetworkSession._avatars.has(target_peer) and is_instance_valid(NetworkSession._avatars[target_peer]):
+			out[target_peer] = (NetworkSession._avatars[target_peer] as Node3D).global_position + Vector3.UP
+		return out
+	if shooter != null and is_instance_valid(shooter):
+		var players := shooter.targetable_players()
+		for id in players:
+			out[id] = (players[id] as Vector3) + Vector3.UP
+		return out
+	var lp := get_tree().get_first_node_in_group("player") as Player
+	if lp != null and not lp.is_dead:
+		out[1] = lp.global_position + Vector3.UP
+	return out
+
+
 func _physics_process(delta: float) -> void:
 	life -= delta
-	var p := get_tree().get_first_node_in_group("player") as Player
-	if p != null:
-		var chest := p.global_position + Vector3.UP
-		if homing and velocity.length() > 0.1:
-			velocity = velocity.lerp((chest - global_position).normalized() * velocity.length(), 2.5 * delta)
-		if global_position.distance_to(chest) < 0.9:
-			p.take_damage(damage, velocity.normalized() * 4.0)
+	var targets := _targets()
+	if homing and velocity.length() > 0.1 and targets.has(target_peer):
+		var chase: Vector3 = targets[target_peer]
+		velocity = velocity.lerp((chase - global_position).normalized() * velocity.length(), 2.5 * delta)
+	for id in targets:
+		if global_position.distance_to(targets[id]) < 0.9:
+			if not cosmetic:
+				if shooter != null and is_instance_valid(shooter):
+					shooter.hurt_peer(int(id), damage, velocity.normalized() * 4.0)
+				else:
+					var p := get_tree().get_first_node_in_group("player") as Player
+					if p != null:
+						p.take_damage(damage, velocity.normalized() * 4.0)
 			Vfx.burst(get_parent(), global_position, color, 14, 5.0, 0.2, 0.5)
 			queue_free()
 			return

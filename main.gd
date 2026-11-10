@@ -55,6 +55,8 @@ func _ready() -> void:
 		_start_kurama()
 	elif mode == "world":
 		_start_world()
+	elif _is_pvp_arena():
+		_start_arena()
 
 func _process(delta: float) -> void:
 	var over := player.is_dead or (mode == "kurama" and hud.victory)
@@ -69,9 +71,9 @@ func _process(delta: float) -> void:
 			_give_spins(1, "8 kills")
 	# Fight mode spawns AI ninjas. In a PvP arena only the host spawns them; they are shared
 	# with every player (see NetworkSession "PvP arena ninjas").
-	if mode == "fight" and (not NetworkSession.is_active() or NetworkSession.session_mode != "pvp" or multiplayer.is_server()):
+	if mode == "fight" and (not _is_pvp_arena() or multiplayer.is_server()):
 		_fight_spawner(delta)
-	elif mode == "world":
+	if mode == "world" or _is_pvp_arena():
 		_world_interact()
 
 func _give_spins(n: int, why: String) -> void:
@@ -108,6 +110,9 @@ func _load_map() -> void:
 
 # ---------------------------------------------------------------- Mode: FIGHT
 func _fight_spawner(delta: float) -> void:
+	if _is_pvp_arena() and NetworkSession.arena_ninja.is_empty():
+		respawn_timer = 1.5   # nobody joined Ninja Battle: no new ninjas
+		return
 	if get_tree().get_nodes_in_group("enemies").size() >= FIGHT_ENEMIES:
 		respawn_timer = 1.5
 		return
@@ -140,13 +145,14 @@ func _spawn_enemy() -> void:
 	if arena:
 		NetworkSession.announce_arena_enemy(e)
 
-## PvP host: spawn ninjas around a random living player, so they show up all over the arena.
+## PvP host: spawn ninjas around a random living Ninja Battle player.
 func _arena_spawn_center() -> Vector3:
 	var spots: Array[Vector3] = []
-	if not player.is_dead:
+	if not player.is_dead and NetworkSession.arena_flag(1, "ninja"):
 		spots.append(player.global_position)
-	for avatar in NetworkSession._avatars.values():
-		if is_instance_valid(avatar) and not bool(avatar.get("network_ragdoll_started")):
+	for id in NetworkSession._avatars:
+		var avatar = NetworkSession._avatars[id]
+		if is_instance_valid(avatar) and not bool(avatar.get("network_ragdoll_started")) and NetworkSession.arena_flag(int(id), "ninja"):
 			spots.append((avatar as Node3D).global_position)
 	return spots[rng.randi() % spots.size()] if not spots.is_empty() else player.global_position
 
@@ -220,6 +226,7 @@ func _start_world() -> void:
 		n.model_height = d["model_height"]
 		n.model_yaw_deg = d["model_yaw"]
 		n.outline = d["outline"]
+		n.appearance = d.get("appearance", {})
 		if placed.has(id):
 			n.rotation.y = (placed[id] as Node3D).global_rotation.y
 		add_child(n)
@@ -261,6 +268,9 @@ func _world_interact() -> void:
 		_talk(near)
 
 func _talk(npc: Npc) -> void:
+	if ARENA_NPCS.has(npc.npc_id):
+		_talk_arena(npc)
+		return
 	var id := npc.npc_id
 	var act := quests.active_def()
 	var none := Callable()
@@ -283,6 +293,75 @@ func _talk(npc: Npc) -> void:
 		dialog.open(npc.display_name, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
 	else:
 		dialog.open(npc.display_name, npc.greeting + "\n\n(I have no more work for you right now.)", [["Goodbye", none]])
+
+# ---------------------------------------------------------------- PvP arena NPCs
+## Two NPCs in the PvP arena let each player opt into fights. Their files are in
+## data/arena_npcs; place them with the NpcSpawn markers under ArenaNPCs in maps/village.tscn.
+const ARENA_NPC_DIR := "res://data/arena_npcs"
+const ARENA_NPCS := {"ninja_battle": "ninja", "pvp_battle": "pvp"}
+
+func _is_pvp_arena() -> bool:
+	return mode == "fight" and NetworkSession.is_active() and NetworkSession.session_mode == "pvp"
+
+func _start_arena() -> void:
+	dialog = DialogBox.new()
+	add_child(dialog)
+	dialog.bind(player)
+	var placed := {}
+	for s in map.find_children("*", "NpcSpawn", true, false):
+		var sp := s as NpcSpawn
+		if ARENA_NPCS.has(sp.npc_id()):
+			placed[sp.npc_id()] = sp
+	for id in ARENA_NPCS:
+		var def := load(ARENA_NPC_DIR.path_join(id + ".tres")) as NpcDef
+		if def == null:
+			continue
+		var d := def.to_dict(id)
+		var n := Npc.new()
+		n.npc_id = id
+		n.display_name = d["name"]
+		n.body_color = d["color"]
+		n.band_color = d["band"]
+		n.greeting = d["greet"]
+		n.appearance = d["appearance"]
+		n.model_path = d["model"]
+		n.model_height = d["model_height"]
+		n.model_yaw_deg = d["model_yaw"]
+		n.outline = d["outline"]
+		n.position = d["pos"]
+		if placed.has(id):
+			n.position = (placed[id] as Node3D).global_position
+			n.rotation.y = (placed[id] as Node3D).global_rotation.y
+		add_child(n)
+		npcs[id] = n
+	NetworkSession.arena_flags_changed.connect(_on_arena_flags_changed)
+	_on_arena_flags_changed()
+
+func _talk_arena(npc: Npc) -> void:
+	var kind: String = ARENA_NPCS[npc.npc_id]
+	var on := NetworkSession.arena_flag(multiplayer.get_unique_id(), kind)
+	var who := 0
+	for id in (NetworkSession.arena_pvp if kind == "pvp" else NetworkSession.arena_ninja):
+		who += 1
+	var status := "\n\n[You are %s.  Players in it: %d]" % ["IN" if on else "not in it", who]
+	var action := ("Leave the %s" if on else "Join the %s") % npc.display_name
+	dialog.open(npc.display_name, npc.greeting + status,
+		[[action, NetworkSession.request_arena_toggle.bind(kind)], ["Not now", Callable()]])
+
+## Updates the NPC markers ("ON" when you're in that battle) and tells you when your status changes.
+var _arena_mine := {}
+func _on_arena_flags_changed() -> void:
+	var me := multiplayer.get_unique_id()
+	for id in ARENA_NPCS:
+		if not npcs.has(id):
+			continue
+		var kind: String = ARENA_NPCS[id]
+		var on := NetworkSession.arena_flag(me, kind)
+		(npcs[id] as Npc).set_marker("ON" if on else "!", Color(0.35, 1.0, 0.4) if on else Color(1.0, 0.9, 0.2))
+		if _arena_mine.has(kind) and bool(_arena_mine[kind]) != on:
+			var what := "Ninja Battle: the arena ninjas will fight you" if kind == "ninja" else "PvP Battle: you can fight other PvP players"
+			hud.toast(("Joined %s" % what) if on else ("Left the %s" % ("Ninja Battle" if kind == "ninja" else "PvP Battle")))
+		_arena_mine[kind] = on
 
 # ---------------------------------------------------------------- Shared world helpers
 ## Is this x/z point inside (or within `pad` of) something solid on the map?

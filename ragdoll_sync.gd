@@ -38,8 +38,11 @@ func _process(delta: float) -> void:
 
 	_apply_pending_events()
 	_update_enemy_ragdolls(delta)
-	var local_player := NetworkSession.get("_local_player") as Player
-	if local_player == null or not is_instance_valid(local_player):
+	var raw = NetworkSession.get("_local_player")   # may be a freed Player after a scene change
+	if raw == null or not is_instance_valid(raw):
+		return
+	var local_player := raw as Player
+	if local_player == null:
 		return
 
 	# Main.gd respawns by reloading the scene, which creates a new Player node.
