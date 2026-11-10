@@ -734,7 +734,8 @@ func _toggle_power() -> void:
 	var col: Color = m["col"]
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_power_state(true, col, id)
-	Hero.apply_mode_look(model, m.get("look", {}))
+	if not m.has("cutscene"):   # with a cutscene, the look switches on at its big moment instead
+		Hero.apply_mode_look(model, m.get("look", {}))
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
 	if not m.get("look", {}).has("glow"):

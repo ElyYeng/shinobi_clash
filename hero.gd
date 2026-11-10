@@ -303,6 +303,20 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 			glowing.append(entry["node"])
 	if extras.has("backhead"):
 		glowing.append(extras["backhead"])
+	var brows: Array = []   # [mesh, surface]: the eyebrows are one surface of the face mesh
+	if extras.has("face"):
+		var face := extras["face"] as MeshInstance3D
+		for surface in face.mesh.get_surface_count():
+			var src := face.mesh.surface_get_material(surface)
+			if src != null and src.resource_name.to_lower().contains("eyebrow"):
+				brows.append([face, surface])
+	for b in brows:
+		_tint_surface(b[0], b[1], glow, true)
+		var bm := (b[0] as MeshInstance3D).get_surface_override_material(b[1]) as BaseMaterial3D
+		if bm != null:
+			bm.emission_enabled = true
+			bm.emission = glow
+			bm.emission_energy_multiplier = energy
 	for mi in glowing:
 		for surface in (mi as MeshInstance3D).mesh.get_surface_count():
 			if cat_skip_surface(mi, surface):

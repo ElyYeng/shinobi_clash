@@ -107,8 +107,8 @@ func _process(delta: float) -> void:
 		_swapped = true
 		var m: Dictionary = Bloodline.mode(bloodline)
 		var look: Dictionary = m.get("look", {})
-		if look.has("eyes") and is_instance_valid(player):
-			Hero.set_eyes(player.model, Moves.tex(str(look["eyes"])))
+		if is_instance_valid(player) and player.powered:
+			Hero.apply_mode_look(player.model, look)   # eyes (and anything else the look has)
 		if bloodline == "uchiha":
 			SharinganEffect.play_sound(get_tree())
 		else:
@@ -138,8 +138,8 @@ func _finish() -> void:
 		player.aura.light_energy = _aura_energy
 	if is_instance_valid(player) and player.cam != null:
 		player.cam.make_current()
-		if not player.powered:   # power-up ended meanwhile (multiplayer): normal eyes again
-			Hero.set_eyes(player.model, null)
+		# make sure the look matches the power state (it may have ended meanwhile in multiplayer)
+		Hero.apply_mode_look(player.model, Bloodline.mode(bloodline).get("look", {}) if player.powered else {})
 	if cam != null and is_instance_valid(cam):
 		cam.queue_free()
 	if bloodline == "uchiha":   # the spinning Sharingan emblem

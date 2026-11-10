@@ -140,7 +140,8 @@ const DEFS := {
 		"mode": {"name": "Kurama Ink Mode", "dmg": 1.4, "speed": 1.25, "def": 0.7, "ck": 20.0, "hp": 3.0,
 			"col": Color(1.0, 0.78, 0.3),
 			# Recolours the character while the power-up is on (see Hero.apply_mode_look).
-			"look": {"glow": "#E3D79A", "energy": 0.25, "flat": true, "outfit": "uzumaki"}, "cutscene": "body", "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
+			"look": {"glow": "#E3D79A", "energy": 0.25, "flat": true, "outfit": "uzumaki",
+				"eyes": "res://assets/character/character_main_T_CHR_Eye_SixPaths.png"}, "cutscene": "body", "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
 	"uchiha": {"name": "Uchiha", "rarity": "Legendary", "weight": 2.5, "color": Color(0.9, 0.1, 0.15),
 		"desc": "Fire prodigy: +20% damage, fireball costs 40% less.", "stats": {"dmg": 1.2, "fire_cost": 0.6},
 		"abilities": [
