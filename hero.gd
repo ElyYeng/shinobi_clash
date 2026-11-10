@@ -368,7 +368,11 @@ static func attach_rigid_hair_to_head(inst: Node) -> int:
 		return 0
 
 	var head_bone_name := sk.get_bone_name(head_idx)
-	var head_world_transform := sk.global_transform * sk.get_bone_global_pose(head_idx)
+	# Everything is measured in the skeleton's own space (not world space): this runs while
+	# the model is being built, before it is in the scene tree, where global transforms
+	# don't exist yet. A BoneAttachment3D places its children at the bone's pose in that space.
+	var head_pose := sk.get_bone_global_pose(head_idx)
+	var sk_from_inst := _rel(sk, inst).affine_inverse()
 	var attached_count := 0
 	for mi in rigid_hair:
 		var ancestor := mi.get_parent()
@@ -383,14 +387,14 @@ static func attach_rigid_hair_to_head(inst: Node) -> int:
 		if already_bone_attached:
 			continue
 
-		# Save the mesh's current world pose before moving it under the head attachment.
-		var original_world_transform := mi.global_transform
+		# Save the mesh's pose (in skeleton space) before moving it under the head attachment.
+		var original_in_sk := sk_from_inst * _rel(mi, inst)
 		var attachment := BoneAttachment3D.new()
 		attachment.name = "AutoHairHead_%d" % mi.get_instance_id()
 		attachment.bone_name = head_bone_name
 		sk.add_child(attachment)
 		mi.reparent(attachment, false)
-		mi.transform = head_world_transform.affine_inverse() * original_world_transform
+		mi.transform = head_pose.affine_inverse() * original_in_sk
 		# Ragdoll.start() moves this rigid hair mesh under the physics Head body
 		# so it follows the falling head instead of remaining at its last bone pose.
 		mi.set_meta("ragdoll_follow_head", true)

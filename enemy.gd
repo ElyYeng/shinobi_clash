@@ -268,13 +268,20 @@ func _strike(p: Player, dir: Vector3, _dist: float, target_peer_id: int, target_
 ## Hero-model enemies fall as a ragdoll instead of vanishing: the model is moved out of this
 ## node (which is freed) and cleaned up together with the ragdoll after CORPSE_TIME seconds.
 const CORPSE_TIME := 8.0
-func _remove_with_ragdoll(knock: Vector3) -> void:
+## network_driven = true: a co-op client's copy; its bodies follow the host instead of simulating.
+func _remove_with_ragdoll(knock: Vector3, network_driven := false) -> void:
 	var world := get_parent()
 	if uses_hero and is_instance_valid(model) and world != null and is_inside_tree():
 		model.reparent(world, true)
 		var vel := Vector3(velocity.x, 0.0, velocity.z) * 0.5 + knock * 0.8 + Vector3.UP * 3.0
 		var body := Ragdoll.start(model, world, vel)
 		var corpse := model
+		if body != null and network_quest_id != "" and NetworkSession.is_active():
+			if network_driven:
+				body.set_network_driven(true)
+				RagdollSync.follow_enemy_ragdoll(network_quest_id, body)
+			elif multiplayer.is_server():
+				RagdollSync.stream_enemy_ragdoll(network_quest_id, body)
 		if body == null:
 			corpse.queue_free()
 		else:
@@ -388,8 +395,24 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 				p.chakra = minf(p.max_chakra, p.chakra + 10.0)
 				if is_boss:
 					p.health = minf(p.max_health, p.health + 30.0)
-		Fx.puff(get_parent(), global_position + Vector3.UP, Color(1, 0.85, 0.6, 0.9), 2.5 * k)
-		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.5, 0.15), 40, 9.0, 0.3, 0.9)
-		Sfx.play(self, "poof", -2.0)
+		_death_fx()
 		remove_from_group("enemies")
 		_remove_with_ragdoll(knock)
+
+func _death_fx() -> void:
+	Fx.puff(get_parent(), global_position + Vector3.UP, Color(1, 0.85, 0.6, 0.9), 2.5 * k)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.5, 0.15), 40, 9.0, 0.3, 0.9)
+	Sfx.play(self, "poof", -2.0)
+
+## Co-op client: the host killed this mirrored quest enemy. Play the same death and fall as a
+## ragdoll that follows the host's body snapshots (RagdollSync), instead of just vanishing.
+func die_from_network() -> void:
+	if health <= 0.0 and network_quest_defeated and not is_in_group("enemies"):
+		return
+	health = 0.0
+	network_quest_defeated = true
+	_update_label()
+	_death_fx()
+	remove_from_group("enemies")
+	remove_from_group("quest_enemies")
+	_remove_with_ragdoll(Vector3.ZERO, true)

@@ -6,6 +6,10 @@ extends Node
 ## host validates/relays the snapshots to every other peer. Remote avatars use
 ## frozen rigid bodies and apply those transforms, so all players see the same
 ## fall rather than a locally simulated approximation.
+##
+## Co-op quest enemies work the same way with the host as owner: the host simulates
+## the enemy's ragdoll and streams it; each client's mirrored enemy goes limp and
+## follows those snapshots (Enemy.die_from_network -> follow_enemy_ragdoll).
 
 const SNAPSHOT_INTERVAL := 0.05       # 20 Hz while a ragdoll is settling
 const SNAPSHOT_LIFETIME := 6.15       # Ragdoll.gd freezes its bodies after 6 s
@@ -20,12 +24,20 @@ var _tracked_local_player: Player
 var _has_tracked_local_player := false
 var _tracked_player_died := false
 
+# ---- enemy ragdolls (key = Enemy.network_quest_id)
+const ENEMY_PENDING_TTL := 2.0          # drop snapshots for an enemy this client never saw die
+var _streamed_enemies: Dictionary = {}  # host: id -> Ragdoll it simulates and sends
+var _followed_enemies: Dictionary = {}  # client: id -> network-driven Ragdoll
+var _pending_enemy_states: Dictionary = {}  # client: id -> [state, age] that arrived before the death event
+var _enemy_snapshot_timer := 0.0
+
 func _process(delta: float) -> void:
 	if not NetworkSession.is_active():
 		_reset_session_state()
 		return
 
 	_apply_pending_events()
+	_update_enemy_ragdolls(delta)
 	var local_player := NetworkSession.get("_local_player") as Player
 	if local_player == null or not is_instance_valid(local_player):
 		return
@@ -74,6 +86,10 @@ func _reset_session_state() -> void:
 	_tracked_local_player = null
 	_has_tracked_local_player = false
 	_tracked_player_died = false
+	_streamed_enemies.clear()
+	_followed_enemies.clear()
+	_pending_enemy_states.clear()
+	_enemy_snapshot_timer = 0.0
 
 func _send_player_respawn(player: Player) -> void:
 	var position := player.global_position
@@ -274,3 +290,56 @@ func _valid_state(state: PackedFloat32Array) -> bool:
 		if q_len_sq < 0.5 or q_len_sq > 1.5:
 			return false
 	return true
+
+# ---------------------------------------------------------------- enemy ragdolls
+## Host: send this enemy ragdoll's body transforms to the other players while it settles.
+func stream_enemy_ragdoll(enemy_id: String, ragdoll: Ragdoll) -> void:
+	if enemy_id == "" or ragdoll == null or not multiplayer.is_server():
+		return
+	_streamed_enemies[enemy_id] = ragdoll
+	_send_enemy_state(enemy_id, ragdoll)   # first pose right away, so clients don't wait a tick
+
+## Client: drive this (network-driven) ragdoll from the host's snapshots.
+func follow_enemy_ragdoll(enemy_id: String, ragdoll: Ragdoll) -> void:
+	if enemy_id == "" or ragdoll == null:
+		return
+	_followed_enemies[enemy_id] = ragdoll
+	if _pending_enemy_states.has(enemy_id):   # a snapshot overtook the (reliable) death event
+		ragdoll.apply_network_state(_pending_enemy_states[enemy_id][0])
+		_pending_enemy_states.erase(enemy_id)
+
+func _update_enemy_ragdolls(delta: float) -> void:
+	for id in _followed_enemies.keys():
+		if not is_instance_valid(_followed_enemies[id]):
+			_followed_enemies.erase(id)
+	for id in _pending_enemy_states.keys():
+		_pending_enemy_states[id][1] += delta
+		if _pending_enemy_states[id][1] > ENEMY_PENDING_TTL:
+			_pending_enemy_states.erase(id)
+	if _streamed_enemies.is_empty() or not multiplayer.is_server():
+		return
+	_enemy_snapshot_timer += delta
+	if _enemy_snapshot_timer < SNAPSHOT_INTERVAL:
+		return
+	_enemy_snapshot_timer = 0.0
+	for id in _streamed_enemies.keys():
+		var r = _streamed_enemies[id]
+		if not is_instance_valid(r) or (r as Ragdoll).life > SNAPSHOT_LIFETIME:
+			_streamed_enemies.erase(id)   # settled (bodies frozen) or cleaned up
+			continue
+		_send_enemy_state(id, r)
+
+func _send_enemy_state(enemy_id: String, ragdoll: Ragdoll) -> void:
+	var state := ragdoll.get_network_state()
+	if _valid_state(state):
+		_enemy_ragdoll_state.rpc(enemy_id, state)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _enemy_ragdoll_state(enemy_id: String, state: PackedFloat32Array) -> void:
+	if not _valid_state(state):
+		return
+	var r = _followed_enemies.get(enemy_id)
+	if r != null and is_instance_valid(r):
+		(r as Ragdoll).apply_network_state(state)
+	else:
+		_pending_enemy_states[enemy_id] = [state, 0.0]

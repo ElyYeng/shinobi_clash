@@ -509,7 +509,7 @@ func _server_party_quest_abandon(sender_id: int, quest_id: String) -> void:
 			var enemy_id := (node as Enemy).network_quest_id
 			_sent_quest_enemy_identities.erase(enemy_id)
 			_pending_quest_enemy_identities.erase(enemy_id)
-			_remove_quest_enemy.rpc(enemy_id)
+			_remove_quest_enemy.rpc(enemy_id, false)
 			node.queue_free()
 	_publish_party_quest_state(leader, "", "", 0)
 
@@ -620,7 +620,7 @@ func quest_enemy_killed(enemy_id: String, leader_id: int) -> void:
 		return
 	_sent_quest_enemy_identities.erase(enemy_id)
 	_pending_quest_enemy_identities.erase(enemy_id)
-	_remove_quest_enemy.rpc(enemy_id)
+	_remove_quest_enemy.rpc(enemy_id, true)
 	_grant_party_quest_kill_reward(leader_id)
 	if not _party_quest_states.has(leader_id):
 		return
@@ -780,11 +780,16 @@ func _quest_enemy_state(enemy_id: String, pos: Vector3, yaw: float, hp: float) -
 			return
 
 @rpc("authority", "call_remote", "reliable")
-func _remove_quest_enemy(enemy_id: String) -> void:
+## killed = true: the host defeated it, so it dies and falls as a ragdoll driven by the host
+## (RagdollSync). false: the quest was dropped, so it is simply removed.
+func _remove_quest_enemy(enemy_id: String, killed: bool) -> void:
 	_pending_quest_enemy_identities.erase(enemy_id)
 	for node in get_tree().get_nodes_in_group("quest_enemies"):
 		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
-			(node as Enemy).queue_free()
+			if killed:
+				(node as Enemy).die_from_network()
+			else:
+				(node as Enemy).queue_free()
 			return
 
 ## Shared Kurama raid. Host simulates the boss; clients receive authoritative snapshots.
