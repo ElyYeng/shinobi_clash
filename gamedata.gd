@@ -19,6 +19,10 @@ const ELEMENT_COLORS := {
 }
 
 static var mode := "fight"          # "kurama" | "fight" | "world"  (chosen in the menu)
+## Multiplayer lobby fields, remembered between launches.
+static var mp_name := "Shinobi"
+static var mp_address := "26.x.x.x"
+static var mp_port := "7000"
 static var spins := 3
 static var element_spins := 3
 static var equipped_element := "Fire"
@@ -90,6 +94,9 @@ static func load_data() -> void:
 	var d = JSON.parse_string(f.get_as_text())
 	if d is Dictionary:
 		spins = maxi(int(d.get("spins", 3)), 0)
+		mp_name = str(d.get("mp_name", mp_name))
+		mp_address = str(d.get("mp_address", mp_address))
+		mp_port = str(d.get("mp_port", mp_port))
 		element_spins = maxi(int(d.get("element_spins", 3)), 0)
 		pity = maxi(int(d.get("pity", 0)), 0)
 		var saved_elements = d.get("owned_elements", ["Fire"])
@@ -181,6 +188,7 @@ static func save() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({
+			"mp_name": mp_name, "mp_address": mp_address, "mp_port": mp_port,
 			"spins": spins, "pity": pity, "owned": owned, "equipped": equipped,
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,

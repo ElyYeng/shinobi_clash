@@ -146,8 +146,9 @@ func play_ability(move_id: String, color: Color) -> void:
 		)
 
 ## Spawn a cosmetic projectile on this peer; damage is deliberately zero.
-func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float, shot_size: float, color: Color, long_shape: bool, aoe: float, shot_damage: float, visual_kind: String = "") -> void:
+func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float, shot_size: float, color: Color, long_shape: bool, aoe: float, shot_damage: float, visual_kind: String = "", homing_on: Node3D = null) -> void:
 	var shot := Projectile.new()
+	shot.target = homing_on
 	shot.global_position = origin
 	shot.velocity = shot_velocity
 	shot.speed = shot_speed

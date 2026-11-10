@@ -68,7 +68,7 @@ var kunai_cd := 0.0
 var fire_cd := 0.0
 var clone_cd := 0.0
 var invuln := 0.0
-var lock_target: Enemy = null
+var lock_target: Node3D = null   # an Enemy, or another player's avatar in PvP
 
 var pivot: Node3D
 var spring: SpringArm3D
@@ -180,7 +180,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if event.is_action_pressed("lockon"):
-		lock_target = null if lock_target else _nearest_enemy(30.0)
+		lock_target = null if lock_target else _nearest_foe(30.0)
 
 func _process(delta: float) -> void:
 	pivot.rotation = Vector3(pitch, yaw, 0.0)
@@ -258,7 +258,7 @@ func _physics_process(delta: float) -> void:
 		health = minf(max_health, health + hpr * delta)
 
 	# Lock-on camera
-	if not is_instance_valid(lock_target):
+	if not _alive(lock_target):
 		lock_target = null
 	elif global_position.distance_to(lock_target.global_position) > 45.0:
 		lock_target = null
@@ -399,7 +399,7 @@ func _melee() -> void:
 	combo_timer = 0.8
 	attack_cd = 0.5 if combo == 3 else 0.28
 	attack_lock = attack_cd
-	var tgt: Enemy = lock_target if lock_target else _nearest_enemy(6.0)
+	var tgt: Node3D = lock_target if lock_target else _nearest_foe(6.0)
 	if tgt:
 		var f := tgt.global_position - global_position
 		f.y = 0.0
@@ -455,7 +455,7 @@ func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, lon
 	get_parent().add_child(pr)
 	pr.global_position = origin
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe, dmg * _dmg())
+		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe, dmg * _dmg(), "", _peer_of(pr.target))
 
 func _throw_kunai() -> void:
 	if kunai_cd > 0.0 or chakra < 3.0:
@@ -583,10 +583,10 @@ func _use_move(id: String) -> void:
 		_toast("Not enough chakra for %s" % a["name"])
 		return
 	var kind := str(a["kind"])
-	var target: Enemy = null
+	var target: Node3D = null
 	if kind == "target":
-		target = lock_target if is_instance_valid(lock_target) and lock_target.health > 0.0 \
-			and lock_target.global_position.distance_to(global_position) <= float(a["r"]) else _nearest_enemy(float(a["r"]))
+		target = lock_target if _alive(lock_target) \
+			and lock_target.global_position.distance_to(global_position) <= float(a["r"]) else _nearest_foe(float(a["r"]))
 		if target == null:
 			_toast("No enemy in range (%dm)" % int(a["r"]))
 			return
@@ -605,23 +605,23 @@ func _use_move(id: String) -> void:
 		"custom":   # hand-made jutsu (original Fire Style, clones, substitution, armor)
 			call(str(a["fn"]), col)
 		"burst":
-			for e in _enemies_in(float(a["r"])):
+			for e in _foes_in(float(a["r"])):
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
 				_stun(e, float(a["stun"]))
-				_hit(e, dmg, to.normalized() * float(a["knock"]))
+				_hit_foe(e, dmg, to.normalized() * float(a["knock"]))
 			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, float(a["r"]), 0.45)
 		"cone":
-			for e in _enemies_in(float(a["r"])):
+			for e in _foes_in(float(a["r"])):
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
 				if to.normalized().dot(facing) > float(a["dot"]):
 					_stun(e, float(a["stun"]))
-					_hit(e, dmg, to.normalized() * float(a["knock"]))
+					_hit_foe(e, dmg, to.normalized() * float(a["knock"]))
 			Vfx.shockwave(get_parent(), global_position + facing * float(a["r"]) * 0.4 + Vector3.UP * 0.2, col, float(a["r"]) * 0.6, 0.35)
 		"target":
 			_stun(target, float(a["stun"]))
 			Vfx.shockwave(get_parent(), target.global_position + Vector3.UP, col, 3.0, 0.4)
 			Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
-			_hit(target, dmg, Vector3.ZERO)
+			_hit_foe(target, dmg, Vector3.ZERO)
 		"fan":
 			var projectile_visual := "rasenshuriken" if id == "bl:uzumaki:2" else ""
 			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * mult,
@@ -635,11 +635,11 @@ func _use_move(id: String) -> void:
 				if d.length() > 0.1:
 					dir = d.normalized()
 			var reach := float(a["dist"])
-			for e in _enemies_in(reach + 1.0):
+			for e in _foes_in(reach + 1.0):
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
 				var along := to.dot(dir)
 				if along > -0.5 and along < reach + 1.0 and (to - dir * along).length() < 2.5:
-					_hit(e, dmg, dir * 12.0)
+					_hit_foe(e, dmg, dir * 12.0)
 			facing = dir
 			dash_dir = dir
 			dash_time = reach / DASH_SPEED
@@ -657,8 +657,8 @@ func _use_move(id: String) -> void:
 		_play_once("jutsu", 0.5)
 	cur_mkey = ""
 
-func _stun(e: Enemy, secs: float) -> void:
-	if secs <= 0.0 or not is_instance_valid(e):
+func _stun(e: Node3D, secs: float) -> void:
+	if secs <= 0.0 or not (e is Enemy) or not is_instance_valid(e):
 		return
 	e.stun = maxf(e.stun, secs * (0.4 if e.is_boss else 1.0))   # bosses shrug most of it off
 	e.windup = 0.0
@@ -697,8 +697,8 @@ func _update_buffs(delta: float) -> void:
 		aura.light_energy = move_toward(aura.light_energy, 1.2, 6.0 * delta)
 
 func _aura_tick(radius: float, dps: float, col: Color) -> void:
-	for e in _enemies_in(radius):
-		_hit(e, dps * 0.5 * _dmg() * (_bl_mult() if not cur_mkey.begins_with("el:") else 1.0), Vector3.ZERO)
+	for e in _foes_in(radius):
+		_hit_foe(e, dps * 0.5 * _dmg() * (_bl_mult() if not cur_mkey.begins_with("el:") else 1.0), Vector3.ZERO)
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
@@ -817,6 +817,49 @@ func _enemies_in(radius: float) -> Array[Enemy]:
 				out.append(e)
 	return out
 
+## Enemies plus, in the PvP arena, other players you can fight (both joined PvP Battle).
+func _foes_in(radius: float) -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for e in _enemies_in(radius):
+		out.append(e)
+	for av in NetworkSession.hostile_avatars():
+		var to := av.global_position - global_position
+		to.y = 0.0
+		if to.length() <= radius:
+			out.append(av)
+	return out
+
+func _nearest_foe(max_dist: float) -> Node3D:
+	var best: Node3D = null
+	var best_d := max_dist
+	for f in _foes_in(max_dist):
+		var d := global_position.distance_to(f.global_position)
+		if d < best_d:
+			best_d = d
+			best = f
+	return best
+
+## Still a valid target: a living enemy, or a player you can still fight.
+func _alive(t: Node3D) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if t is Enemy:
+		return t.health > 0.0
+	return NetworkSession.hostile_avatars().has(t)
+
+## Network id of a target player's avatar (0 for enemies / nothing).
+func _peer_of(t: Node3D) -> int:
+	if t != null and is_instance_valid(t) and not (t is Enemy) and "peer_id" in t:
+		return int(t.get("peer_id"))
+	return 0
+
+## Hits an enemy, or asks the host to hit another player with an ability.
+func _hit_foe(t: Node3D, amount: float, knock: Vector3) -> void:
+	if t is Enemy:
+		_hit(t, amount, knock)
+	elif _peer_of(t) != 0:
+		NetworkSession.request_ability_hit(_peer_of(t), amount, knock)
+
 ## Damages an enemy only if it is still alive (stops double kills in one frame). Gives mastery XP.
 func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 	if is_instance_valid(e) and e.health > 0.0:
@@ -826,8 +869,8 @@ func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 
 ## Fires `count` homing projectiles, spread over the nearest enemies.
 func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> void:
-	var targets := _enemies_in(40.0)
-	targets.sort_custom(func(a: Enemy, b: Enemy): return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
+	var targets := _foes_in(40.0)
+	targets.sort_custom(func(a: Node3D, b: Node3D): return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
 	var origin := global_position + Vector3.UP * 1.6
 	for i in count:
 		var ang := TAU * float(i) / float(count)
@@ -846,7 +889,7 @@ func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> v
 		get_parent().add_child(pr)
 		pr.global_position = origin + Vector3(cos(ang), 0.3, sin(ang)) * 0.8
 		if NetworkSession.is_active():
-			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe, pr.damage)
+			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe, pr.damage, "", _peer_of(pr.target))
 
 ## ---- Fire Style jutsu + Kurama Mode (keys: T Y G H, V, RMB+E, Z) ----
 func _toast(t: String) -> void:
@@ -924,6 +967,10 @@ func _fx_flame_wave(col: Color) -> void:
 		to.y = 0.0
 		if to.length() < 9.0 + e.k * 1.5:
 			e.take_damage(40.0 * _dmg(), to.normalized() * 14.0)
+	for av in NetworkSession.hostile_avatars():
+		var to := (av.global_position - global_position) * Vector3(1, 0, 1)
+		if to.length() < 10.0:
+			_hit_foe(av, 40.0 * _dmg(), to.normalized() * 14.0)
 	var element_col := col
 	Vfx.burst(get_parent(), global_position + Vector3.UP, element_col, 60, 12.0, 0.5, 0.7, 0.0)
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(element_col.r, element_col.g, element_col.b, 0.7), 12.0)

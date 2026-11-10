@@ -28,6 +28,8 @@ var _known_appearances: Dictionary = {}
 var _party_leader: Dictionary = {}
 var _pending_party_invites: Dictionary = {}
 var _avatars: Dictionary = {}
+const ABILITY_HIT_RANGE := 45.0    # furthest a jutsu hit on another player is accepted from
+const ABILITY_MAX_DAMAGE := 200.0
 var _remote_clones: Dictionary = {}
 var _next_clone_summon_id := 1
 var _raid_boss: Kurama
@@ -978,7 +980,38 @@ func _request_player_hit(target_id: int, damage: float, knockback: Vector3) -> v
 		return
 	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback)
 
-func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3) -> void:
+## Other players the local player may hit right now (PvP arena, both joined PvP Battle, not
+## in your party, not ragdolled).
+func hostile_avatars() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	if not is_active() or session_mode != "pvp":
+		return out
+	var me := multiplayer.get_unique_id()
+	for id in _avatars:
+		var av = _avatars[id]
+		if not is_instance_valid(av) or av.network_ragdoll_started:
+			continue
+		if _same_party(me, int(id)) or not pvp_allowed(me, int(id)):
+			continue
+		out.append(av)
+	return out
+
+## A jutsu (burst, cone, target, dash, aura) hit another player. The host checks range and PvP.
+func request_ability_hit(target_id: int, damage: float, knockback: Vector3) -> void:
+	if not is_active() or session_mode != "pvp":
+		return
+	if multiplayer.is_server():
+		_server_apply_hit(1, target_id, damage, knockback, ABILITY_HIT_RANGE, ABILITY_MAX_DAMAGE)
+	else:
+		_request_ability_hit.rpc_id(1, target_id, damage, knockback)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_ability_hit(target_id: int, damage: float, knockback: Vector3) -> void:
+	if not multiplayer.is_server():
+		return
+	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback, ABILITY_HIT_RANGE, ABILITY_MAX_DAMAGE)
+
+func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3, max_range := 4.0, max_damage := 80.0) -> void:
 	if attacker_id == target_id or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
 	if not pvp_allowed(attacker_id, target_id):
@@ -997,9 +1030,9 @@ func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockbac
 		target_pos = _avatars[target_id].global_position
 	else:
 		return
-	if attacker_pos.distance_to(target_pos) > 4.0:
+	if attacker_pos.distance_to(target_pos) > max_range:
 		return
-	var safe_damage := clampf(damage, 1.0, 80.0)
+	var safe_damage := clampf(damage, 1.0, max_damage)
 	if target_id == 1 and _local_player != null:
 		_local_player.take_damage(safe_damage, knockback)
 	else:
@@ -1201,31 +1234,39 @@ func _apply_shadow_clone_states(peer_id: int, ids: PackedInt32Array, indices: Pa
 		var clone: Clone = _remote_clones[key]
 		clone.set_network_transform(positions[i], yaws[i])
 
-func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String = "") -> void:
+## `target_peer`: the player a homing shot chases (0 = none), so it homes on their screen too.
+func broadcast_projectile(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String = "", target_peer := 0) -> void:
 	if not is_active():
 		return
 	if multiplayer.is_server():
-		_broadcast_projectile_visual.rpc(1, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
+		_broadcast_projectile_visual.rpc(1, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, target_peer)
 	else:
-		_request_projectile_visual.rpc_id(1, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
+		_request_projectile_visual.rpc_id(1, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, target_peer)
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String) -> void:
+func _request_projectile_visual(origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String, target_peer: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_show_remote_projectile(sender, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
-	_broadcast_projectile_visual.rpc(sender, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
+	_show_remote_projectile(sender, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, target_peer)
+	_broadcast_projectile_visual.rpc(sender, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, target_peer)
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String) -> void:
-	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
+func _broadcast_projectile_visual(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String, target_peer: int) -> void:
+	_show_remote_projectile(peer_id, origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, target_peer)
 
-func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String) -> void:
-	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
-		_avatars[peer_id].play_projectile(origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind)
+func _show_remote_projectile(peer_id: int, origin: Vector3, velocity: Vector3, speed: float, size: float, color: Color, long_shape: bool, aoe: float, damage: float, visual_kind: String, target_peer := 0) -> void:
+	if not _avatars.has(peer_id) or not is_instance_valid(_avatars[peer_id]):
+		return
+	var homing_on: Node3D = null
+	if target_peer != 0:
+		if target_peer == multiplayer.get_unique_id():
+			homing_on = _local_player
+		elif _avatars.has(target_peer) and is_instance_valid(_avatars[target_peer]):
+			homing_on = _avatars[target_peer]
+	_avatars[peer_id].play_projectile(origin, velocity, speed, size, color, long_shape, aoe, damage, visual_kind, homing_on)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_ability_visual(move_id: String, color: Color) -> void:

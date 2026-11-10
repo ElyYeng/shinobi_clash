@@ -8,6 +8,7 @@ var status_label: Label
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	GameData.load_data()
 	NetworkSession.connection_succeeded.connect(_on_joined)
 	NetworkSession.connection_failed.connect(_on_failed)
 	NetworkSession.server_disconnected.connect(_on_disconnected)
@@ -33,9 +34,11 @@ func _build_ui() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 10)
 	UiStyle.scroll(outer, Vector2(600, 0)).add_child(col)
-	name_input = UiStyle.field(col, "NAME", "Shinobi", "Player name")
-	address_input = UiStyle.field(col, "HOST IP", "26.x.x.x", "Host Radmin VPN IPv4")
-	port_input = UiStyle.field(col, "UDP PORT", "7000")
+	name_input = UiStyle.field(col, "NAME", GameData.mp_name, "Player name")
+	address_input = UiStyle.field(col, "HOST IP", GameData.mp_address, "Host Radmin VPN IPv4")
+	port_input = UiStyle.field(col, "UDP PORT", GameData.mp_port)
+	for e in [name_input, address_input, port_input]:   # remember what was typed
+		e.text_changed.connect(func(_t: String) -> void: _remember())
 	UiStyle.divider(col)
 	UiStyle.label(col, "HOST A GAME", 15, UiStyle.GREEN_DK)
 	var hosts := HBoxContainer.new()
@@ -58,7 +61,17 @@ func _build_ui() -> void:
 	back.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	back.pressed.connect(_back)
 
+func _remember() -> void:
+	GameData.mp_name = name_input.text.strip_edges()
+	GameData.mp_address = address_input.text.strip_edges()
+	GameData.mp_port = port_input.text.strip_edges()
+
+func _save_fields() -> void:
+	_remember()
+	GameData.save()
+
 func _host(mode: String) -> void:
+	_save_fields()
 	if mode == "raid" and GameData.level < 10:
 		status_label.text = "Kurama Raid requires Level 10."
 		return
@@ -73,6 +86,7 @@ func _host(mode: String) -> void:
 	get_tree().change_scene_to_file("res://main.tscn")
 
 func _join() -> void:
+	_save_fields()
 	var port := _read_port()
 	if port < 1:
 		return
@@ -102,5 +116,6 @@ func _on_disconnected() -> void:
 	status_label.text = "Disconnected from the host."
 
 func _back() -> void:
+	_save_fields()
 	NetworkSession.disconnect_session()
 	get_tree().change_scene_to_file("res://menu.tscn")
