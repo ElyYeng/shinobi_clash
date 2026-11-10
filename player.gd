@@ -144,6 +144,7 @@ func refresh_stats() -> void:
 ## Called when the equipped bloodline changes.
 func apply_bloodline() -> void:
 	var def := Bloodline.get_def(GameData.equipped)
+	NetworkSession.broadcast_clan(GameData.equipped)   # clan next to your name for other players
 	refresh_stats()
 	_clear_buffs()
 	_power_off()

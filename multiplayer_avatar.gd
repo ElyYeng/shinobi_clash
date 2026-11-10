@@ -4,6 +4,7 @@ extends Node3D
 var peer_id := 0
 var display_name := "Shinobi"
 var player_level := 1
+var clan := "none"   # equipped bloodline, shown next to the name
 var is_party_member := false
 var character_appearance: Dictionary = {}
 var target_position := Vector3.ZERO
@@ -23,7 +24,7 @@ func _ready() -> void:
 		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
 	add_child(model)
 	name_tag = Label3D.new()
-	name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
+	name_tag.text = _tag_text()
 	name_tag.position = Vector3(0, 2.4, 0)
 	name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	name_tag.font_size = 32
@@ -124,7 +125,7 @@ func reset_network_ragdoll(position: Vector3, yaw: float) -> void:
 	set_physics_process(true)
 	if name_tag != null:
 		name_tag.visible = true
-		name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
+		name_tag.text = _tag_text()
 	Hero.play(model, "idle")
 
 ## Cosmetic-only ability playback on this remote avatar; gameplay remains owned by its player.
@@ -138,11 +139,11 @@ func play_ability(move_id: String, color: Color) -> void:
 		Vfx.burst(root, global_position + Vector3.UP, color, 30, 8.0, 0.28, 0.55, 0.0)
 		Vfx.shockwave(root, global_position + Vector3.UP * 0.2, color, 3.5, 0.4)
 	if name_tag != null:
-		name_tag.text = "%s  •  Lv. %d\n%s" % [display_name, player_level, move_id]
+		name_tag.text = _tag_text() + "\n" + move_id
 		var timer := get_tree().create_timer(1.2)
 		timer.timeout.connect(func() -> void:
 			if is_instance_valid(name_tag):
-				name_tag.text = "%s  •  Lv. %d" % [display_name, player_level]
+				name_tag.text = _tag_text()
 		)
 
 ## Spawn a cosmetic projectile on this peer; damage is deliberately zero.
@@ -208,3 +209,14 @@ func _process(delta: float) -> void:
 		if animation_lock <= 0.0:
 			Hero.play_move(model, Hero.move_state(speed), speed)
 	_last_position = global_position
+
+
+## "Ely  [Uchiha]  •  Lv. 5" (no clan part without a bloodline).
+func _tag_text() -> String:
+	var c := "" if clan == "none" else "  [%s]" % Bloodline.get_def(clan)["name"]
+	return "%s%s  •  Lv. %d" % [display_name, c, player_level]
+
+func set_clan(value: String) -> void:
+	clan = value
+	if name_tag != null:
+		name_tag.text = _tag_text()

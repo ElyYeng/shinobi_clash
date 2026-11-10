@@ -399,7 +399,7 @@ func _refresh_party_hud() -> void:
 			ids.append(int(id))
 	ids.sort()
 	for id in ids:
-		var nm := str(NetworkSession._known_players[id])
+		var nm := NetworkSession.name_with_clan(int(id))
 		var lv := int(NetworkSession._known_levels.get(id, 1))
 		var row := Label.new()
 		row.text = "%s  •  Lv. %d%s" % [nm, lv, " (YOU)" if id == my_id else ""]
@@ -833,7 +833,7 @@ func _page_party() -> Array:
 		if peer_id == my_id:
 			continue
 		var in_party := NetworkSession._same_party(my_id, peer_id)
-		var nm := str(NetworkSession._known_players[id])
+		var nm := NetworkSession.name_with_clan(peer_id)
 		var lv := int(NetworkSession._known_levels.get(id, 1))
 		var acts: Array = []
 		if in_party:

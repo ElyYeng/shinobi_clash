@@ -272,6 +272,7 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 ## Power-up look (Bloodline mode "look"). An empty look puts the normal appearance back.
 ##   glow/under/energy/flat - hair and top turn `glow` and glow, pants turn `under` (Uzumaki)
 ##   eyes                   - iris texture for both eyes (Uchiha's Sharingan)
+##   outfit_glow            - neon: the outfit glows in its own texture colours (0 = off)
 ##   outfit                 - "uzumaki" shows the shirt_uzumaki / pants_uzumaki meshes instead of
 ##                            your clothes (those keep their own textures; the glow then only
 ##                            goes on what the outfit doesn't replace, e.g. the hair)
@@ -283,10 +284,25 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 	apply_appearance(model, appearance)
 	set_eyes(model, Moves.tex(str(look["eyes"])) if look.has("eyes") else null)
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
+	var outfit_glow := float(look.get("outfit_glow", 0.0))
 	for cat in outfit:   # swap in the power-up outfit (it has its own textures and colours)
 		for entry in (model.get_meta("hero_parts") as Dictionary).get(cat, []):
 			(entry["node"] as MeshInstance3D).visible = false
-		(outfit[cat] as MeshInstance3D).visible = true
+		var om := outfit[cat] as MeshInstance3D
+		om.visible = true
+		for surface in om.mesh.get_surface_count():   # neon: the outfit lights up in its own colours
+			var src := om.mesh.surface_get_material(surface) as BaseMaterial3D
+			if src == null:
+				continue
+			if outfit_glow <= 0.0:
+				om.set_surface_override_material(surface, null)
+				continue
+			var nm := src.duplicate() as BaseMaterial3D
+			nm.emission_enabled = true
+			nm.emission = Color.WHITE
+			nm.emission_texture = src.albedo_texture
+			nm.emission_energy_multiplier = outfit_glow
+			om.set_surface_override_material(surface, nm)
 	if not look.has("glow"):
 		return
 	var glow := Color.html(str(look.get("glow", "#E3D79A")))
@@ -337,6 +353,8 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 			if flat and pmat != null:
 				pmat.albedo_texture = null
 
+const EYE_GLOW := 0.9   # how bright transformed irises glow (needs <eye>_Glow.png next to the eye texture)
+
 ## Swaps the iris texture on both eyes (null = the model's own eyes). The eyes are the face
 ## surfaces whose material is called "... Eye" or uses an "Eye" texture (not the eyebrows).
 static func set_eyes(model: Node3D, tex: Texture2D) -> void:
@@ -361,6 +379,15 @@ static func set_eyes(model: Node3D, tex: Texture2D) -> void:
 		elif base is BaseMaterial3D:
 			var m := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
 			m.albedo_texture = tex
+			# Unshaded: toon lighting over-brightens the eye and washes the iris colours out.
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			# Neon iris: "<eye>_Glow.png" (black outside the iris) lights up only the iris.
+			var glow := Moves.tex(tex.resource_path.get_basename() + "_Glow.png") if tex.resource_path != "" else null
+			if glow != null:
+				m.emission_enabled = true
+				m.emission = Color.WHITE
+				m.emission_texture = glow
+				m.emission_energy_multiplier = EYE_GLOW
 			mi.set_surface_override_material(surface, m)
 
 ## World position of the eyes (for close-ups): 30% of the way from the head bone to the head top.

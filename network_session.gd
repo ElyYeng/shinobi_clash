@@ -24,6 +24,7 @@ var _game_root: Node
 var _sync_timer := 0.0
 var _known_players: Dictionary = {}
 var _known_levels: Dictionary = {}
+var _known_clans: Dictionary = {}   # peer id -> equipped bloodline id (shown next to the name)
 var _known_appearances: Dictionary = {}
 var _party_leader: Dictionary = {}
 var _pending_party_invites: Dictionary = {}
@@ -94,6 +95,7 @@ func disconnect_session() -> void:
 	_sync_timer = 0.0
 	_known_players.clear()
 	_known_levels.clear()
+	_known_clans.clear()
 	_known_appearances.clear()
 	_party_leader.clear()
 	_pending_party_invites.clear()
@@ -131,6 +133,45 @@ func bind_local_player(player: Player, game_root: Node) -> void:
 		else:
 			# Joined or respawned: ask the host for the ninjas that are already fighting.
 			_request_arena_snapshot.rpc_id(1)
+	broadcast_clan(GameData.equipped)
+
+# ---------------------------------------------------------------- clan next to the name
+## Tells everyone which bloodline (clan) this player has equipped; shown on their name tag.
+func broadcast_clan(clan: String) -> void:
+	if not is_active():
+		return
+	clan = _safe_clan(clan)
+	if multiplayer.is_server():
+		_known_clans[1] = clan
+		_clan_changed.rpc(1, clan)
+	else:
+		_request_clan.rpc_id(1, clan)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_clan(clan: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	clan = _safe_clan(clan)
+	_clan_changed(sender, clan)
+	_clan_changed.rpc(sender, clan)
+
+@rpc("authority", "call_remote", "reliable")
+func _clan_changed(peer_id: int, clan: String) -> void:
+	_known_clans[peer_id] = _safe_clan(clan)
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].set_clan(_known_clans[peer_id])
+
+func _safe_clan(clan: String) -> String:
+	return clan if Bloodline.DEFS.has(clan) else "none"
+
+## "Ely  [Uchiha]" - a name with its clan (for name tags / party lists).
+func name_with_clan(peer_id: int) -> String:
+	var nm := str(_known_players.get(peer_id, "Shinobi"))
+	var clan := str(_known_clans.get(peer_id, "none"))
+	return nm if clan == "none" else "%s  [%s]" % [nm, Bloodline.get_def(clan)["name"]]
 
 func _process(delta: float) -> void:
 	if not is_active() or _local_player == null:
@@ -173,7 +214,7 @@ func _request_join(requested_name: String, requested_level: int, requested_appea
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id)), "appearance": _known_appearances.get(id, {})})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id)), "appearance": _known_appearances.get(id, {}), "clan": str(_known_clans.get(id, "none"))})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
 	_known_levels[sender] = clampi(requested_level, 1, 9999)
@@ -194,6 +235,7 @@ func _receive_roster(roster: Array) -> void:
 		_known_players[id] = nm
 		_known_levels[id] = lv
 		_known_appearances[id] = _sanitize_appearance(entry.get("appearance", {}))
+		_known_clans[id] = _safe_clan(str(entry.get("clan", "none")))
 		_party_leader[id] = int(entry.get("party_leader", id))
 		if id != multiplayer.get_unique_id():
 			_spawn_remote_local(id, nm, lv, _known_appearances[id])
@@ -222,6 +264,7 @@ func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1, app
 	avatar.set("peer_id", peer_id)
 	avatar.set("display_name", display_name)
 	avatar.set("player_level", level)
+	avatar.set("clan", str(_known_clans.get(peer_id, "none")))
 	avatar.set("character_appearance", _sanitize_appearance(appearance))
 	avatar.set("is_party_member", _same_party(multiplayer.get_unique_id(), peer_id))
 	_game_root.add_child(avatar)
@@ -271,6 +314,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		_server_leave_party(peer_id)
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
+	_known_clans.erase(peer_id)
 	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
 	if arena_ninja.has(peer_id) or arena_pvp.has(peer_id):
@@ -285,6 +329,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _despawn_remote(peer_id: int) -> void:
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
+	_known_clans.erase(peer_id)
 	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
 	_remove_remote_local(peer_id)
