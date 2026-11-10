@@ -264,6 +264,53 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 				_tint_surface(mi, surface, tint, false, null, true)
 
 
+## Power-up recolour, e.g. Uzumaki's Kurama Ink Mode: hair and top turn `look.glow` and glow,
+## pants turn `look.under`. An empty look puts the normal appearance back.
+## look = {"glow": "#E3D79A", "under": "#2B261A", "energy": 0.55, "flat": true}
+## flat = drop the clothes' own textures so the top is one glowing colour (outline keeps the shape).
+static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Dictionary = {}) -> void:
+	if model == null or not model.has_meta("hero_parts"):
+		return
+	apply_appearance(model, appearance)
+	if look.is_empty():
+		return
+	var glow := Color.html(str(look.get("glow", "#E3D79A")))
+	var under := Color.html(str(look.get("under", "#2B261A")))
+	var energy := float(look.get("energy", 0.5))
+	var flat := bool(look.get("flat", true))
+	var parts: Dictionary = model.get_meta("hero_parts")
+	var extras: Dictionary = model.get_meta("hero_extra", {})
+	var glowing: Array = []
+	for cat in ["hair", "shirt"]:
+		for entry in parts.get(cat, []):
+			glowing.append(entry["node"])
+	if extras.has("backhead"):
+		glowing.append(extras["backhead"])
+	for mi in glowing:
+		for surface in (mi as MeshInstance3D).mesh.get_surface_count():
+			if cat_skip_surface(mi, surface):
+				continue
+			_tint_surface(mi, surface, glow, true)
+			var m := (mi as MeshInstance3D).get_surface_override_material(surface) as BaseMaterial3D
+			if m != null:
+				if flat:
+					m.albedo_texture = null
+				m.emission_enabled = true
+				m.emission = glow
+				m.emission_energy_multiplier = energy
+	for entry in parts.get("pants", []):
+		var pm := entry["node"] as MeshInstance3D
+		for surface in pm.mesh.get_surface_count():
+			_tint_surface(pm, surface, under, true)
+			var pmat := pm.get_surface_override_material(surface) as BaseMaterial3D
+			if flat and pmat != null:
+				pmat.albedo_texture = null
+
+## Keeps the headband plate (its own texture) and similar slot surfaces out of the glow.
+static func cat_skip_surface(mi: MeshInstance3D, surface: int) -> bool:
+	return _slot_of(mi.mesh.surface_get_material(surface)) == "headbandmetal"
+
+
 ## Which COLOR_SLOTS slot a material belongs to ("" = plain hair). Ignores Blender's ".001" suffixes.
 static func _slot_of(material: Material) -> String:
 	if material == null:

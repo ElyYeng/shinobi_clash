@@ -138,7 +138,9 @@ const DEFS := {
 			{"name": "Sealing Chains", "kind": "burst", "r": 14.0, "dmg": 30.0, "stun": 4.5, "knock": -10.0, "desc": "Chains pull every enemy within 14m in and bind them."},
 			{"name": "Rasenshuriken", "kind": "fan", "n": 1, "speed": 26.0, "dmg": 140.0, "aoe": 5.0, "size": 0.6, "col": Color(0.6, 0.85, 1.0), "desc": "A wind shuriken that explodes in a 5m storm."}],
 		"mode": {"name": "Kurama Ink Mode", "dmg": 1.4, "speed": 1.25, "def": 0.7, "ck": 20.0, "hp": 3.0,
-			"col": Color(1.0, 0.4, 0.05), "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
+			"col": Color(1.0, 0.78, 0.3),
+			# Recolours the character while the power-up is on (see Hero.apply_mode_look).
+			"look": {"glow": "#E3D79A", "under": "#2B261A", "energy": 0.25, "flat": true}, "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
 	"uchiha": {"name": "Uchiha", "rarity": "Legendary", "weight": 2.5, "color": Color(0.9, 0.1, 0.15),
 		"desc": "Fire prodigy: +20% damage, fireball costs 40% less.", "stats": {"dmg": 1.2, "fire_cost": 0.6},
 		"abilities": [

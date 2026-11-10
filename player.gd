@@ -731,10 +731,14 @@ func _toggle_power() -> void:
 	mode_tick = 0.0
 	var col: Color = m["col"]
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_power_state(true, col)
+		NetworkSession.broadcast_power_state(true, col, id)
+	Hero.apply_mode_look(model, m.get("look", {}))
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
-	Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
+	if m.get("look", {}).is_empty():
+		Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
+	else:   # the body already glows: keep the flames faint so they don't hide it
+		Vfx.aura_flames(pmode_fx, Vector3(0, 0.9, 0), 0.45, Color(col.r, col.g, col.b, 0.35), 10, true)
 	aura.visible = true
 	aura.light_color = col
 	aura.light_energy = 1.8
@@ -749,7 +753,9 @@ func _power_off() -> void:
 	if not powered:
 		return
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_power_state(false, Color.WHITE)
+		NetworkSession.broadcast_power_state(false, Color.WHITE, "")
+	if model != null and not pmode.get("look", {}).is_empty():
+		Hero.apply_mode_look(model, {})
 	powered = false
 	pmode = {}
 	if pmode_fx != null and is_instance_valid(pmode_fx):

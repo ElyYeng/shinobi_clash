@@ -1045,33 +1045,34 @@ func _apply_player_damage(amount: float, knockback: Vector3) -> void:
 
 
 ## Replicate the persistent bloodline power-up aura on remote player avatars.
-func broadcast_power_state(enabled: bool, color: Color) -> void:
+## `bloodline` lets other players see that power-up's recolour (Bloodline.mode(id)["look"]).
+func broadcast_power_state(enabled: bool, color: Color, bloodline := "") -> void:
 	if not is_active():
 		return
 	if multiplayer.is_server():
-		_broadcast_power_state.rpc(1, enabled, color)
+		_broadcast_power_state.rpc(1, enabled, color, bloodline)
 	else:
-		_request_power_state.rpc_id(1, enabled, color)
+		_request_power_state.rpc_id(1, enabled, color, bloodline)
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_power_state(enabled: bool, color: Color) -> void:
+func _request_power_state(enabled: bool, color: Color, bloodline: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_apply_power_state(sender, enabled, color)
-	_broadcast_power_state.rpc(sender, enabled, color)
+	_apply_power_state(sender, enabled, color, bloodline)
+	_broadcast_power_state.rpc(sender, enabled, color, bloodline)
 
 @rpc("authority", "call_remote", "reliable")
-func _broadcast_power_state(peer_id: int, enabled: bool, color: Color) -> void:
-	_apply_power_state(peer_id, enabled, color)
+func _broadcast_power_state(peer_id: int, enabled: bool, color: Color, bloodline: String) -> void:
+	_apply_power_state(peer_id, enabled, color, bloodline)
 
-func _apply_power_state(peer_id: int, enabled: bool, color: Color) -> void:
+func _apply_power_state(peer_id: int, enabled: bool, color: Color, bloodline := "") -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
-		_avatars[peer_id].set_powered_visual(enabled, color)
+		_avatars[peer_id].set_powered_visual(enabled, color, bloodline)
 
 ## Replicate Kurama Mode (Z) on remote avatars.
 func broadcast_kurama_state(enabled: bool) -> void:

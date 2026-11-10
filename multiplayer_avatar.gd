@@ -166,15 +166,21 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 		root.add_child(shot)
 		shot.global_position = origin
 
-func set_powered_visual(enabled: bool, color: Color) -> void:
+func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 	if network_ragdoll_started:
 		return
+	var look: Dictionary = Bloodline.mode(bloodline).get("look", {}) if enabled and bloodline != "" else {}
+	if model != null and is_instance_valid(model):
+		Hero.apply_mode_look(model, look, character_appearance)
 	if enabled:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()
 		power_fx = Node3D.new()
 		add_child(power_fx)
-		Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
+		if look.is_empty():
+			Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
+		else:
+			Vfx.aura_flames(power_fx, Vector3(0, 0.9, 0), 0.45, Color(color.r, color.g, color.b, 0.35), 10, true)
 	else:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()
