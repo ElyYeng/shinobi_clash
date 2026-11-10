@@ -96,6 +96,10 @@ class ElementBadge extends Control:
 		set(v):
 			active = v
 			queue_redraw()
+	var locked := false:
+		set(v):
+			locked = v
+			queue_redraw()
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -103,6 +107,13 @@ class ElementBadge extends Control:
 	func _draw() -> void:
 		var c := size / 2.0
 		var r := minf(size.x, size.y) / 2.0 - 3.0
+		if locked:
+			var red := Color(0.78, 0.18, 0.15)
+			var dark := Color(0.45, 0.06, 0.05)
+			draw_arc(c + Vector2(0, -r * 0.18), r * 0.42, PI, TAU, 24, dark, r * 0.18)
+			draw_rect(Rect2(c + Vector2(-r * 0.66, -r * 0.2), Vector2(r * 1.32, r * 1.05)), red)
+			draw_circle(c + Vector2(0, r * 0.3), r * 0.22, dark)
+			return
 		var col := GameData.get_element_color(element) if owned else Color(0.35, 0.33, 0.3)
 		if active:
 			draw_circle(c, r + 2.0, Color(1.0, 0.92, 0.4))
@@ -139,10 +150,11 @@ var auto_pick: OptionButton
 var auto_btn: Button
 var pity_label: Label
 # element page
-var el_badges := {}              # element -> {badge, button}
+var el_slot_ui: Array = []       # one Dictionary per element slot
 var el_title: Label
 var el_rows: VBoxContainer
-var el_spin_btn: Button
+var el_auto_pick: OptionButton
+var el_auto_btn: Button
 # appearance page
 var look_box: VBoxContainer
 var color_targets: HFlowContainer
@@ -388,38 +400,68 @@ func _build_slot(parent: Node, i: int) -> Dictionary:
 	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq}
 
 func _build_element_page(page: VBoxContainer) -> void:
-	UiStyle.label(page, "YOUR ELEMENTS  -  click one to equip it", 13, Color(0.42, 0.36, 0.26))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	page.add_child(row)
-	for e in GameData.ELEMENTS:
-		var b := Button.new()
-		b.flat = true
-		b.custom_minimum_size = Vector2(96, 104)
-		b.focus_mode = Control.FOCUS_NONE
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(b)
-		var badge := ElementBadge.new()
-		badge.element = e
-		badge.position = Vector2(14, 0)
-		badge.size = Vector2(68, 68)
-		b.add_child(badge)
-		var l := UiStyle.label(b, e.to_upper(), 14, INK)
-		l.position = Vector2(0, 72)
-		l.size = Vector2(96, 20)
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		b.pressed.connect(_equip_element.bind(e))
-		el_badges[e] = {"badge": badge, "button": b, "label": l}
-	el_spin_btn = UiStyle.ribbon_button(page, "", 20)
-	el_spin_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	el_spin_btn.pressed.connect(_on_element_spin)
-	UiStyle.label(page, "A spin always gives an element you don't own yet, until you have them all.", 12, Color(0.42, 0.36, 0.26))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	page.add_child(grid)
+	el_slot_ui.resize(GameData.SLOT_COUNT)
+	for i in GameData.SLOT_COUNT:
+		el_slot_ui[i] = _build_el_slot(grid, i)
+	UiStyle.label(page, "Jutsu of every element in your slots can go on your hotbar (M > Element).", 12, Color(0.42, 0.36, 0.26))
 	UiStyle.divider(page)
 	el_title = UiStyle.label(page, "", 22, INK)
 	el_rows = VBoxContainer.new()
 	el_rows.add_theme_constant_override("separation", 4)
 	page.add_child(el_rows)
+	UiStyle.divider(page)
+	var auto_row := HBoxContainer.new()
+	auto_row.add_theme_constant_override("separation", 8)
+	page.add_child(auto_row)
+	el_auto_pick = OptionButton.new()
+	for e in GameData.ELEMENTS:
+		el_auto_pick.add_item("Stop at %s" % e)
+	el_auto_pick.add_theme_font_override("font", GameMenu.font())
+	el_auto_pick.add_theme_font_size_override("font_size", 14)
+	el_auto_pick.custom_minimum_size = Vector2(170, 36)
+	auto_row.add_child(el_auto_pick)
+	el_auto_btn = UiStyle.ribbon_button(auto_row, "", 15)
+	el_auto_btn.custom_minimum_size = Vector2(0, 36)
+	el_auto_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	el_auto_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	el_auto_btn.pressed.connect(_on_el_auto)
+
+func _build_el_slot(parent: Node, i: int) -> Dictionary:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(card)
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 8)
+	card.add_child(hb)
+	var badge := ElementBadge.new()
+	badge.custom_minimum_size = Vector2(70, 70)
+	badge.pivot_offset = Vector2(35, 35)
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hb.add_child(badge)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 1)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hb.add_child(vb)
+	UiStyle.label(vb, "ELEMENT SLOT %d" % (i + 1), 11, Color(0.42, 0.36, 0.26))
+	var nm := UiStyle.label(vb, "", 18, INK)
+	var sub := UiStyle.label(vb, "", 12, INK)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	vb.add_child(row)
+	var spin := UiStyle.ribbon_button(row, "", 13)
+	spin.custom_minimum_size = Vector2(0, 28)
+	spin.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spin.pressed.connect(_on_el_slot_pressed.bind(i))
+	var eq := UiStyle.green_button(row, "", 12)
+	eq.custom_minimum_size = Vector2(66, 28)
+	eq.pressed.connect(_on_el_equip.bind(i))
+	return {"card": card, "badge": badge, "name": nm, "sub": sub, "spin": spin, "equip": eq}
 
 func _build_look_page(page: VBoxContainer) -> void:
 	look_box = VBoxContainer.new()   # one row of choices per model part (filled in _build_look_options)
@@ -845,16 +887,41 @@ func _refresh_bloodline_info() -> void:
 
 func _refresh_elements() -> void:
 	var busy := spinning or auto_running
-	for e in el_badges:
-		var owned := GameData.owned_elements.has(e)
-		var ui: Dictionary = el_badges[e]
-		(ui["badge"] as ElementBadge).owned = owned
-		(ui["badge"] as ElementBadge).active = e == GameData.equipped_element
-		(ui["label"] as Label).text = e.to_upper() if owned else "???"
-		(ui["button"] as Button).disabled = busy or not owned
-		(ui["button"] as Button).tooltip_text = "Equip %s Style" % e if owned else "Not owned yet - spin for it"
-	el_spin_btn.text = "SPIN ELEMENT  (%d left)" % GameData.element_spins
-	el_spin_btn.disabled = busy or GameData.element_spins <= 0
+	for i in GameData.SLOT_COUNT:
+		var ui: Dictionary = el_slot_ui[i]
+		var badge: ElementBadge = ui["badge"]
+		var nm: Label = ui["name"]
+		var sub: Label = ui["sub"]
+		var spin: Button = ui["spin"]
+		var eq: Button = ui["equip"]
+		if not GameData.el_slot_unlocked[i]:
+			var cost: int = GameData.EL_SLOT_UNLOCK_COST[i]
+			(ui["card"] as PanelContainer).add_theme_stylebox_override("panel", _card_style(false, true))
+			badge.locked = true
+			badge.active = false
+			nm.text = "LOCKED"
+			sub.text = "Costs %d element spins" % cost
+			sub.add_theme_color_override("font_color", Color(0.65, 0.15, 0.1))
+			spin.text = "UNLOCK (%d)" % cost
+			spin.disabled = busy or GameData.element_spins < cost
+			eq.visible = false
+			continue
+		var e := str(GameData.el_slots[i])
+		var empty := e == "none"
+		var active: bool = i == GameData.active_el_slot
+		(ui["card"] as PanelContainer).add_theme_stylebox_override("panel", _card_style(active, false))
+		badge.locked = false
+		badge.owned = not empty
+		badge.element = e if not empty else "?"
+		badge.active = active
+		nm.text = "EMPTY" if empty else "%s Style" % e
+		sub.text = "Spin to awaken" if empty else "LV %d" % GameData.mastery_level("el:" + e)
+		sub.add_theme_color_override("font_color", INK if empty else GameData.get_element_color(e).darkened(0.45))
+		spin.text = "SPIN"
+		spin.disabled = busy or GameData.element_spins <= 0
+		eq.visible = not empty
+		eq.text = "ACTIVE" if active else "EQUIP"
+		eq.disabled = busy or active
 	var e := GameData.equipped_element
 	var elv := GameData.mastery_level("el:" + e)
 	el_title.text = "%s STYLE   ·   LV %d" % [e.to_upper(), elv]
@@ -864,6 +931,13 @@ func _refresh_elements() -> void:
 		var ab := ElementData.ability(e, k)
 		var mid := "el:%s:%d" % [e, k]
 		_move_row(el_rows, mid, str(ab["name"]), int(ab["lvl"]), elv, str(ab.get("desc", "")), ab["col"], Moves.icon(mid))
+	el_auto_pick.disabled = busy
+	if auto_running and current_tab == "element":
+		el_auto_btn.text = "STOP AUTO"
+		el_auto_btn.disabled = false
+	else:
+		el_auto_btn.text = "AUTO SPIN ELEMENT SLOT %d" % (GameData.active_el_slot + 1)
+		el_auto_btn.disabled = busy or GameData.element_spins <= 0
 
 # ================================================================== appearance
 func _build_look_options() -> void:
@@ -1121,30 +1195,80 @@ func _on_auto() -> void:
 		_show_banner("OUT OF SPINS", Color(0.9, 0.3, 0.25), false)
 
 # ================================================================== element actions
-func _equip_element(e: String) -> void:
-	if spinning or auto_running or not GameData.owned_elements.has(e) or GameData.equipped_element == e:
+func _on_el_equip(i: int) -> void:
+	if spinning or auto_running:
 		return
-	GameData.equipped_element = e
-	GameData.save()
-	Sfx.play(self, "poof", -6.0)
-	_refresh()
+	if GameData.set_active_el_slot(i):
+		Sfx.play(self, "poof", -6.0)
+		_refresh()
 
-func _on_element_spin() -> void:
-	if spinning or auto_running or GameData.element_spins <= 0:
+func _on_el_slot_pressed(i: int) -> void:
+	if spinning or auto_running:
 		return
+	if not GameData.el_slot_unlocked[i]:
+		if GameData.unlock_el_slot(i):
+			Sfx.play(self, "power")
+			_show_banner("ELEMENT SLOT %d UNLOCKED!" % (i + 1), Color(1.0, 0.9, 0.5), false)
+		_refresh()
+		return
+	if GameData.element_spins <= 0:
+		_show_banner("NO ELEMENT SPINS LEFT", Color(0.9, 0.3, 0.25), false)
+		return
+	await _spin_el_slot(i, false)
+
+## Rolls element slot i with a short reel. Returns the element won ("" if nothing was spun).
+func _spin_el_slot(i: int, fast: bool) -> String:
+	var result := GameData.roll_el_slot(i)
+	if result == "":
+		return ""
+	var is_new := GameData.last_el_new
 	spinning = true
 	_refresh()
-	var result := GameData.roll_element()
-	for k in 14:
-		var e: String = GameData.ELEMENTS[k % GameData.ELEMENTS.size()]
-		for x in el_badges:
-			(el_badges[x]["badge"] as ElementBadge).active = x == e
-		await get_tree().create_timer(0.04 + k * 0.012, true, false, true).timeout
+	var ui: Dictionary = el_slot_ui[i]
+	var badge: ElementBadge = ui["badge"]
+	var nm: Label = ui["name"]
+	badge.owned = true
+	var steps := 8 if fast else 18
+	for k in steps:
+		var e: String = GameData.ELEMENTS[(k + randi() % 2) % GameData.ELEMENTS.size()]
+		badge.element = e
+		nm.text = "%s Style" % e
+		if k % 2 == 0:
+			Sfx.play(self, "throw", -16.0)
+		var t := (0.03 + k * 0.004) if fast else (0.035 + k * k * 0.0011)
+		await get_tree().create_timer(t, true, false, true).timeout
 	spinning = false
 	_refresh()
-	var badge: ElementBadge = el_badges[result]["badge"]
-	badge.pivot_offset = badge.size / 2.0
-	badge.scale = Vector2(1.4, 1.4)
+	badge.scale = Vector2(1.35, 1.35)
 	create_tween().tween_property(badge, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sfx.play(self, "fire", -4.0)
-	_show_banner("%s STYLE!" % result.to_upper(), GameData.get_element_color(result), false)
+	if not fast:
+		_show_banner("%s STYLE!%s" % [result.to_upper(), "\n(NEW)" if is_new else ""], GameData.get_element_color(result), false)
+	return result
+
+func _on_el_auto() -> void:
+	if auto_running:
+		auto_stop = true
+		return
+	if spinning:
+		return
+	var slot := GameData.active_el_slot
+	var want: String = GameData.ELEMENTS[el_auto_pick.selected]
+	if str(GameData.el_slots[slot]) == want:
+		_show_banner("Slot %d already has %s" % [slot + 1, want], Color(1.0, 0.85, 0.5), false)
+		return
+	auto_running = true
+	auto_stop = false
+	_refresh()
+	var got := ""
+	while not auto_stop and GameData.element_spins > 0:
+		got = await _spin_el_slot(slot, true)
+		if got == "" or got == want:
+			break
+		await get_tree().create_timer(0.18, true, false, true).timeout
+	auto_running = false
+	_refresh()
+	if got == want:
+		_show_banner("%s STYLE!" % want.to_upper(), GameData.get_element_color(want), true)
+	elif GameData.element_spins <= 0:
+		_show_banner("OUT OF ELEMENT SPINS", Color(0.9, 0.3, 0.25), false)

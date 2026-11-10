@@ -1431,8 +1431,7 @@ func _equip_slot(i: int) -> void:
 func _equip_element(element: String) -> void:
 	if not GameData.owned_elements.has(element):
 		return
-	GameData.equipped_element = element
-	GameData.save()
+	GameData.equip_element(element)
 	_refresh_header()
 	_reload_page()
 

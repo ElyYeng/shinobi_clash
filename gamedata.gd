@@ -8,6 +8,8 @@ const PITY_LIMIT := 20
 ## Spinning a slot REPLACES whatever it held. Slots 1-2 start open; 3-4 are bought with spins.
 const SLOT_COUNT := 4
 const SLOT_UNLOCK_COST := [0, 0, 10, 25]
+## Element slots work the same way, paid with ELEMENT spins. Spinning a slot replaces its element.
+const EL_SLOT_UNLOCK_COST := [0, 0, 5, 10]
 const RARITY_ORDER := ["Common", "Rare", "Epic", "Legendary", "Mythic"]
 const ELEMENTS := ["Fire", "Earth", "Lightning", "Water", "Wind"]
 const ELEMENT_COLORS := {
@@ -25,8 +27,12 @@ static var mp_address := "26.x.x.x"
 static var mp_port := "7000"
 static var spins := 3
 static var element_spins := 3
-static var equipped_element := "Fire"
-static var owned_elements: Array[String] = ["Fire"]
+static var equipped_element := "Fire"   # always el_slots[active_el_slot]; use set_active_el_slot()
+static var owned_elements: Array[String] = ["Fire"]   # the elements in your slots (their jutsu are usable)
+static var el_slots: Array = ["Fire", "none", "none", "none"]
+static var el_slot_unlocked: Array = [true, true, false, false]
+static var active_el_slot := 0
+static var last_el_new := false
 static var pity := 0
 static var owned: Array = ["none"]      # every bloodline ever rolled (codex / achievements)
 static var equipped := "none"           # always slots[active_slot]; use set_active_slot() to change
@@ -145,6 +151,10 @@ static func load_data() -> void:
 				if kb.has(k):
 					var mv := str(kb[k])
 					keybinds[k] = mv if mv == "" or not Moves.spec(mv).is_empty() else ""
+		if d.has("el_slots"):
+			_load_el_slots(d)
+		else:
+			_migrate_old_elements()
 		if d.has("slots"):
 			_load_slots(d)
 		else:
@@ -181,6 +191,46 @@ static func _migrate_old_collection() -> void:
 	slots[1] = best
 	active_slot = 0
 
+static func _load_el_slots(d: Dictionary) -> void:
+	var s = d.get("el_slots", [])
+	var u = d.get("el_slot_unlocked", [])
+	for i in SLOT_COUNT:
+		var e := str(s[i]) if s is Array and i < s.size() else "none"
+		el_slots[i] = e if ELEMENTS.has(e) else "none"
+		el_slot_unlocked[i] = EL_SLOT_UNLOCK_COST[i] == 0 or (u is Array and i < u.size() and bool(u[i]))
+	active_el_slot = clampi(int(d.get("active_el_slot", 0)), 0, SLOT_COUNT - 1)
+	if str(el_slots[0]) == "none":
+		el_slots[0] = "Fire"
+	if not el_slot_unlocked[active_el_slot] or str(el_slots[active_el_slot]) == "none":
+		active_el_slot = 0
+	_sync_elements()
+
+## Old saves had a list of owned elements. Each one gets a slot (extra slots open for free).
+static func _migrate_old_elements() -> void:
+	var list: Array[String] = [equipped_element]
+	for e in owned_elements:
+		if not list.has(e):
+			list.append(e)
+	for i in SLOT_COUNT:
+		el_slots[i] = list[i] if i < list.size() else "none"
+		if i < list.size():
+			el_slot_unlocked[i] = true
+	active_el_slot = 0
+	_sync_elements()
+
+## equipped_element / owned_elements follow the element slots.
+static func _sync_elements() -> void:
+	owned_elements.clear()
+	for i in SLOT_COUNT:
+		var e := str(el_slots[i])
+		if el_slot_unlocked[i] and e != "none" and not owned_elements.has(e):
+			owned_elements.append(e)
+	if owned_elements.is_empty():
+		el_slots[0] = "Fire"
+		owned_elements.append("Fire")
+	var cur := str(el_slots[active_el_slot])
+	equipped_element = cur if cur != "none" else owned_elements[0]
+
 static func _sync_equipped() -> void:
 	equipped = str(slots[active_slot]) if slot_unlocked[active_slot] else "none"
 
@@ -192,6 +242,7 @@ static func save() -> void:
 			"spins": spins, "pity": pity, "owned": owned, "equipped": equipped,
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,
+			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot,
 			"kurama_defeated": kurama_defeated, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
@@ -370,24 +421,58 @@ static func set_active_slot(i: int) -> bool:
 	save()
 	return true
 
-## Spends one element spin, preferring an element that is not owned yet.
-## Once all elements are collected, duplicate rolls remain possible.
-static func roll_element() -> String:
-	if element_spins <= 0:
-		return equipped_element
+## Spends one element spin on element slot `i` and returns the element won ("" if it could not
+## spin). The slot's old element is replaced. Always a different element than the slot had, and
+## one that isn't in your other slots while there are any left.
+static func roll_el_slot(i: int) -> String:
+	if i < 0 or i >= SLOT_COUNT or not el_slot_unlocked[i] or element_spins <= 0:
+		return ""
 	element_spins -= 1
-	var choices: Array[String] = []
-	for element in ELEMENTS:
-		if not owned_elements.has(element):
-			choices.append(element)
-	if choices.is_empty():
-		choices.assign(ELEMENTS)
-	var result: String = choices[randi() % choices.size()]
-	if not owned_elements.has(result):
-		owned_elements.append(result)
-	equipped_element = result
+	var cur := str(el_slots[i])
+	var fresh: Array[String] = []
+	var others: Array[String] = []
+	for e in ELEMENTS:
+		if e == cur:
+			continue
+		others.append(e)
+		if not el_slots.has(e):
+			fresh.append(e)
+	var pool := fresh if not fresh.is_empty() else others
+	var result: String = pool[randi() % pool.size()]
+	last_el_new = not owned_elements.has(result)
+	el_slots[i] = result
+	if cur == "none" and str(el_slots[active_el_slot]) == "none":
+		active_el_slot = i
+	_sync_elements()
 	save()
 	return result
+
+static func unlock_el_slot(i: int) -> bool:
+	if i < 0 or i >= SLOT_COUNT or el_slot_unlocked[i] or element_spins < EL_SLOT_UNLOCK_COST[i]:
+		return false
+	element_spins -= EL_SLOT_UNLOCK_COST[i]
+	el_slot_unlocked[i] = true
+	save()
+	return true
+
+## Makes element slot `i` the equipped element (its jutsu colour, M > Element page ...).
+static func set_active_el_slot(i: int) -> bool:
+	if i < 0 or i >= SLOT_COUNT or not el_slot_unlocked[i] or str(el_slots[i]) == "none":
+		return false
+	active_el_slot = i
+	_sync_elements()
+	save()
+	return true
+
+## Equips an element you have in a slot (used by the in-game M menu).
+static func equip_element(e: String) -> bool:
+	var i := el_slots.find(e)
+	return i >= 0 and set_active_el_slot(i)
+
+## Kept for older callers: spins the equipped element's slot.
+static func roll_element() -> String:
+	var r := roll_el_slot(active_el_slot)
+	return equipped_element if r == "" else r
 
 static func get_element_color(element: String = "") -> Color:
 	var key := equipped_element if element.is_empty() else element
