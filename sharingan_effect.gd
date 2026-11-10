@@ -9,11 +9,36 @@ const SCREEN_COVERAGE := 0.92
 const FINAL_OPACITY := 0.94
 const SPIN_DURATION := 0.88
 
-static func play_activation(scene_tree: SceneTree) -> void:
+var with_sound := true
+
+static func play_activation(scene_tree: SceneTree, sound := true) -> void:
 	if scene_tree == null or scene_tree.root == null:
 		return
 	var effect := SharinganEffect.new()
+	effect.with_sound = sound
 	scene_tree.root.add_child(effect)
+
+## Quick activation cutscene: close-up on the face, the eyes turn into the Sharingan (red flash +
+## sound), then back to the game through the spinning emblem. Pauses the game in single player.
+static func play_cutscene(player: Player) -> void:
+	if player == null or not is_instance_valid(player) or player.model == null:
+		play_activation(player.get_tree() if player else null)
+		return
+	var cs := SharinganCutscene.new()
+	cs.player = player
+	player.get_tree().root.add_child(cs)
+
+static func play_sound(scene_tree: SceneTree) -> void:
+	var stream := load(SOUND_PATH) as AudioStream
+	if stream == null:
+		return
+	var audio := AudioStreamPlayer.new()
+	audio.stream = stream
+	audio.volume_db = -2.0
+	audio.process_mode = Node.PROCESS_MODE_ALWAYS
+	scene_tree.root.add_child(audio)
+	audio.finished.connect(audio.queue_free)
+	audio.play()
 
 func _ready() -> void:
 	layer = 128
@@ -23,7 +48,8 @@ func _ready() -> void:
 		push_warning("[SharinganEffect] Missing image: %s" % TEXTURE_PATH)
 		queue_free()
 		return
-	_play_activation_sound()
+	if with_sound:
+		_play_activation_sound()
 	_build_screen_image(texture)
 	_animate_screen_image()
 

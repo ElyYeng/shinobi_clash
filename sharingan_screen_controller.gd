@@ -21,7 +21,7 @@ func _process(_delta: float) -> void:
 
 	if is_uchiha_powered and not _was_active:
 		_stop_old_procedural_power_sound()
-		SHARINGAN_EFFECT_SCRIPT.play_activation(get_tree())
+		SHARINGAN_EFFECT_SCRIPT.play_cutscene(_tracked_player)
 
 	_was_active = is_uchiha_powered
 

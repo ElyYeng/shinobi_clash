@@ -177,7 +177,7 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 			power_fx.queue_free()
 		power_fx = Node3D.new()
 		add_child(power_fx)
-		if look.is_empty():
+		if not look.has("glow"):
 			Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
 		else:
 			Vfx.aura_flames(power_fx, Vector3(0, 0.9, 0), 0.45, Color(color.r, color.g, color.b, 0.35), 10, true)

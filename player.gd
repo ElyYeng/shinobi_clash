@@ -737,7 +737,7 @@ func _toggle_power() -> void:
 	Hero.apply_mode_look(model, m.get("look", {}))
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
-	if m.get("look", {}).is_empty():
+	if not m.get("look", {}).has("glow"):
 		Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
 	else:   # the body already glows: keep the flames faint so they don't hide it
 		Vfx.aura_flames(pmode_fx, Vector3(0, 0.9, 0), 0.45, Color(col.r, col.g, col.b, 0.35), 10, true)

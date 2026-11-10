@@ -147,7 +147,8 @@ const DEFS := {
 			{"name": "Genjutsu Glare", "kind": "buff", "t": 6.0, "slow": 0.35, "dmg": 1.25, "desc": "6s: enemies slowed to 35% speed, +25% damage."},
 			{"name": "Amaterasu", "kind": "target", "r": 20.0, "dmg": 110.0, "stun": 1.0, "col": Color(0.05, 0.02, 0.05), "desc": "Black flames engulf the nearest enemy."},
 			{"name": "Susanoo Arrow", "kind": "fan", "n": 1, "speed": 50.0, "dmg": 150.0, "aoe": 3.0, "size": 0.5, "long": true, "col": Color(0.6, 0.3, 1.0), "desc": "A giant chakra arrow."}],
-		"mode": {"name": "Sharingan", "dmg": 1.3, "slow": 0.75, "speed": 1.1, "desc": "+30% damage, enemies 25% slower, +10% speed."}},
+		"mode": {"name": "Sharingan", "dmg": 1.3, "slow": 0.75, "speed": 1.1,
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Sharingan.png"}, "desc": "+30% damage, enemies 25% slower, +10% speed."}},
 	"hatake": {"name": "Hatake", "rarity": "Legendary", "weight": 2, "color": Color(0.55, 0.8, 1.0),
 		"desc": "Copy ninja: +15% damage, chakra regens 30% faster.", "stats": {"dmg": 1.15, "regen": 1.3},
 		"abilities": [

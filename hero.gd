@@ -265,15 +265,17 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 				_tint_surface(mi, surface, tint, false, null, true)
 
 
-## Power-up recolour, e.g. Uzumaki's Kurama Ink Mode: hair and top turn `look.glow` and glow,
-## pants turn `look.under`. An empty look puts the normal appearance back.
-## look = {"glow": "#E3D79A", "under": "#2B261A", "energy": 0.55, "flat": true}
+## Power-up look (Bloodline mode "look"). An empty look puts the normal appearance back.
+##   glow/under/energy/flat - hair and top turn `glow` and glow, pants turn `under` (Uzumaki)
+##   eyes                   - iris texture for both eyes (Uchiha's Sharingan)
+## e.g. {"glow": "#E3D79A", "under": "#2B261A", "energy": 0.25, "flat": true}
 ## flat = drop the clothes' own textures so the top is one glowing colour (outline keeps the shape).
 static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Dictionary = {}) -> void:
 	if model == null or not model.has_meta("hero_parts"):
 		return
 	apply_appearance(model, appearance)
-	if look.is_empty():
+	set_eyes(model, Moves.tex(str(look["eyes"])) if look.has("eyes") else null)
+	if not look.has("glow"):
 		return
 	var glow := Color.html(str(look.get("glow", "#E3D79A")))
 	var under := Color.html(str(look.get("under", "#2B261A")))
@@ -306,6 +308,53 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 			var pmat := pm.get_surface_override_material(surface) as BaseMaterial3D
 			if flat and pmat != null:
 				pmat.albedo_texture = null
+
+## Swaps the iris texture on both eyes (null = the model's own eyes). The eyes are the face
+## surfaces whose material is called "... Eye" or uses an "Eye" texture (not the eyebrows).
+static func set_eyes(model: Node3D, tex: Texture2D) -> void:
+	if model == null or not model.has_meta("hero_extra"):
+		return
+	var face = (model.get_meta("hero_extra") as Dictionary).get("face")
+	if face == null or not is_instance_valid(face):
+		return
+	var mi := face as MeshInstance3D
+	for surface in mi.mesh.get_surface_count():
+		var base := mi.mesh.surface_get_material(surface)
+		if base == null:
+			continue
+		var nm := base.resource_name.to_lower()
+		var tex_path := ""
+		if base is BaseMaterial3D and (base as BaseMaterial3D).albedo_texture != null:
+			tex_path = (base as BaseMaterial3D).albedo_texture.resource_path.to_lower()
+		if nm.contains("brow") or not (nm.ends_with("eye") or tex_path.contains("eye_bc")):
+			continue
+		if tex == null:
+			mi.set_surface_override_material(surface, null)
+		elif base is BaseMaterial3D:
+			var m := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
+			m.albedo_texture = tex
+			mi.set_surface_override_material(surface, m)
+
+## World position of the eyes (for close-ups): 30% of the way from the head bone to the head top.
+static func eyes_position(model: Node3D) -> Vector3:
+	var head := head_position(model)
+	for sk in model.find_children("*", "Skeleton3D", true, false):
+		var s := sk as Skeleton3D
+		for i in s.get_bone_count():
+			var bn := s.get_bone_name(i).to_lower()
+			if bn.ends_with("headtop_end") or bn.ends_with("head_end") or bn.ends_with("headtop"):
+				return head.lerp(s.global_transform * s.get_bone_global_pose(i).origin, 0.3)
+	return head + Vector3.UP * 0.15
+
+## World position of the head bone (for close-ups); falls back to 1.6 m above the model.
+static func head_position(model: Node3D) -> Vector3:
+	for sk in model.find_children("*", "Skeleton3D", true, false):
+		var s := sk as Skeleton3D
+		for i in s.get_bone_count():
+			var bn := s.get_bone_name(i).to_lower()
+			if bn.ends_with("head") and not bn.contains("top") and not bn.contains("ctrl"):
+				return s.global_transform * s.get_bone_global_pose(i).origin
+	return model.global_position + Vector3.UP * 1.6
 
 ## Keeps the headband plate (its own texture) and similar slot surfaces out of the glow.
 static func cat_skip_surface(mi: MeshInstance3D, surface: int) -> bool:

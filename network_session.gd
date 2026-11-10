@@ -113,6 +113,11 @@ func _sanitize_appearance(raw: Dictionary) -> Dictionary:
 func is_active() -> bool:
 	return multiplayer.multiplayer_peer != null
 
+## True only in a real hosted / joined game. (is_active() is also true in single player, because
+## Godot's default peer is an OfflineMultiplayerPeer, not null.)
+func is_online() -> bool:
+	return multiplayer.multiplayer_peer != null and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer)
+
 func bind_local_player(player: Player, game_root: Node) -> void:
 	_local_player = player
 	_game_root = game_root
