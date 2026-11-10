@@ -174,6 +174,8 @@ var floor_glow: MeshInstance3D
 var floor_light: OmniLight3D
 var _yaw := PI
 var _dragging := false
+var _turntable := false          # SPIN button: slowly turn the character
+var spin_toggle: Button
 var _face_view := false
 var _cam_blend := 0.0
 
@@ -302,7 +304,11 @@ func _ready() -> void:
 	right.add_child(bottom)
 	var view_btn := UiStyle.text_button(bottom, "FACE / BODY", 15)
 	view_btn.pressed.connect(func(): _face_view = not _face_view)
-	UiStyle.label(bottom, "drag to rotate", 13, Color(0.7, 0.68, 0.64), 4)
+	spin_toggle = UiStyle.text_button(bottom, "SPIN: OFF", 15)
+	spin_toggle.pressed.connect(func():
+		_turntable = not _turntable
+		spin_toggle.text = "SPIN: ON" if _turntable else "SPIN: OFF")
+	UiStyle.label(bottom, "or drag to rotate", 13, Color(0.7, 0.68, 0.64), 4)
 	var fill := Control.new()
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(fill)
@@ -351,14 +357,12 @@ func _build_bloodline_page(page: VBoxContainer) -> void:
 	var auto_row := HBoxContainer.new()
 	auto_row.add_theme_constant_override("separation", 8)
 	page.add_child(auto_row)
-	auto_pick = OptionButton.new()
+	auto_pick = _dropdown(auto_row)
 	for t in AUTO_TARGETS:
 		auto_pick.add_item("Stop at %s%s" % [t, "" if t == "Mythic" else "+"])
 	auto_pick.select(AUTO_TARGETS.find("Legendary"))
-	auto_pick.add_theme_font_override("font", GameMenu.font())
 	auto_pick.add_theme_font_size_override("font_size", 14)
 	auto_pick.custom_minimum_size = Vector2(170, 36)
-	auto_row.add_child(auto_pick)
 	auto_btn = UiStyle.ribbon_button(auto_row, "", 15)
 	auto_btn.custom_minimum_size = Vector2(0, 36)
 	auto_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -418,13 +422,11 @@ func _build_element_page(page: VBoxContainer) -> void:
 	var auto_row := HBoxContainer.new()
 	auto_row.add_theme_constant_override("separation", 8)
 	page.add_child(auto_row)
-	el_auto_pick = OptionButton.new()
+	el_auto_pick = _dropdown(auto_row)
 	for e in GameData.ELEMENTS:
 		el_auto_pick.add_item("Stop at %s" % e)
-	el_auto_pick.add_theme_font_override("font", GameMenu.font())
 	el_auto_pick.add_theme_font_size_override("font_size", 14)
 	el_auto_pick.custom_minimum_size = Vector2(170, 36)
-	auto_row.add_child(el_auto_pick)
 	el_auto_btn = UiStyle.ribbon_button(auto_row, "", 15)
 	el_auto_btn.custom_minimum_size = Vector2(0, 36)
 	el_auto_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -584,6 +586,42 @@ func _chip(parent: Node, text: String) -> Button:
 	parent.add_child(b)
 	return b
 
+## Parchment dropdown (hair / shirt / pants lists grow as meshes are added to the model).
+func _dropdown(parent: Node) -> OptionButton:
+	var dd := OptionButton.new()
+	dd.custom_minimum_size = Vector2(0, 38)
+	dd.focus_mode = Control.FOCUS_NONE
+	dd.fit_to_longest_item = false
+	dd.add_theme_font_override("font", GameMenu.font())
+	dd.add_theme_font_size_override("font_size", 16)
+	for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = PAPER_DK.lightened(0.1) if st.begins_with("hover") else PAPER_DK
+		sb.set_border_width_all(2)
+		sb.border_color = UiStyle.RED if st.begins_with("hover") or st == "pressed" else Color(0.5, 0.42, 0.28)
+		sb.content_margin_left = 12
+		sb.content_margin_right = 12
+		dd.add_theme_stylebox_override(st, sb)
+	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		dd.add_theme_color_override(c, INK)
+	dd.add_theme_color_override("arrow_color", INK)   # (ignored on older Godot)
+	var pop := dd.get_popup()
+	var psb := StyleBoxFlat.new()
+	psb.bg_color = Color(0.06, 0.05, 0.04, 0.97)
+	psb.set_border_width_all(2)
+	psb.border_color = Color(0.75, 0.62, 0.3)
+	psb.set_content_margin_all(6)
+	pop.add_theme_stylebox_override("panel", psb)
+	var hsb := StyleBoxFlat.new()
+	hsb.bg_color = Color(0.45, 0.07, 0.05)
+	pop.add_theme_stylebox_override("hover", hsb)
+	pop.add_theme_font_override("font", GameMenu.font())
+	pop.add_theme_font_size_override("font_size", 16)
+	pop.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
+	pop.add_theme_color_override("font_hover_color", Color(1.0, 0.86, 0.45))
+	parent.add_child(dd)
+	return dd
+
 func _swatch(color: Color) -> Button:
 	var b := Button.new()
 	b.custom_minimum_size = Vector2(52, 28)
@@ -711,8 +749,8 @@ func _process(delta: float) -> void:
 		return
 	_update_camera(delta)
 	if preview_model != null and is_instance_valid(preview_model):
-		if not _dragging:
-			_yaw += delta * 0.3
+		if _turntable and not _dragging:
+			_yaw += delta * 0.5
 		preview_model.rotation.y = _yaw
 
 func _input(event: InputEvent) -> void:
@@ -948,17 +986,14 @@ func _build_look_options() -> void:
 		if ids.is_empty():
 			continue
 		UiStyle.label(look_box, str(Hero.CATEGORIES[cat]["label"]), 16, INK)
-		var flow := HFlowContainer.new()
-		flow.add_theme_constant_override("h_separation", 5)
-		flow.add_theme_constant_override("v_separation", 5)
-		look_box.add_child(flow)
-		var group := ButtonGroup.new()
 		var key: String = Hero.CATEGORIES[cat]["key"]
-		for id in ids:
-			var b := _chip(flow, Hero.display_name(str(id)))
-			b.button_group = group
-			b.set_pressed_no_signal(str(_working.get(key, "")) == str(id))
-			b.pressed.connect(_on_part_chosen.bind(str(cat), str(id)))
+		var dd := _dropdown(look_box)
+		for n in ids.size():
+			dd.add_item(Hero.display_name(str(ids[n])), n)
+			dd.set_item_metadata(n, str(ids[n]))
+			if str(_working.get(key, "")) == str(ids[n]):
+				dd.select(n)
+		dd.item_selected.connect(func(n: int): _on_part_chosen(str(cat), str(dd.get_item_metadata(n))))
 	if options.is_empty():
 		UiStyle.label(look_box, "Character model not found - put it in res://assets/character/", 14, Color(0.6, 0.15, 0.1))
 	_rebuild_color_targets()
@@ -969,6 +1004,10 @@ func _rebuild_color_targets() -> void:
 	if preview_model != null and preview_model.has_meta("anim_player"):
 		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
 			targets.append([Hero.COLOR_SLOTS[slot]["key"], Hero.COLOR_SLOTS[slot]["label"]])
+		var opts := Hero.get_options(preview_model)
+		for cat in Hero.CLOTH_COLORS:
+			if not (opts.get(cat, []) as Array).is_empty():
+				targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
 	if not targets.any(func(t): return t[0] == _color_target):
 		_color_target = "hair_color"
 	var group := ButtonGroup.new()
@@ -986,6 +1025,12 @@ func _rebuild_color_targets() -> void:
 
 func _rebuild_textures() -> void:
 	_clear(texture_row)
+	if Hero.CLOTH_COLORS.values().has(_color_target):   # clothes: a way back to the model's own colours
+		texture_row.visible = true
+		var orig := _chip(texture_row, "Original colours")
+		orig.toggle_mode = false
+		orig.pressed.connect(func(): _apply_color(Color.WHITE))
+		return
 	var slot := Hero.slot_for_key(_color_target)
 	var files: Array = Hero.list_slot_textures(slot) if slot != "" else []
 	var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", "")) if slot != "" else ""

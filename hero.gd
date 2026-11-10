@@ -31,7 +31,11 @@ const DEFAULT_APPEARANCE := {
 	"headband_color": "#2B3A67",
 	"headbandmetal_color": "#FFFFFF",   # white = show the texture untinted
 	"headbandmetal_texture": "",        # "" = the texture embedded in the GLB
+	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
+	"pants_color": "#FFFFFF",
 }
+## Clothing tints: category -> appearance key. The colour multiplies the mesh's own colours.
+const CLOTH_COLORS := {"shirt": "shirt_color", "pants": "pants_color"}
 ## Extra colour targets on hair meshes. A hairstyle gets one only if it has a surface whose
 ## MATERIAL NAME matches ("headband", "headbandmetal"), so hairs without a headband show
 ## nothing extra. To add another (e.g. a scarf) add an entry here + a default above.
@@ -160,7 +164,7 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var number := id.substr(String(cat).length())
 		if id.begins_with(String(cat)) and number.is_valid_int() and number.length() <= 2:
 			safe[key] = id
-	var color_keys: Array = ["hair_color"]
+	var color_keys: Array = ["hair_color", "shirt_color", "pants_color"]
 	for slot in COLOR_SLOTS:
 		color_keys.append(COLOR_SLOTS[slot]["key"])
 	for color_key in color_keys:
@@ -252,6 +256,12 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 		for entry in entries:
 			(entry["node"] as MeshInstance3D).visible = entry["id"] == want
 	_apply_hair_color(model, Color.html(str(look["hair_color"])), look)
+	for cat in CLOTH_COLORS:
+		var tint := Color.html(str(look[CLOTH_COLORS[cat]]))
+		for entry in parts.get(cat, []):
+			var mi := entry["node"] as MeshInstance3D
+			for surface in mi.mesh.get_surface_count():
+				_tint_surface(mi, surface, tint, false, null, true)
 
 
 ## Which COLOR_SLOTS slot a material belongs to ("" = plain hair). Ignores Blender's ".001" suffixes.
@@ -485,7 +495,8 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 ## hair colour never leaks onto another player, a clone or a preview.
 ## matte = true forces metallic 0: glTF materials without a metallic value default to fully
 ## metal, which renders pitch black (there is no environment to reflect).
-static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color, matte := false, texture: Texture2D = null) -> void:
+## multiply = true keeps the material's own colour and multiplies it (white = unchanged).
+static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color, matte := false, texture: Texture2D = null, multiply := false) -> void:
 	var meta_key := "hero_base_%d" % surface
 	var base: Material
 	if mi.has_meta(meta_key):
@@ -495,7 +506,7 @@ static func _tint_surface(mi: MeshInstance3D, surface: int, color: Color, matte 
 		mi.set_meta(meta_key, base)
 	if base is BaseMaterial3D:
 		var tinted := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
-		tinted.albedo_color = color
+		tinted.albedo_color = (base as BaseMaterial3D).albedo_color * color if multiply else color
 		if matte:
 			tinted.metallic = 0.0
 		if texture != null:
