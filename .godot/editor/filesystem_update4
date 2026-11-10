@@ -15,3 +15,14 @@ res://game_menu.gd
 res://player.gd
 res://spin_menu.gd
 res://ui_style.gd
+res://bloodline.gd
+res://ability_bar.gd
+res://clone.gd
+res://sharingan_effect.gd
+res://sharingan_screen_controller.gd
+res://world_terrain.gd
+res://main.tscn
+res://moves.gd
+res://quests.gd
+res://quest_def.gd
+res://vfx.gd
