@@ -24,6 +24,10 @@ extends Node3D
 @export_group("Grass Appearance")
 @export_range(4.0, 32.0, 0.5) var grass_tile_size: float = 11.0
 @export_range(0.0, 1.0, 0.05) var grass_detail_strength: float = 0.65
+## Multiplies the grass texture (white = the texture's own green). Slightly muted by default.
+@export var grass_tint := Color(0.86, 0.9, 0.8)
+## Large soft light/dark patches across the fields (0 = one flat colour).
+@export_range(0.0, 0.5, 0.01) var grass_patchiness: float = 0.18
 
 @export_group("Editor Preview")
 @export var show_editor_preview: bool = true
@@ -45,7 +49,7 @@ func _ready() -> void:
 	add_to_group("world_terrain")
 	_configure_noise()
 	_material.vertex_color_use_as_albedo = true
-	_material.albedo_color = Color.WHITE
+	_material.albedo_color = grass_tint
 	_material.roughness = 1.0
 	_material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 	_material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
@@ -223,6 +227,9 @@ func _create_chunk(coord: Vector2i) -> void:
 			var slope := 1.0 - normal.y
 			var grass := Color(1.0, 1.0, 0.96).lerp(Color(0.88, 0.98, 0.82), grass_detail_strength * 0.45)
 			grass = grass.lerp(Color(0.96, 1.0, 0.88), clampf((h + 5.0) / 14.0, 0.0, 1.0) * 0.12)
+			var patch := _noise.get_noise_2d(wx * 2.7 + 913.0, wz * 2.7 - 377.0)   # -1..1, big soft blobs
+			grass *= 1.0 + patch * grass_patchiness
+			grass = grass.lerp(Color(1.0, 0.95, 0.78), clampf(-patch, 0.0, 1.0) * grass_patchiness)   # drier spots
 			var rock := Color(0.76, 0.80, 0.74)
 			var color := grass.lerp(rock, smoothstep(0.28, 0.62, slope))
 			if h > 10.0:

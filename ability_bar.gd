@@ -8,6 +8,7 @@ extends Control
 const LEFT := ["R", "T", "Y", "F", "G", "H"]
 const RIGHT := ["Q", "RMB+E", "E", "V", "B", "N"]
 const PITCH := 52.0
+const HUD_SCALE := 0.85   # size of the bottom HUD (1.0 = original)
 
 var slots := {}
 var hp: StatBar
@@ -158,6 +159,7 @@ func _ready() -> void:
 	offset_top = 0.0
 	offset_bottom = 0.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scale = Vector2.ONE * HUD_SCALE   # everything hangs off this bottom-centre anchor
 	for i in LEFT.size():
 		_slot(LEFT[i], Vector2(-362.0 + i * PITCH, -160.0))
 	for i in RIGHT.size():
