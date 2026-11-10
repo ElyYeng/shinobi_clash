@@ -29,6 +29,7 @@ static var spins := 6                   # one currency for bloodline AND element
 static var element_spins := 0           # old saves only: merged into spins when loaded
 static var equipped_element := "Fire"   # always el_slots[active_el_slot]; use set_active_el_slot()
 static var owned_elements: Array[String] = ["Fire"]   # the elements in your slots (their jutsu are usable)
+static var el_bag: Array[String] = ["Fire"]   # Element Bag: every element you've ever rolled
 static var el_slots: Array = ["Fire", "none", "none", "none"]
 static var el_slot_unlocked: Array = [true, true, false, false]
 static var active_el_slot := 0
@@ -158,12 +159,16 @@ static func load_data() -> void:
 			_load_el_slots(d)
 		else:
 			_migrate_old_elements()
+		_load_el_bag(d)
 		if d.has("slots"):
 			_load_slots(d)
 		else:
 			_migrate_old_collection()
 	if not owned.has("none"):
 		owned.append("none")
+	for sid in slots:   # anything in a slot is in the Bloodline Bag too
+		if not owned.has(str(sid)):
+			owned.append(str(sid))
 	_sync_equipped()
 	_default_binds()
 
@@ -222,6 +227,15 @@ static func _migrate_old_elements() -> void:
 	_sync_elements()
 
 ## equipped_element / owned_elements follow the element slots.
+## Element Bag: every element ever rolled (old saves: whatever they had in slots / owned).
+static func _load_el_bag(d: Dictionary) -> void:
+	el_bag.clear()
+	var saved = d.get("el_bag", [])
+	for e in (saved if saved is Array else []) + owned_elements + el_slots:
+		var en := str(e)
+		if ELEMENTS.has(en) and not el_bag.has(en):
+			el_bag.append(en)
+
 static func _sync_elements() -> void:
 	owned_elements.clear()
 	for i in SLOT_COUNT:
@@ -255,7 +269,7 @@ static func save() -> void:
 			"spins": spins, "pity": pity, "owned": owned, "equipped": equipped,
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,
-			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot,
+			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot, "el_bag": el_bag,
 			"kurama_defeated": kurama_defeated, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
@@ -453,7 +467,9 @@ static func roll_el_slot(i: int) -> String:
 			fresh.append(e)
 	var pool := fresh if not fresh.is_empty() else others
 	var result: String = pool[randi() % pool.size()]
-	last_el_new = not owned_elements.has(result)
+	last_el_new = not el_bag.has(result)
+	if last_el_new:
+		el_bag.append(result)
 	el_slots[i] = result
 	if cur == "none" and str(el_slots[active_el_slot]) == "none":
 		active_el_slot = i
@@ -491,3 +507,36 @@ static func roll_element() -> String:
 static func get_element_color(element: String = "") -> Color:
 	var key := equipped_element if element.is_empty() else element
 	return ELEMENT_COLORS.get(key, Color.WHITE)
+
+
+# ------------------------------------------------------------------ bags (Shindo Life style)
+## Bloodline Bag: every bloodline you've ever rolled (`owned`). Puts `id` in slot `i` for free;
+## if it's already in another slot, the two slots swap. Its mastery level is kept (per bloodline).
+static func place_bloodline(i: int, id: String) -> bool:
+	if i < 0 or i >= SLOT_COUNT or not slot_unlocked[i] or id == "none" or not owned.has(id) or not Bloodline.DEFS.has(id):
+		return false
+	var other := slots.find(id)
+	if other == i:
+		return false
+	if other >= 0:
+		slots[other] = slots[i]
+	slots[i] = id
+	_sync_equipped()
+	save()
+	return true
+
+## Element Bag: puts element `e` (from el_bag) in element slot `i`; swaps if it's in another slot.
+static func place_element(i: int, e: String) -> bool:
+	if i < 0 or i >= SLOT_COUNT or not el_slot_unlocked[i] or not el_bag.has(e):
+		return false
+	var other := el_slots.find(e)
+	if other == i:
+		return false
+	if other >= 0:
+		el_slots[other] = el_slots[i]
+	el_slots[i] = e
+	if str(el_slots[active_el_slot]) == "none":
+		active_el_slot = i
+	_sync_elements()
+	save()
+	return true

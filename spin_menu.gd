@@ -317,6 +317,7 @@ func _ready() -> void:
 	done_btn.pressed.connect(toggle)
 
 	_build_odds_panel()
+	_build_bag()
 	flash = ColorRect.new()
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	flash.color = Color(1, 1, 1, 0)
@@ -400,9 +401,13 @@ func _build_slot(parent: Node, i: int) -> Dictionary:
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.pressed.connect(_on_slot_pressed.bind(i))
 	var eq := UiStyle.green_button(row, "", 12)
-	eq.custom_minimum_size = Vector2(66, 28)
+	eq.custom_minimum_size = Vector2(54, 28)
 	eq.pressed.connect(_on_equip.bind(i))
-	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq}
+	var bag := UiStyle.green_button(row, "BAG", 12)
+	bag.custom_minimum_size = Vector2(42, 28)
+	bag.tooltip_text = "Bloodline Bag: put a bloodline you already have in this slot"
+	bag.pressed.connect(_open_bag.bind("bloodline", i))
+	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq, "bag": bag}
 
 func _build_element_page(page: VBoxContainer) -> void:
 	var grid := GridContainer.new()
@@ -462,9 +467,13 @@ func _build_el_slot(parent: Node, i: int) -> Dictionary:
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.pressed.connect(_on_el_slot_pressed.bind(i))
 	var eq := UiStyle.green_button(row, "", 12)
-	eq.custom_minimum_size = Vector2(66, 28)
+	eq.custom_minimum_size = Vector2(54, 28)
 	eq.pressed.connect(_on_el_equip.bind(i))
-	return {"card": card, "badge": badge, "name": nm, "sub": sub, "spin": spin, "equip": eq}
+	var bag := UiStyle.green_button(row, "BAG", 12)
+	bag.custom_minimum_size = Vector2(42, 28)
+	bag.tooltip_text = "Element Bag: put an element you already have in this slot"
+	bag.pressed.connect(_open_bag.bind("element", i))
+	return {"card": card, "badge": badge, "name": nm, "sub": sub, "spin": spin, "equip": eq, "bag": bag}
 
 func _build_look_page(page: VBoxContainer) -> void:
 	look_box = VBoxContainer.new()   # one row of choices per model part (filled in _build_look_options)
@@ -515,6 +524,172 @@ func _build_look_page(page: VBoxContainer) -> void:
 	var rst := UiStyle.green_button(acts, "RESET", 15)
 	rst.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rst.pressed.connect(_reset_look)
+
+# ================================================================== bags
+var bag_panel: Control
+var bag_title: Label
+var bag_list: VBoxContainer
+var bag_kind := "bloodline"
+var bag_slot := 0
+
+## Bloodline / Element Bag (Shindo Life style): a scroll on the right listing everything you've
+## ever rolled. Click one to put it in the slot you opened the bag from.
+func _build_bag() -> void:
+	bag_panel = Control.new()
+	root.add_child(bag_panel)
+	bag_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.45)
+	bag_panel.add_child(dim)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed:
+			_close_bag())
+	var holder := VBoxContainer.new()
+	bag_panel.add_child(holder)
+	holder.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	holder.offset_left = -420
+	holder.offset_right = -60
+	holder.offset_top = 70
+	holder.offset_bottom = -60
+	var box := UiStyle.scroll(holder, Vector2(360, 0))
+	box.get_parent().size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("margin_left", 14)
+	box.add_theme_constant_override("margin_right", 10)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 8)
+	box.add_child(vb)
+	var top := HBoxContainer.new()
+	vb.add_child(top)
+	var tl := Label.new()   # brush-stroke title like the reference
+	tl.add_theme_font_override("font", GameMenu.font())
+	tl.add_theme_font_size_override("font_size", 20)
+	tl.add_theme_color_override("font_color", INK)
+	var tsb := StyleBoxFlat.new()
+	tsb.bg_color = Color(0.98, 0.97, 0.93)
+	tsb.skew = Vector2(0.1, 0)
+	tsb.content_margin_left = 14
+	tsb.content_margin_right = 14
+	tl.add_theme_stylebox_override("normal", tsb)
+	tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(tl)
+	bag_title = tl
+	var x := UiStyle.text_button(top, "X", 18)
+	x.pressed.connect(_close_bag)
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vb.add_child(sc)
+	vb.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	bag_list = VBoxContainer.new()
+	bag_list.add_theme_constant_override("separation", 0)
+	bag_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sc.add_child(bag_list)
+	bag_panel.visible = false
+
+func _open_bag(kind: String, slot: int) -> void:
+	if spinning or auto_running:
+		return
+	bag_kind = kind
+	bag_slot = slot
+	bag_title.text = ("BLOODLINE BAG" if kind == "bloodline" else "ELEMENT BAG") + "  ·  SLOT %d" % (slot + 1)
+	_fill_bag()
+	bag_panel.visible = true
+
+func _close_bag() -> void:
+	bag_panel.visible = false
+
+func _fill_bag() -> void:
+	_clear(bag_list)
+	var ids: Array = []
+	if bag_kind == "bloodline":
+		for id in GameData.owned:
+			if str(id) != "none" and Bloodline.DEFS.has(str(id)):
+				ids.append(str(id))
+		ids.sort_custom(func(a, b) -> bool:   # best rarity first, then name
+			var ra := GameData.rarity_rank(a)
+			var rb := GameData.rarity_rank(b)
+			return ra > rb if ra != rb else str(a) < str(b))
+	else:
+		for e in GameData.ELEMENTS:
+			if GameData.el_bag.has(e):
+				ids.append(e)
+	if ids.is_empty():
+		UiStyle.label(bag_list, "Nothing yet - spin to fill your bag!", 15, UiStyle.BODY_TEXT)
+		return
+	for id in ids:
+		_bag_row(str(id))
+
+func _bag_row(id: String) -> void:
+	var btn := Button.new()
+	btn.flat = true
+	btn.custom_minimum_size = Vector2(0, 74)
+	btn.focus_mode = Control.FOCUS_NONE
+	var hsb := StyleBoxFlat.new()
+	hsb.bg_color = Color(1, 1, 1, 0.25)
+	btn.add_theme_stylebox_override("hover", hsb)
+	bag_list.add_child(btn)
+	var in_slot := -1
+	var name := ""
+	var tag := ""
+	var lv := 0
+	if bag_kind == "bloodline":
+		var em := Emblem.new()
+		em.id = id
+		em.position = Vector2(4, 8)
+		em.size = Vector2(58, 58)
+		btn.add_child(em)
+		var d := Bloodline.get_def(id)
+		name = str(d["name"])
+		tag = str(d["rarity"])
+		lv = GameData.mastery_level(id)
+		in_slot = GameData.slots.find(id)
+	else:
+		var bd := ElementBadge.new()
+		bd.element = id
+		bd.position = Vector2(4, 8)
+		bd.size = Vector2(58, 58)
+		btn.add_child(bd)
+		name = id
+		tag = "Element"
+		lv = GameData.mastery_level("el:" + id)
+		in_slot = GameData.el_slots.find(id)
+	var t := UiStyle.label(btn, "[%s][%s]" % [name, tag], 16, INK)
+	t.position = Vector2(70, 10)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var line := ColorRect.new()
+	line.color = INK
+	line.position = Vector2(70, 34)
+	line.size = Vector2(240, 2)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(line)
+	var sub := UiStyle.label(btn, "[Lvl. %d]%s" % [lv, "" if in_slot < 0 else "   in slot %d" % (in_slot + 1)], 15,
+		Color(0.55, 0.5, 0.42) if in_slot < 0 else Color(0.1, 0.45, 0.12))
+	sub.position = Vector2(72, 40)
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sep := ColorRect.new()
+	sep.color = INK
+	sep.custom_minimum_size = Vector2(0, 2)
+	bag_list.add_child(sep)
+	if in_slot == bag_slot:
+		btn.disabled = true
+		btn.modulate = Color(1, 1, 1, 0.55)
+	btn.pressed.connect(_bag_pick.bind(id))
+
+func _bag_pick(id: String) -> void:
+	var ok := GameData.place_bloodline(bag_slot, id) if bag_kind == "bloodline" else GameData.place_element(bag_slot, id)
+	if not ok:
+		return
+	if bag_kind == "bloodline" and p:
+		p.apply_bloodline()
+	Sfx.play(self, "poof", -6.0)
+	_close_bag()
+	_refresh()
+	var badge: Control = (slot_ui if bag_kind == "bloodline" else el_slot_ui)[bag_slot]["emblem" if bag_kind == "bloodline" else "badge"]
+	badge.pivot_offset = badge.size / 2.0
+	badge.scale = Vector2(1.3, 1.3)
+	create_tween().tween_property(badge, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _build_odds_panel() -> void:
 	odds_panel = PanelContainer.new()
@@ -771,7 +946,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if gm != null and gm.is_open:
 		return
 	if root.visible and event.is_action_pressed("pause"):
-		if odds_panel.visible:
+		if bag_panel != null and bag_panel.visible:
+			_close_bag()
+		elif odds_panel.visible:
 			odds_panel.visible = false
 		else:
 			toggle()
@@ -865,6 +1042,7 @@ func _refresh() -> void:
 			spin.text = "UNLOCK (%d)" % cost
 			spin.disabled = busy or GameData.spins < cost
 			eq.visible = false
+			(ui["bag"] as Button).visible = false
 			continue
 		var id := str(GameData.slots[i])
 		var d := Bloodline.get_def(id)
@@ -882,6 +1060,8 @@ func _refresh() -> void:
 		eq.text = "MAIN" if active else "EQUIP"
 		eq.disabled = busy or active
 		eq.tooltip_text = "Use this bloodline's transformation (C) and stats. Jutsu from all your slots work anyway."
+		(ui["bag"] as Button).visible = true
+		(ui["bag"] as Button).disabled = busy
 	_refresh_bloodline_info()
 	auto_pick.disabled = busy
 	if auto_running:
@@ -960,6 +1140,7 @@ func _refresh_elements() -> void:
 			spin.text = "UNLOCK (%d)" % cost
 			spin.disabled = busy or GameData.spins < cost
 			eq.visible = false
+			(ui["bag"] as Button).visible = false
 			continue
 		var e := str(GameData.el_slots[i])
 		var empty := e == "none"
@@ -977,6 +1158,8 @@ func _refresh_elements() -> void:
 		eq.visible = not empty
 		eq.text = "ACTIVE" if active else "EQUIP"
 		eq.disabled = busy or active
+		(ui["bag"] as Button).visible = true
+		(ui["bag"] as Button).disabled = busy
 	var e := GameData.equipped_element
 	var elv := GameData.mastery_level("el:" + e)
 	el_title.text = "%s STYLE   ·   LV %d" % [e.to_upper(), elv]
