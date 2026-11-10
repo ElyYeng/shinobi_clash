@@ -3,7 +3,8 @@ extends CanvasLayer
 ## The Sharingan activation close-up (started by SharinganEffect.play_cutscene).
 ##   (0.35s after the power-up, so its burst has played)
 ##   0.0s  letterbox bars slide in, camera cuts to the face and slowly pushes in (normal eyes)
-##   0.8s  red flash + sound, the eyes become the Sharingan (Bloodline uchiha mode "look.eyes")
+##   0.8s  flash + sound, the eyes change (the bloodline's mode "look.eyes": Sharingan, Byakugan,
+##         Ketsuryugan ...). Used by every mode with "cutscene": "eyes".
 ##   1.6s  back to the game camera through the spinning emblem overlay
 ## Single player: the game is paused meanwhile. Multiplayer: not paused, the player is invulnerable.
 
@@ -12,6 +13,7 @@ const DURATION := 1.6
 const SWAP_AT := 0.8
 
 var player: Player
+var bloodline := "uchiha"
 var cam: Camera3D
 var flash: ColorRect
 var bars: Array[ColorRect] = []
@@ -80,7 +82,8 @@ func _begin() -> void:
 		bar.set_meta("top", top)
 		bars.append(bar)
 	flash = ColorRect.new()
-	flash.color = Color(0.9, 0.0, 0.05, 0.0)
+	var mc: Color = Bloodline.mode(bloodline).get("col", Color(0.9, 0.0, 0.05))
+	flash.color = Color(mc.r, mc.g, mc.b, 0.0)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(flash)
 	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -102,11 +105,14 @@ func _process(delta: float) -> void:
 		cam.global_transform = tf
 	if not _swapped and _t >= SWAP_AT:
 		_swapped = true
-		var m: Dictionary = Bloodline.mode("uchiha")
+		var m: Dictionary = Bloodline.mode(bloodline)
 		var look: Dictionary = m.get("look", {})
 		if look.has("eyes") and is_instance_valid(player):
 			Hero.set_eyes(player.model, Moves.tex(str(look["eyes"])))
-		SharinganEffect.play_sound(get_tree())
+		if bloodline == "uchiha":
+			SharinganEffect.play_sound(get_tree())
+		else:
+			Sfx.play(player, "power", -2.0)
 		flash.color.a = 0.55
 	if flash.color.a > 0.0:
 		flash.color.a = maxf(0.0, flash.color.a - delta * 1.6)
@@ -136,5 +142,6 @@ func _finish() -> void:
 			Hero.set_eyes(player.model, null)
 	if cam != null and is_instance_valid(cam):
 		cam.queue_free()
-	SharinganEffect.play_activation(get_tree(), false)
+	if bloodline == "uchiha":   # the spinning Sharingan emblem
+		SharinganEffect.play_activation(get_tree(), false)
 	queue_free()

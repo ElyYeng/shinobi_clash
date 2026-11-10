@@ -794,7 +794,7 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	wrapper.set_meta("anim_map", map)
 
 ## Ground speed (m/s) -> locomotion state. Normal movement (Player.WALK_SPEED 2.5) plays the walk
-## clip, sprinting (SPRINT_SPEED 8) plays the run clip. Raise/lower WALK_BELOW to taste.
+## clip, sprinting (SPRINT_SPEED 11) plays the run clip. Raise/lower WALK_BELOW to taste.
 const WALK_BELOW := 4.5
 static func move_state(speed: float) -> String:
 	if speed <= 1.0:
@@ -813,7 +813,7 @@ static func _lookup(map: Dictionary, state: String) -> Array:
 ## Plays an animation state; returns its length (0.0 if the model has none).
 ## Locomotion speeds the walk/run clips may be sped up or slowed down to (keeps them sane).
 const ANIM_SPEED_MIN := 0.6
-const ANIM_SPEED_MAX := 3.5
+const ANIM_SPEED_MAX := 4.0
 ## Per-clip cap (walk looks hurried above this, even if the feet slide a little).
 const ANIM_SPEED_CAP := {"walk": 1.7}
 

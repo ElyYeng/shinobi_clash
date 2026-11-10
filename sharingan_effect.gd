@@ -20,12 +20,13 @@ static func play_activation(scene_tree: SceneTree, sound := true) -> void:
 
 ## Quick activation cutscene: close-up on the face, the eyes turn into the Sharingan (red flash +
 ## sound), then back to the game through the spinning emblem. Pauses the game in single player.
-static func play_cutscene(player: Player) -> void:
+static func play_cutscene(player: Player, bloodline := "uchiha") -> void:
 	if player == null or not is_instance_valid(player) or player.model == null:
 		play_activation(player.get_tree() if player else null)
 		return
 	var cs := SharinganCutscene.new()
 	cs.player = player
+	cs.bloodline = bloodline
 	player.get_tree().root.add_child(cs)
 
 static func play_sound(scene_tree: SceneTree) -> void:

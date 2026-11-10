@@ -76,7 +76,7 @@ const DEFS := {
 			{"name": "Gentle Burst", "kind": "burst", "r": 7.0, "dmg": 40.0, "knock": 15.0, "desc": "A chakra shockwave around you."},
 			{"name": "Air Palm", "kind": "fan", "n": 1, "speed": 40.0, "dmg": 45.0, "aoe": 2.0, "size": 0.45, "desc": "Fires a blast of compressed air."},
 			{"name": "64 Palms", "kind": "target", "r": 6.0, "dmg": 120.0, "stun": 2.5, "desc": "Close range: 64 strikes on the nearest enemy."}],
-		"mode": {"name": "Byakugan", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Byakugan.png"}, "dmg": 1.3, "def": 0.85, "slow": 0.85, "desc": "+30% damage, take 15% less damage, enemies 15% slower."}},
+		"mode": {"name": "Byakugan", "cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Byakugan.png"}, "dmg": 1.3, "def": 0.85, "slow": 0.85, "desc": "+30% damage, take 15% less damage, enemies 15% slower."}},
 	"aburame": {"name": "Aburame", "rarity": "Rare", "weight": 5, "color": Color(0.35, 0.45, 0.3),
 		"desc": "Hive body: +20 max chakra.", "stats": {"chakra": 20.0},
 		"abilities": [
@@ -140,14 +140,14 @@ const DEFS := {
 		"mode": {"name": "Kurama Ink Mode", "dmg": 1.4, "speed": 1.25, "def": 0.7, "ck": 20.0, "hp": 3.0,
 			"col": Color(1.0, 0.78, 0.3),
 			# Recolours the character while the power-up is on (see Hero.apply_mode_look).
-			"look": {"glow": "#E3D79A", "energy": 0.25, "flat": true, "outfit": "uzumaki"}, "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
+			"look": {"glow": "#E3D79A", "energy": 0.25, "flat": true, "outfit": "uzumaki"}, "cutscene": "body", "desc": "+40% damage, +25% speed, take 30% less damage, +20 chakra/s, heal 3/s."}},
 	"uchiha": {"name": "Uchiha", "rarity": "Legendary", "weight": 2.5, "color": Color(0.9, 0.1, 0.15),
 		"desc": "Fire prodigy: +20% damage, fireball costs 40% less.", "stats": {"dmg": 1.2, "fire_cost": 0.6},
 		"abilities": [
 			{"name": "Genjutsu Glare", "kind": "buff", "t": 6.0, "slow": 0.35, "dmg": 1.25, "desc": "6s: enemies slowed to 35% speed, +25% damage."},
 			{"name": "Amaterasu", "kind": "target", "r": 20.0, "dmg": 110.0, "stun": 1.0, "col": Color(0.05, 0.02, 0.05), "desc": "Black flames engulf the nearest enemy."},
 			{"name": "Susanoo Arrow", "kind": "fan", "n": 1, "speed": 50.0, "dmg": 150.0, "aoe": 3.0, "size": 0.5, "long": true, "col": Color(0.6, 0.3, 1.0), "desc": "A giant chakra arrow."}],
-		"mode": {"name": "Sharingan", "dmg": 1.3, "slow": 0.75, "speed": 1.1,
+		"mode": {"name": "Sharingan", "dmg": 1.3, "slow": 0.75, "speed": 1.1, "cutscene": "eyes",
 			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Sharingan.png"}, "desc": "+30% damage, enemies 25% slower, +10% speed."}},
 	"hatake": {"name": "Hatake", "rarity": "Legendary", "weight": 2, "color": Color(0.55, 0.8, 1.0),
 		"desc": "Copy ninja: +15% damage, chakra regens 30% faster.", "stats": {"dmg": 1.15, "regen": 1.3},
@@ -162,7 +162,7 @@ const DEFS := {
 			{"name": "Blood Rage", "kind": "buff", "t": 7.0, "dmg": 1.4, "r": 8.0, "dps": 12.0, "desc": "7s: +40% damage and enemies within 8m bleed."},
 			{"name": "Blood Spears", "kind": "fan", "n": 5, "spread": 14.0, "speed": 32.0, "dmg": 35.0, "size": 0.2, "long": true, "desc": "Five spears of hardened blood."},
 			{"name": "Ketsuryugan", "kind": "burst", "r": 14.0, "dmg": 40.0, "stun": 3.5, "desc": "A blood-red glare paralyses everything within 14m."}],
-		"mode": {"name": "Ketsuryugan Awakening", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Ketsuryugan.png"}, "dmg": 1.35, "hp": 3.0, "r": 6.0, "dps": 10.0, "desc": "+35% damage, heal 3/s, enemies within 6m bleed."}},
+		"mode": {"name": "Ketsuryugan Awakening", "cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Ketsuryugan.png"}, "dmg": 1.35, "hp": 3.0, "r": 6.0, "dps": 10.0, "desc": "+35% damage, heal 3/s, enemies within 6m bleed."}},
 
 	# ================================================================ Mythic (1.5%)
 	"otsutsuki": {"name": "Otsutsuki", "rarity": "Mythic", "weight": 1.5, "color": Color(0.85, 0.8, 1.0),

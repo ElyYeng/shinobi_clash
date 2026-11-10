@@ -13,17 +13,18 @@ func _process(_delta: float) -> void:
 		if _tracked_player == null:
 			return
 
-	var is_uchiha_powered := (
-		str(GameData.equipped) == "uchiha"
-		and bool(_tracked_player.get("powered"))
-		and not bool(_tracked_player.get("is_dead"))
-	)
-
-	if is_uchiha_powered and not _was_active:
-		_stop_old_procedural_power_sound()
-		SHARINGAN_EFFECT_SCRIPT.play_cutscene(_tracked_player)
-
-	_was_active = is_uchiha_powered
+	var is_powered := bool(_tracked_player.get("powered")) and not bool(_tracked_player.get("is_dead"))
+	if is_powered and not _was_active:
+		# Which activation cutscene: bloodline mode "cutscene" ("eyes" = Sharingan close-up,
+		# "body" = full-body transformation).
+		var mode: Dictionary = Bloodline.mode(str(GameData.equipped))
+		match str(mode.get("cutscene", "")):
+			"eyes":
+				_stop_old_procedural_power_sound()
+				SHARINGAN_EFFECT_SCRIPT.play_cutscene(_tracked_player, str(GameData.equipped))
+			"body":
+				TransformCutscene.play(_tracked_player, mode)
+	_was_active = is_powered
 
 func _stop_old_procedural_power_sound() -> void:
 	# Sfx.play(self, "power") creates an unnamed root AudioStreamPlayer with an
