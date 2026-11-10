@@ -400,13 +400,9 @@ func _build_slot(parent: Node, i: int) -> Dictionary:
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.pressed.connect(_on_slot_pressed.bind(i))
 	var eq := UiStyle.green_button(row, "", 12)
-	eq.custom_minimum_size = Vector2(54, 28)
+	eq.custom_minimum_size = Vector2(66, 28)
 	eq.pressed.connect(_on_equip.bind(i))
-	var second := UiStyle.green_button(row, "2ND", 12)
-	second.custom_minimum_size = Vector2(40, 28)
-	second.tooltip_text = "Second bloodline: its 3 jutsu can go on your hotbar too"
-	second.pressed.connect(_on_second.bind(i))
-	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq, "second": second}
+	return {"card": card, "emblem": em, "name": nm, "rarity": rar, "spin": spin, "equip": eq}
 
 func _build_element_page(page: VBoxContainer) -> void:
 	var grid := GridContainer.new()
@@ -847,14 +843,6 @@ func _card_style(active: bool, locked: bool) -> StyleBoxFlat:
 	sb.set_content_margin_all(8)
 	return sb
 
-## Card look for the second bloodline (blue edge).
-func _card_style2() -> StyleBoxFlat:
-	var sb := _card_style(false, false)
-	sb.bg_color = Color(0.86, 0.88, 0.86)
-	sb.set_border_width_all(3)
-	sb.border_color = Color(0.2, 0.45, 0.8)
-	return sb
-
 func _refresh() -> void:
 	var busy := spinning or auto_running
 	spins_label.text = "%d SPIN%s" % [GameData.spins, "" if GameData.spins == 1 else "S"]
@@ -877,7 +865,6 @@ func _refresh() -> void:
 			spin.text = "UNLOCK (%d)" % cost
 			spin.disabled = busy or GameData.spins < cost
 			eq.visible = false
-			(ui["second"] as Button).visible = false
 			continue
 		var id := str(GameData.slots[i])
 		var d := Bloodline.get_def(id)
@@ -894,14 +881,7 @@ func _refresh() -> void:
 		eq.visible = true
 		eq.text = "MAIN" if active else "EQUIP"
 		eq.disabled = busy or active
-		var is2: bool = i == GameData.second_slot
-		var sb2: Button = ui["second"]
-		sb2.visible = not active and id != "none"
-		sb2.text = "x 2ND" if is2 else "2ND"
-		sb2.disabled = busy
-		if is2:
-			(ui["card"] as PanelContainer).add_theme_stylebox_override("panel", _card_style2())
-			rar.text += "  ·  2ND"
+		eq.tooltip_text = "Use this bloodline's transformation (C) and stats. Jutsu from all your slots work anyway."
 	_refresh_bloodline_info()
 	auto_pick.disabled = busy
 	if auto_running:
@@ -922,8 +902,6 @@ func _refresh() -> void:
 	plate_info.text = "%s   ·   %s Style   ·   Shinobi LV %d" % [
 		"spin a bloodline" if a == "none" else "%s  ·  LV %d" % [Bloodline.get_def(a)["rarity"], GameData.mastery_level(a)],
 		GameData.equipped_element, GameData.level]
-	if GameData.equipped2 != "none":
-		plate_info.text = "+ %s   ·   " % Bloodline.get_def(GameData.equipped2)["name"] + plate_info.text
 	_update_floor()
 
 func _refresh_bloodline_info() -> void:
@@ -946,17 +924,21 @@ func _refresh_bloodline_info() -> void:
 	var m := Bloodline.mode(a)
 	if not m.is_empty():
 		_move_row(bl_rows, "", "POWER-UP: %s   [C]" % m["name"], Bloodline.MODE_LEVEL, lv, str(m.get("desc", "")), m["col"], Moves.mode_icon(a))
-	var b := GameData.equipped2
-	if b != "none":
+	# Mix & match: the jutsu of your other slotted bloodlines work too (bind them in M > Bloodline).
+	var shown := [a]
+	for i in GameData.SLOT_COUNT:
+		var b := str(GameData.slots[i])
+		if not GameData.slot_unlocked[i] or b == "none" or shown.has(b):
+			continue
+		shown.append(b)
 		var lv2 := GameData.mastery_level(b)
-		var t2 := UiStyle.label(bl_rows, "2ND: %s   ·   LV %d" % [str(Bloodline.get_def(b)["name"]).to_upper(), lv2], 18, Color(0.15, 0.35, 0.7))
-		t2.add_theme_constant_override("line_spacing", 0)
+		UiStyle.label(bl_rows, "+ %s JUTSU   ·   LV %d   (slot %d)" % [str(Bloodline.get_def(b)["name"]).to_upper(), lv2, i + 1], 16, Color(0.15, 0.35, 0.7))
 		for k in 3:
 			var ab2 := Bloodline.ability(b, k)
 			var mid2 := "bl:%s:%d" % [b, k]
 			_move_row(bl_rows, mid2, str(ab2["name"]), int(ab2["lvl"]), lv2, str(ab2.get("desc", "")), ab2["col"], Moves.icon(mid2))
-	elif GameData.slots.filter(func(x): return str(x) != "none").size() > 1:
-		UiStyle.label(bl_rows, "Tip: press 2ND on another slot to use its jutsu too.", 12, Color(0.42, 0.36, 0.26))
+	if shown.size() > 1:
+		UiStyle.label(bl_rows, "Mix & match: bind any of these in M > Bloodline. EQUIP picks your transformation (C).", 12, Color(0.42, 0.36, 0.26)).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func _refresh_elements() -> void:
 	var busy := spinning or auto_running
@@ -1146,13 +1128,6 @@ func _on_equip(i: int) -> void:
 		confirm_slot = -1
 		if p:
 			p.apply_bloodline()
-		Sfx.play(self, "poof", -6.0)
-		_refresh()
-
-func _on_second(i: int) -> void:
-	if spinning or auto_running:
-		return
-	if GameData.set_second_slot(-1 if i == GameData.second_slot else i):
 		Sfx.play(self, "poof", -6.0)
 		_refresh()
 

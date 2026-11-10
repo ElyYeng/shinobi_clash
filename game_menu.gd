@@ -1026,16 +1026,20 @@ func _bl_label(text: String, r: Rect2, size: int, col: Color, parent: Control, a
 ## their unlock levels, EQUIP, mastery EXP bar) and an info panel where you assign the clicked move to a key.
 func _tree_pages() -> Array:
 	if tree_kind == "element":
-		return [["Fire", "Earth"], ["Lightning", "Water"], ["Wind"]]
+		return [["Fire", "Earth"], ["Lightning", "Water"], ["Wind", "basic"]]
 	return [["0", "1"], ["2", "3"]]
 
 func _tree_page_names() -> Array:
-	return ["F / E", "L / W", "WIND"] if tree_kind == "element" else ["SLOTS 1-2", "SLOTS 3-4"]
+	return ["F / E", "L / W", "W / BASIC"] if tree_kind == "element" else ["SLOTS 1-2", "SLOTS 3-4"]
 
 ## Everything a column needs. cid = slot index ("0".."3") or element name.
 func _col_data(cid: String) -> Dictionary:
 	var d := {"locked": false, "msg": "", "name": "", "color": Color.GRAY, "letter": "?", "lv": 0, "moves": [],
 		"mode": "", "equipped": false, "mkey": "", "can_equip": true}
+	if cid == "basic":   # Shadow Clones, Substitution, Element Armor: always available
+		d.merge({"name": "Basic Jutsu", "color": Color(0.3, 0.55, 0.9), "letter": "B", "basic": true,
+			"moves": Moves.BASE.keys().map(func(k): return "base:" + str(k))}, true)
+		return d
 	if tree_kind == "element":
 		d["name"] = cid
 		d["color"] = GameData.get_element_color(cid)
@@ -1063,8 +1067,7 @@ func _col_data(cid: String) -> Dictionary:
 		return d
 	var bd := Bloodline.get_def(id)
 	d.merge({"name": bd["name"], "color": bd["color"], "letter": str(bd["name"]).substr(0, 1), "mkey": id,
-		"lv": GameData.mastery_level(id), "mode": id, "equipped": slot == GameData.active_slot,
-		"second": slot == GameData.second_slot}, true)
+		"lv": GameData.mastery_level(id), "mode": id, "equipped": slot == GameData.active_slot}, true)
 	for i in 3:
 		d["moves"].append("bl:%s:%d" % [id, i])
 	return d
@@ -1129,7 +1132,7 @@ func _build_tree_column(cid: String, x: float) -> void:
 	badge.letter = d["letter"]
 	badge.fill = (d["color"] as Color).darkened(0.25)
 	badge.ring = d["equipped"]
-	_bl_label("LV.%d" % lv, Rect2(52, 8, 140, 30), 19, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
+	_bl_label("ANY TIME" if d.get("basic", false) else "LV.%d" % lv, Rect2(52, 8, 140, 30), 19, Color.WHITE, col, HORIZONTAL_ALIGNMENT_RIGHT)
 	_bl_label(d["name"], Rect2(0, 40, 200, 18), 14, BODY_TEXT, col)
 	var moves: Array = d["moves"]
 	var n := moves.size() + (1 if d["mode"] != "" else 0)
@@ -1159,9 +1162,11 @@ func _build_tree_column(cid: String, x: float) -> void:
 			tree_sel_idx = k
 			_build_tree_page())
 		col.add_child(ic)
+	if d.get("basic", false):
+		return   # nothing to equip or level up
 	var eq := Button.new()
 	eq.flat = true
-	eq.text = "[EQUIPPED]" if d["equipped"] else ("[2ND] MAIN?" if d.get("second", false) else "[EQUIP]")
+	eq.text = "[EQUIPPED]" if d["equipped"] else "[EQUIP]"
 	eq.position = Vector2(30, 344)
 	eq.size = Vector2(140, 28)
 	eq.add_theme_font_override("font", font())
@@ -1250,7 +1255,7 @@ func _build_tree_info() -> void:
 	box.add_child(ub)
 	var tip := "Abilities still need their level to work." if not ok2 else "Press [%s] in a fight to use it." % cur_key if cur_key != "" else "Pick a key to use it in fights."
 	if tree_kind == "bloodline":
-		tip += " Only the EQUIPPED bloodline's abilities work."
+		tip += " Jutsu from every bloodline in your slots work - mix and match. EQUIP picks your transformation (C)."
 	_bl_label(tip, Rect2(0, 314, 196, 60), 12, Color(0.35, 0.25, 0.15), box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
 
 func _page_bloodlines() -> Array:

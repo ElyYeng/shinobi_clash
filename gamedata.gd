@@ -36,8 +36,6 @@ static var last_el_new := false
 static var pity := 0
 static var owned: Array = ["none"]      # every bloodline ever rolled (codex / achievements)
 static var equipped := "none"           # always slots[active_slot]; use set_active_slot() to change
-static var equipped2 := "none"          # second bloodline (its jutsu are usable too); slots[second_slot]
-static var second_slot := -1            # -1 = no second bloodline
 static var slots: Array = ["none", "none", "none", "none"]
 static var slot_unlocked: Array = [true, true, false, false]
 static var active_slot := 0
@@ -179,9 +177,6 @@ static func _load_slots(d: Dictionary) -> void:
 	active_slot = clampi(int(d.get("active_slot", 0)), 0, SLOT_COUNT - 1)
 	if not slot_unlocked[active_slot]:
 		active_slot = 0
-	second_slot = clampi(int(d.get("second_slot", -1)), -1, SLOT_COUNT - 1)
-	if second_slot == active_slot or (second_slot >= 0 and not slot_unlocked[second_slot]):
-		second_slot = -1
 
 ## Old saves had a collection + one equipped bloodline. Put the equipped one in slot 1
 ## and the best other owned bloodline in slot 2 so nobody loses their roll.
@@ -241,23 +236,16 @@ static func _sync_elements() -> void:
 
 static func _sync_equipped() -> void:
 	equipped = str(slots[active_slot]) if slot_unlocked[active_slot] else "none"
-	equipped2 = "none"
-	if second_slot >= 0 and second_slot != active_slot and slot_unlocked[second_slot]:
-		equipped2 = str(slots[second_slot])
 
-## True if `id` is your main or second bloodline (its jutsu can be used).
-static func is_equipped(id: String) -> bool:
-	return id != "none" and (id == equipped or id == equipped2)
-
-## Makes slot `i` your second bloodline (-1 = none). Its 3 jutsu can go on your hotbar next to
-## the main bloodline's; passive stats and the power-up (C) stay with the main one.
-static func set_second_slot(i: int) -> bool:
-	if i >= SLOT_COUNT or (i >= 0 and (not slot_unlocked[i] or i == active_slot)):
+## Shindo Life rules: the jutsu of EVERY bloodline in your (unlocked) slots can be put on your
+## hotbar and used - mix and match. The EQUIPPED one gives the transformation (C) and stats.
+static func has_bloodline(id: String) -> bool:
+	if id == "none":
 		return false
-	second_slot = i
-	_sync_equipped()
-	save()
-	return true
+	for i in SLOT_COUNT:
+		if slot_unlocked[i] and str(slots[i]) == id:
+			return true
+	return false
 
 static func save() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -271,7 +259,7 @@ static func save() -> void:
 			"kurama_defeated": kurama_defeated, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
-			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot, "second_slot": second_slot,
+			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
 			"keybinds": keybinds, "character_appearance": character_appearance}))
@@ -441,8 +429,6 @@ static func unlock_slot(i: int) -> bool:
 static func set_active_slot(i: int) -> bool:
 	if i < 0 or i >= SLOT_COUNT or not slot_unlocked[i]:
 		return false
-	if i == second_slot:   # promoting the second bloodline: the old main becomes the second
-		second_slot = active_slot
 	active_slot = i
 	_sync_equipped()
 	save()

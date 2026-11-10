@@ -3,7 +3,7 @@ extends RefCounted
 ## Every move you can put on a hotbar key, and the keybinds (Shindo Life style).
 ##
 ## Move ids:
-##   "bl:<bloodline>:<0-2>"   a bloodline ability   (usable while that bloodline is equipped)
+##   "bl:<bloodline>:<0-2>"   a bloodline ability   (usable while that bloodline is in one of your slots)
 ##   "el:<Element>:<0-3>"     an element ability    (usable when you own the element)
 ##   "base:<name>"            always available (clones, substitution, armor)
 ## Each must also be unlocked by mastery level (bloodline LV / element LV).
@@ -94,8 +94,8 @@ static func block(id: String) -> String:
 	match str(s["src"]):
 		"bl":
 			var bname: String = Bloodline.get_def(s["owner"])["name"]
-			if not GameData.is_equipped(s["owner"]):
-				return "Equip %s (main or 2nd) to use this" % bname
+			if not GameData.has_bloodline(s["owner"]):
+				return "%s isn't in any of your bloodline slots" % bname
 			var lv := GameData.mastery_level(s["owner"])
 			if lv < int(s["lvl"]):
 				return "Needs %s LV %d (now %d)" % [bname, int(s["lvl"]), lv]
