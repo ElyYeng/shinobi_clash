@@ -450,7 +450,7 @@ func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, lon
 	pr.color = color
 	pr.long_shape = long
 	pr.source_player = self
-	if homing and lock_target:
+	if homing and _alive(lock_target):
 		pr.target = lock_target
 	get_parent().add_child(pr)
 	pr.global_position = origin
@@ -657,8 +657,8 @@ func _use_move(id: String) -> void:
 		_play_once("jutsu", 0.5)
 	cur_mkey = ""
 
-func _stun(e: Node3D, secs: float) -> void:
-	if secs <= 0.0 or not (e is Enemy) or not is_instance_valid(e):
+func _stun(e, secs: float) -> void:   # untyped: the target may already be freed
+	if secs <= 0.0 or not is_instance_valid(e) or not (e is Enemy):
 		return
 	e.stun = maxf(e.stun, secs * (0.4 if e.is_boss else 1.0))   # bosses shrug most of it off
 	e.windup = 0.0
@@ -840,21 +840,24 @@ func _nearest_foe(max_dist: float) -> Node3D:
 	return best
 
 ## Still a valid target: a living enemy, or a player you can still fight.
-func _alive(t: Node3D) -> bool:
-	if t == null or not is_instance_valid(t):
+## Untyped on purpose: a lock target that was freed (enemy died) can't be passed as Node3D.
+func _alive(t) -> bool:
+	if not is_instance_valid(t):
 		return false
 	if t is Enemy:
 		return t.health > 0.0
 	return NetworkSession.hostile_avatars().has(t)
 
 ## Network id of a target player's avatar (0 for enemies / nothing).
-func _peer_of(t: Node3D) -> int:
-	if t != null and is_instance_valid(t) and not (t is Enemy) and "peer_id" in t:
+func _peer_of(t) -> int:
+	if is_instance_valid(t) and not (t is Enemy) and "peer_id" in t:
 		return int(t.get("peer_id"))
 	return 0
 
 ## Hits an enemy, or asks the host to hit another player with an ability.
-func _hit_foe(t: Node3D, amount: float, knock: Vector3) -> void:
+func _hit_foe(t, amount: float, knock: Vector3) -> void:
+	if not is_instance_valid(t):
+		return
 	if t is Enemy:
 		_hit(t, amount, knock)
 	elif _peer_of(t) != 0:
