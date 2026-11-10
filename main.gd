@@ -67,7 +67,9 @@ func _process(delta: float) -> void:
 		while player.kills - awarded_kills >= 8:
 			awarded_kills += 8
 			_give_spins(1, "8 kills")
-	if mode == "fight" and (not NetworkSession.is_active() or NetworkSession.session_mode != "pvp"):
+	# Fight mode spawns AI ninjas. In a PvP arena only the host spawns them; they are shared
+	# with every player (see NetworkSession "PvP arena ninjas").
+	if mode == "fight" and (not NetworkSession.is_active() or NetworkSession.session_mode != "pvp" or multiplayer.is_server()):
 		_fight_spawner(delta)
 	elif mode == "world":
 		_world_interact()
@@ -119,18 +121,45 @@ func _spawn_enemy() -> void:
 	e.health = 60.0
 	e.speed = 4.8
 	e.damage = 8.0
+	var arena := NetworkSession.is_active() and NetworkSession.session_mode == "pvp"
+	var center := _arena_spawn_center() if arena else player.global_position
 	var pos := Vector3.ZERO
 	for _t in 12:
 		var a := rng.randf() * TAU
 		var r := rng.randf_range(18.0, 28.0)
-		pos = player.global_position + Vector3(cos(a), 0, sin(a)) * r
+		pos = center + Vector3(cos(a), 0, sin(a)) * r
 		pos.x = clampf(pos.x, map.spawn_area.position.x, map.spawn_area.end.x)
 		pos.z = clampf(pos.z, map.spawn_area.position.y, map.spawn_area.end.y)
 		if not _blocked(pos, 1.0):
 			break
 	pos.y = 0.5
 	e.position = pos
+	if arena:
+		NetworkSession.register_arena_enemy(e)
 	add_child(e)
+	if arena:
+		NetworkSession.announce_arena_enemy(e)
+
+## PvP host: spawn ninjas around a random living player, so they show up all over the arena.
+func _arena_spawn_center() -> Vector3:
+	var spots: Array[Vector3] = []
+	if not player.is_dead:
+		spots.append(player.global_position)
+	for avatar in NetworkSession._avatars.values():
+		if is_instance_valid(avatar) and not bool(avatar.get("network_ragdoll_started")):
+			spots.append((avatar as Node3D).global_position)
+	return spots[rng.randi() % spots.size()] if not spots.is_empty() else player.global_position
+
+## PvP client: a copy of one of the host's arena ninjas. It follows the host and sends hits to it.
+func spawn_arena_mirror(enemy_id: String, pos: Vector3) -> void:
+	var e := Enemy.new()
+	e.network_quest_id = enemy_id
+	e.network_quest_party_leader = NetworkSession.ARENA_ENEMY
+	e.network_quest_mirror = true
+	e.position = pos
+	e.add_to_group("quest_enemies")
+	add_child(e)
+	e.apply_quest_network_state(pos, 0.0, -1.0)
 
 # ---------------------------------------------------------------- Mode: KURAMA
 func _start_kurama() -> void:

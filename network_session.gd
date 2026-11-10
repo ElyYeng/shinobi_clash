@@ -110,6 +110,13 @@ func bind_local_player(player: Player, game_root: Node) -> void:
 	for id in _known_players:
 		if int(id) != multiplayer.get_unique_id():
 			_spawn_remote_local(int(id), str(_known_players[id]), int(_known_levels.get(id, 1)), _known_appearances.get(id, {}))
+	if session_mode == "pvp" and GameData.mode == "fight":
+		if multiplayer.is_server():
+			# The host's arena restarted (e.g. after it died): its old ninjas are gone everywhere.
+			_clear_arena_enemies.rpc()
+		else:
+			# Joined or respawned: ask the host for the ninjas that are already fighting.
+			_request_arena_snapshot.rpc_id(1)
 
 func _process(delta: float) -> void:
 	if not is_active() or _local_player == null:
@@ -119,8 +126,8 @@ func _process(delta: float) -> void:
 		return
 	_sync_timer = 0.0
 	_sync_shadow_clone_transforms()
-	if multiplayer.is_server() and session_mode == "coop":
-		_sync_quest_enemy_states()
+	if multiplayer.is_server() and (session_mode == "coop" or session_mode == "pvp"):
+		_sync_quest_enemy_states()   # co-op quest enemies and PvP arena ninjas
 	if multiplayer.is_server() and session_mode == "raid" and _raid_boss != null and is_instance_valid(_raid_boss):
 		_raid_sync_timer += delta
 		if _raid_sync_timer >= 0.1:
@@ -271,6 +278,13 @@ func _remove_remote_local(peer_id: int) -> void:
 		_avatars.erase(peer_id)
 
 ## Party system: party leader ID is shared by every member.
+## Party leader value for PvP arena ninjas: they belong to nobody and fight everyone.
+const ARENA_ENEMY := 0
+
+## Can a host-run enemy owned by `leader` target / be hit by `peer_id`?
+func enemy_targets(peer_id: int, leader: int) -> bool:
+	return _known_players.has(peer_id) if leader == ARENA_ENEMY else _same_party(peer_id, leader)
+
 func _same_party(a_id: int, b_id: int) -> bool:
 	return _party_leader.has(a_id) and _party_leader.has(b_id) and int(_party_leader[a_id]) == int(_party_leader[b_id])
 
@@ -659,7 +673,7 @@ func _party_quest_kill_reward() -> void:
 	_apply_local_party_quest_kill_reward()
 
 func damage_quest_party_member(peer_id: int, leader_id: int, amount: float, knockback: Vector3) -> void:
-	if not is_active() or not multiplayer.is_server() or not _same_party(peer_id, leader_id):
+	if not is_active() or not multiplayer.is_server() or not enemy_targets(peer_id, leader_id):
 		return
 	var safe_damage := clampf(amount, 1.0, 80.0)
 	if peer_id == 1 and _local_player != null:
@@ -668,7 +682,7 @@ func damage_quest_party_member(peer_id: int, leader_id: int, amount: float, knoc
 		_apply_player_damage.rpc_id(peer_id, safe_damage, knockback)
 
 func request_quest_enemy_damage(enemy_id: String, amount: float, knock: Vector3) -> void:
-	if not is_active() or session_mode != "coop" or enemy_id == "":
+	if not is_active() or not (session_mode == "coop" or session_mode == "pvp") or enemy_id == "":
 		return
 	if multiplayer.is_server():
 		_server_quest_enemy_damage(1, enemy_id, amount, knock)
@@ -688,7 +702,7 @@ func _server_quest_enemy_damage(sender_id: int, enemy_id: String, amount: float,
 		if candidate is Enemy and (candidate as Enemy).network_quest_id == enemy_id:
 			enemy = candidate as Enemy
 			break
-	if enemy == null or enemy.health <= 0.0 or enemy.network_quest_defeated or enemy.network_quest_mirror or not _same_party(sender_id, enemy.network_quest_party_leader):
+	if enemy == null or enemy.health <= 0.0 or enemy.network_quest_defeated or enemy.network_quest_mirror or not enemy_targets(sender_id, enemy.network_quest_party_leader):
 		return
 	var attacker_pos := Vector3.ZERO
 	if sender_id == 1:
@@ -701,7 +715,10 @@ func _server_quest_enemy_damage(sender_id: int, enemy_id: String, amount: float,
 		return
 	if attacker_pos.distance_to(enemy.global_position) > 55.0:
 		return
+	enemy.last_hit_peer = sender_id   # so an arena kill is credited to whoever landed it
 	enemy.take_damage(clampf(amount, 1.0, 150.0), knock.limit_length(18.0))
+	if is_instance_valid(enemy):
+		enemy.last_hit_peer = 1
 
 func _sync_quest_enemy_states() -> void:
 	for node in get_tree().get_nodes_in_group("quest_enemies"):
@@ -714,7 +731,7 @@ func _sync_quest_enemy_states() -> void:
 			_sent_quest_enemy_identities[enemy.network_quest_id] = true
 			for peer_id_variant in _known_players:
 				var peer_id := int(peer_id_variant)
-				if peer_id == 1 or not _same_party(peer_id, enemy.network_quest_party_leader):
+				if peer_id == 1 or not enemy_targets(peer_id, enemy.network_quest_party_leader):
 					continue
 				_quest_enemy_identity.rpc_id(peer_id, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 		var yaw := enemy.model.rotation.y if enemy.model != null else 0.0
@@ -767,7 +784,7 @@ func _send_quest_enemy_identities_to_peer(peer_id: int) -> void:
 		var enemy := node as Enemy
 		if enemy.network_quest_id == "" or enemy.network_quest_mirror:
 			continue
-		if not _same_party(peer_id, enemy.network_quest_party_leader):
+		if not enemy_targets(peer_id, enemy.network_quest_party_leader):
 			continue
 		_quest_enemy_identity.rpc_id(peer_id, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 
@@ -1217,3 +1234,69 @@ func _on_server_disconnected() -> void:
 	is_host = false
 	server_disconnected.emit()
 	disconnect_session()
+
+
+# ======================================================================== PvP arena ninjas
+## The host runs AI ninjas in the PvP arena (Main._fight_spawner). Each one is shared like a
+## co-op quest enemy (network_quest_id "arena:N", party leader ARENA_ENEMY = everyone):
+## clients get a mirror that follows the host's position / health, their hits go through
+## request_quest_enemy_damage, the ninja attacks whoever is nearest, and its death ragdoll
+## is streamed by RagdollSync. The player who lands the final hit gets the kill reward.
+var _arena_counter := 0
+
+## Host: gives a freshly spawned arena ninja its network id and shows it to everyone.
+func register_arena_enemy(enemy: Enemy) -> void:
+	if not is_active() or session_mode != "pvp" or not multiplayer.is_server():
+		return
+	_arena_counter += 1
+	enemy.network_quest_id = "arena:%d" % _arena_counter
+	enemy.network_quest_party_leader = ARENA_ENEMY
+	enemy.add_to_group("quest_enemies")
+
+## Host, after the ninja is in the scene (its clan and look are rolled in _ready).
+func announce_arena_enemy(enemy: Enemy) -> void:
+	if not is_active() or enemy.network_quest_id == "":
+		return
+	_spawn_arena_enemy.rpc(enemy.network_quest_id, enemy.global_position)
+
+@rpc("authority", "call_remote", "reliable")
+func _spawn_arena_enemy(enemy_id: String, pos: Vector3) -> void:
+	if _game_root == null or not is_instance_valid(_game_root) or not _game_root.has_method("spawn_arena_mirror"):
+		return
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		if node is Enemy and (node as Enemy).network_quest_id == enemy_id:
+			return   # already have it (snapshot and spawn can overlap)
+	_game_root.call("spawn_arena_mirror", enemy_id, pos)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_arena_snapshot() -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		var enemy := node as Enemy
+		if enemy == null or enemy.network_quest_party_leader != ARENA_ENEMY or enemy.network_quest_mirror or enemy.health <= 0.0:
+			continue
+		_quest_enemy_identity.rpc_id(sender, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
+		_spawn_arena_enemy.rpc_id(sender, enemy.network_quest_id, enemy.global_position)
+
+@rpc("authority", "call_remote", "reliable")
+func _clear_arena_enemies() -> void:
+	for node in get_tree().get_nodes_in_group("quest_enemies"):
+		var enemy := node as Enemy
+		if enemy != null and enemy.network_quest_party_leader == ARENA_ENEMY and enemy.network_quest_mirror:
+			enemy.queue_free()
+
+## Host: an arena ninja died. Everyone sees it ragdoll; the killer gets the kill reward.
+func arena_enemy_killed(enemy_id: String, killer_id: int) -> void:
+	if not is_active() or not multiplayer.is_server():
+		return
+	_sent_quest_enemy_identities.erase(enemy_id)
+	_pending_quest_enemy_identities.erase(enemy_id)
+	_remove_quest_enemy.rpc(enemy_id, true)
+	if killer_id == 1:
+		_apply_local_party_quest_kill_reward()
+	elif _known_players.has(killer_id):
+		_party_quest_kill_reward.rpc_id(killer_id)

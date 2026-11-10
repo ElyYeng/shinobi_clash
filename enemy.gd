@@ -14,6 +14,7 @@ var band_color := Color(0.6, 0.6, 0.65)
 var network_quest_id := ""
 var network_quest_party_leader := 0
 var network_quest_mirror := false
+var last_hit_peer := 1   # host: peer that dealt the latest hit (gets the kill in the PvP arena)
 var network_quest_defeated := false
 var character_appearance: Dictionary = {}
 var _quest_net_position := Vector3.ZERO
@@ -174,16 +175,16 @@ func _ai(delta: float) -> void:
 	var target_peer_id := 1
 	var target_pos := p.global_position if p != null and not p.is_dead else Vector3.INF
 	if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
-		# The host AI can choose any living party avatar, not only the host.
+		# The host AI can choose any living party avatar (any player for PvP arena ninjas), not only the host.
 		target_pos = Vector3.INF
 		var nearest := INF
-		if p != null and not p.is_dead and NetworkSession._same_party(1, network_quest_party_leader):
+		if p != null and not p.is_dead and NetworkSession.enemy_targets(1, network_quest_party_leader):
 			nearest = global_position.distance_to(p.global_position)
 			target_pos = p.global_position
 			target_peer_id = 1
 		for id in NetworkSession._avatars:
 			var avatar = NetworkSession._avatars[id]
-			if not is_instance_valid(avatar) or not NetworkSession._same_party(int(id), network_quest_party_leader):
+			if not is_instance_valid(avatar) or not NetworkSession.enemy_targets(int(id), network_quest_party_leader):
 				continue
 			var candidate_pos: Vector3 = avatar.global_position
 			var candidate_dist := global_position.distance_to(candidate_pos)
@@ -385,7 +386,10 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	if health <= 0.0:
 		network_quest_defeated = true
 		if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
-			NetworkSession.quest_enemy_killed(network_quest_id, network_quest_party_leader)
+			if network_quest_party_leader == NetworkSession.ARENA_ENEMY:
+				NetworkSession.arena_enemy_killed(network_quest_id, last_hit_peer)
+			else:
+				NetworkSession.quest_enemy_killed(network_quest_id, network_quest_party_leader)
 		else:
 			var p := get_tree().get_first_node_in_group("player") as Player
 			if p:
