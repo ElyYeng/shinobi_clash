@@ -89,7 +89,7 @@ func _process(delta: float) -> void:
 	if to.length() > 0.01:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-to.x, -to.z), 12.0 * delta)
 	if anim_lock <= 0.0:
-		Hero.play(model, "run" if running else "idle")
+		Hero.play_move(model, "run" if running else "idle", 8.0 if running else 0.0)
 
 
 func set_network_transform(pos: Vector3, yaw: float) -> void:

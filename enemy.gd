@@ -155,7 +155,7 @@ func _animate_body(delta: float) -> void:
 	var sp := Vector2(velocity.x, velocity.z).length()
 	if uses_hero:
 		if windup <= 0.0:
-			Hero.play(model, "run" if sp > 0.6 else "idle")
+			Hero.play_move(model, "run" if sp > 0.6 else "idle", sp)
 		return
 	if sp > 0.6:
 		bob_t += delta * (6.0 + sp * 1.4)

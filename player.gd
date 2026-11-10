@@ -1,8 +1,8 @@
 class_name Player
 extends CharacterBody3D
 
-const WALK_SPEED := 7.0
-const SPRINT_SPEED := 12.5
+const WALK_SPEED := 3.0      # m/s; walk/run clips are sped up to match (Hero.play_move)
+const SPRINT_SPEED := 6.0
 const JUMP_VELOCITY := 9.5
 const GRAVITY := 26.0
 const DASH_SPEED := 30.0
@@ -369,6 +369,7 @@ func _update_anim() -> void:
 	if anim_lock > 0.0:
 		return
 	var st := "idle"
+	var ground := 0.0
 	var hv := Vector3(velocity.x, 0.0, velocity.z)
 	if not is_on_floor():
 		st = "jump" if velocity.y > 0.5 else "fall"
@@ -376,12 +377,13 @@ func _update_anim() -> void:
 		st = "dash"
 	elif hv.length() > 1.0:
 		st = Hero.move_state(hv.length())
+		ground = hv.length()
 		if lock_target:
 			var fwd := hv.dot(facing)
 			var side := hv.dot(facing.cross(Vector3.UP))
 			if absf(side) > absf(fwd) * 0.8:
 				st = "strafe_r" if side > 0.0 else "strafe_l"
-	Hero.play(model, st)
+	Hero.play_move(model, st, ground)
 
 func _play_once(state: String, max_lock: float, variant := 0) -> bool:
 	var l := Hero.play(model, state, true, variant, max_lock)

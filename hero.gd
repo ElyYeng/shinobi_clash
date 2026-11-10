@@ -96,6 +96,7 @@ static var _warned_missing := false
 static var _printed := false
 static var _warned_no_anims := false
 static var credit := ""
+static var _stride_speed := {}   # animation name -> metres/second its feet move (model space, measured once)
 
 ## Returns a Node3D wrapper (forward = -Z, feet at y=0) or null if no model found.
 static func create(appearance: Dictionary = {}) -> Node3D:
@@ -707,9 +708,9 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
 
-## Ground speed (m/s) -> locomotion state. Normal movement (WALK_SPEED 7) plays the walk
-## clip, sprinting (SPRINT_SPEED 12.5) plays the run clip. Raise/lower WALK_BELOW to taste.
-const WALK_BELOW := 9.5
+## Ground speed (m/s) -> locomotion state. Normal movement (Player.WALK_SPEED 3) plays the walk
+## clip, sprinting (SPRINT_SPEED 6) plays the run clip. Raise/lower WALK_BELOW to taste.
+const WALK_BELOW := 4.5
 static func move_state(speed: float) -> String:
 	if speed <= 1.0:
 		return "idle"
@@ -725,6 +726,96 @@ static func _lookup(map: Dictionary, state: String) -> Array:
 	return []
 
 ## Plays an animation state; returns its length (0.0 if the model has none).
+## Locomotion speeds the walk/run clips may be sped up or slowed down to (keeps them sane).
+const ANIM_SPEED_MIN := 0.6
+const ANIM_SPEED_MAX := 3.0
+
+## Plays walk/run (or idle) for a model moving at `ground_speed` m/s and sets the playback speed
+## so the feet move as fast as the body: no sliding or moonwalking. Use instead of play() for
+## locomotion.
+static func play_move(model: Node3D, state: String, ground_speed: float) -> void:
+	play(model, state)
+	if model == null or not model.has_meta("anim_player"):
+		return
+	var ap := model.get_meta("anim_player") as AnimationPlayer
+	if not is_instance_valid(ap) or ap.current_animation == "":
+		return
+	if not (state in ["walk", "run", "strafe_l", "strafe_r"]) or ap.current_animation == "":
+		ap.speed_scale = 1.0
+		return
+	var natural := stride_speed(model, ap.current_animation)
+	if natural <= 0.01:
+		return
+	var scale := model.global_transform.basis.get_scale().x if model.is_inside_tree() else model.scale.x
+	ap.speed_scale = clampf(ground_speed / (natural * maxf(scale, 0.01)), ANIM_SPEED_MIN, ANIM_SPEED_MAX)
+
+## How fast (m/s, in the model's own units) the planted foot slides back in clip `anim` at speed
+## 1.0, i.e. the ground speed the clip was animated for. Measured once per clip by sampling the
+## foot bones; 0 if the rig has no recognisable feet.
+static func stride_speed(model: Node3D, anim: String) -> float:
+	if _stride_speed.has(anim):
+		return _stride_speed[anim]
+	_stride_speed[anim] = 0.0
+	var ap := model.get_meta("anim_player") as AnimationPlayer
+	var sks := model.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty() or not ap.has_animation(anim):
+		return 0.0
+	var sk := sks[0] as Skeleton3D
+	var feet: Array[int] = []
+	for side in ["left", "right"]:
+		var best := -1
+		var best_score := -1
+		for i in sk.get_bone_count():
+			var bn := sk.get_bone_name(i).to_lower()
+			if not (bn.contains(side) and bn.contains("foot")):
+				continue
+			var score := 1
+			for junk in ["ctrl", "ik", "fk", "pole", "snap", "roll", "heel", "target", "cursor", "end", "index"]:
+				if bn.contains(junk):
+					score = 0
+			if bn.contains("mixamorig") or bn.replace("_", "").contains(side + "foot"):
+				score += 1
+			if score > best_score:
+				best_score = score
+				best = i
+		if best >= 0:
+			feet.append(best)
+	if feet.size() < 2:
+		return 0.0
+	var to_model := _rel(sk, model)
+	var prev_anim := ap.current_animation
+	var prev_pos := ap.current_animation_position
+	var prev_scale := ap.speed_scale
+	ap.speed_scale = 1.0
+	ap.play(anim, 0.0)
+	var length := ap.get_animation(anim).length
+	var steps := 48
+	var dt := length / steps
+	var last: Array = []
+	var speeds: Array[float] = []
+	for k in steps + 1:
+		ap.seek(k * dt, true)
+		sk.force_update_all_bone_transforms()
+		var pts: Array = []
+		for f in feet:
+			pts.append(to_model * sk.get_bone_global_pose(f).origin)
+		if not last.is_empty():
+			var low := 0 if (pts[0] as Vector3).y < (pts[1] as Vector3).y else 1   # the planted foot
+			var d: Vector3 = pts[low] - last[low]
+			d.y = 0.0
+			speeds.append(d.length() / dt)
+		last = pts
+	if prev_anim != "":
+		ap.play(prev_anim, 0.0)
+		ap.seek(prev_pos, true)
+	ap.speed_scale = prev_scale
+	speeds.sort()
+	var v: float = speeds[speeds.size() / 2] if not speeds.is_empty() else 0.0   # median
+	_stride_speed[anim] = v
+	print("[Hero] '%s' moves its feet at %.2f m/s (model units); playback speed follows ground speed." % [anim, v])
+	return v
+
+
 static func play(model: Node3D, state: String, force := false, variant := 0, fit_time := 0.0) -> float:
 	if model == null or not model.has_meta("anim_player"):
 		return 0.0
