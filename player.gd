@@ -497,33 +497,42 @@ func _physics_process(delta: float) -> void:
 	_update_anim()
 
 # ---------------------------------------------------------------- chakra walk
-## Hold Sprint and run into a wall: you stick to it and walk up it (W = up, A/D = along the wall,
-## S = down, Space = leap off). Drains chakra; letting go of Sprint or running dry drops you.
-## Walking off the top hops you onto the roof.
-const WALL_SPEED := 9.0
-const WALL_CHAKRA := 6.0         # per second
-var wall_walking := false
-var wall_n := Vector3.ZERO        # wall normal (points away from the wall)
+## Stick to walls and ceilings like in Naruto. Sprint into a wall (or jump into a ceiling while
+## holding Sprint) and your feet stick to it; then walk anywhere on it with WASD (camera-relative:
+## looking at a wall, W goes up). You stay stuck without holding anything - Space jumps off,
+## running out of chakra drops you, and walking over an edge wraps you onto the next surface
+## (wall -> roof, wall -> ceiling...). Stepping onto ground that faces up turns it back off.
+## Holding Sprint while stuck moves faster but drains more.
+const STICK_SPEED := 5.5
+const STICK_SPRINT := 10.0
+const STICK_CHAKRA_WALL := 4.0      # chakra per second on walls
+const STICK_CHAKRA_CEILING := 7.0   # ... upside down
+const STICK_REACH := 1.35           # how far the feet look for the surface
+var wall_walking := false           # true while stuck to a wall / ceiling
+var wall_n := Vector3.ZERO          # normal of the surface we stand on (points away from it)
 var _wall_cd := 0.0
+var _stick_fwd := Vector3.UP        # last movement direction on the surface (model faces it)
+var _feet := Vector3.ZERO           # surface point under the feet
+var _ctl_fwd := Vector3.UP          # what W means on the surface - carried across edges
+var _ctl_yaw := 0.0                 # camera yaw last frame (mouse turns steer on the surface)
 
 func _try_wall_walk(dir: Vector3) -> void:
 	_wall_cd = maxf(0.0, _wall_cd - get_physics_process_delta_time())
-	if wall_walking or _wall_cd > 0.0 or dash_time > 0.0 or attack_lock > 0.0:
+	if wall_walking or _wall_cd > 0.0 or dash_time > 0.0 or attack_lock > 0.0 or is_dead:
 		return
-	if not Input.is_action_pressed("sprint") or chakra < 5.0 or dir.length() < 0.1:
+	if not Input.is_action_pressed("sprint") or chakra < 5.0:
 		return
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
 		var n := c.get_normal()
-		if absf(n.y) > 0.3 or dir.normalized().dot(-n) < 0.55:
-			continue
 		if not _climbable(c.get_collider()):
 			continue
-		wall_walking = true
-		wall_n = Vector3(n.x, 0, n.z).normalized()
-		velocity = Vector3.UP * WALL_SPEED * 0.6
-		Fx.puff(get_parent(), global_position + Vector3.UP * 0.3, Color(0.7, 0.85, 1.0, 0.6), 1.0)
-		return
+		var wall := absf(n.y) < 0.3 and dir.length() > 0.1 and dir.normalized().dot(-n) > 0.55
+		var ceiling := n.y < -0.7 and not is_on_floor()
+		if wall or ceiling:
+			_stick_to(n.normalized(), c.get_position())
+			Fx.puff(get_parent(), c.get_position(), Color(0.7, 0.85, 1.0, 0.6), 1.0)
+			return
 
 func _climbable(col: Object) -> bool:
 	if not (col is StaticBody3D or col is CSGShape3D):
@@ -531,52 +540,130 @@ func _climbable(col: Object) -> bool:
 	var n := col as Node
 	return not (n.name.begins_with("Bound") or (n.get_parent() != null and n.get_parent().name == "Bounds"))
 
-## One physics step on the wall. Returns false when we let go (normal movement takes over).
-func _wall_walk_step(delta: float) -> bool:
-	var space := get_world_3d().direct_space_state
-	var chest := global_position + Vector3.UP * 1.0
-	var q := PhysicsRayQueryParameters3D.create(chest, chest - wall_n * 1.3)
+func _stick_to(n: Vector3, point: Vector3) -> void:
+	wall_walking = true
+	wall_n = n
+	_feet = point
+	velocity = Vector3.ZERO
+	# keep facing "forward" along the new surface: up the wall, or away from it on ceilings
+	var f := Vector3.UP - n * n.dot(Vector3.UP)
+	if f.length() < 0.2:
+		f = facing - n * n.dot(facing)
+	_stick_fwd = f.normalized() if f.length() > 0.01 else Vector3.FORWARD
+	# W starts as "camera forward" flattened onto the surface (straight up a wall you face)
+	var cf := -cam.global_basis.z
+	var cu := cam.global_basis.y
+	var g := cf - n * n.dot(cf)
+	var gu := cu - n * n.dot(cu)
+	# looking (nearly) at the surface -> W = camera up (straight up a wall); looking along it -> forward
+	var wgt := clampf((g.length() - 0.3) / 0.4, 0.0, 1.0)
+	g = gu.normalized().lerp(g.normalized() if g.length() > 0.01 else gu.normalized(), wgt)
+	_ctl_fwd = g.normalized() if g.length() > 0.01 else _stick_fwd
+	_ctl_yaw = yaw
+
+## Middle of the body - the point the feet probe from (the capsule stays upright).
+func _stick_center() -> Vector3:
+	return global_position + Vector3.UP * 0.9
+
+func _ray(from: Vector3, to: Vector3) -> Dictionary:
+	var q := PhysicsRayQueryParameters3D.create(from, to)
 	q.exclude = [get_rid()]
-	var hit := space.intersect_ray(q)
+	var h := get_world_3d().direct_space_state.intersect_ray(q)
+	if not h.is_empty() and not _climbable(h["collider"]):
+		return {}
+	return h
+
+## Movement on the surface: W follows _ctl_fwd (carried across edges, so W keeps going the same
+## way from a wall onto a ceiling), A/D strafe, mouse left/right steers.
+func _surface_move(n: Vector3) -> Vector3:
+	_ctl_fwd = _ctl_fwd.rotated(n, yaw - _ctl_yaw) if n.length() > 0.5 else _ctl_fwd
+	_ctl_yaw = yaw
+	_ctl_fwd = _ctl_fwd - n * n.dot(_ctl_fwd)
+	if _ctl_fwd.length() < 0.05:
+		_ctl_fwd = (Vector3.UP - n * n.dot(Vector3.UP))
+		if _ctl_fwd.length() < 0.05:
+			_ctl_fwd = Vector3.FORWARD - n * n.dot(Vector3.FORWARD)
+	_ctl_fwd = _ctl_fwd.normalized()
 	var inp := Input.get_vector("left", "right", "forward", "back")
-	if hit.is_empty() or not _climbable(hit["collider"]):
-		# wall ended - over the top: hop onto the roof
-		var up_ok := inp.y < -0.1
-		_end_wall_walk(wall_n * -4.5 + Vector3.UP * (6.5 if up_ok else 1.0))
+	if inp.length() < 0.1:
+		return Vector3.ZERO
+	var rgt := _ctl_fwd.cross(n).normalized()
+	var m := _ctl_fwd * -inp.y + rgt * inp.x
+	return m.normalized() * minf(inp.length(), 1.0)
+
+## One physics step while stuck. Returns false when we let go (normal movement takes over).
+func _wall_walk_step(delta: float) -> bool:
+	if is_dead:
+		_end_wall_walk(Vector3.ZERO)
 		return false
-	var n: Vector3 = hit["normal"]
-	if absf(n.y) < 0.5:
-		wall_n = Vector3(n.x, 0, n.z).normalized()
-	if Input.is_action_just_pressed("jump"):   # leap off
-		_end_wall_walk(wall_n * 9.0 + Vector3.UP * 7.0)
+	if Input.is_action_just_pressed("jump"):   # leap off the surface
+		_end_wall_walk(wall_n * 9.0 + Vector3.UP * (6.0 if wall_n.y > -0.5 else 0.0))
 		jumps_left = 1
 		Sfx.play(self, "jump", -6.0)
-		Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.7, 0.85, 1.0, 0.6), 1.4)
+		Fx.puff(get_parent(), _feet, Color(0.7, 0.85, 1.0, 0.6), 1.4)
 		return false
-	if not Input.is_action_pressed("sprint") or chakra <= 0.0 or is_dead:
+	var sprinting := Input.is_action_pressed("sprint")
+	var drain := STICK_CHAKRA_CEILING if wall_n.y < -0.5 else STICK_CHAKRA_WALL
+	if not inf_chakra:
+		chakra = maxf(0.0, chakra - drain * (1.6 if sprinting else 1.0) * delta)
+	if chakra <= 0.0:
+		_toast("Out of chakra")
 		_end_wall_walk(wall_n * 2.0)
 		return false
-	if is_on_floor() and inp.y > 0.1:   # walked back down to the ground
-		_end_wall_walk(wall_n * 1.0)
+
+	var move := _surface_move(wall_n)
+	var spd := (STICK_SPRINT if sprinting else STICK_SPEED) * speed_mult
+
+	# find the surface under the feet; wrap over edges / into corners
+	var c := _stick_center()
+	var hit := _ray(c, c - wall_n * STICK_REACH)
+	if move.length() > 0.1:
+		# concave corner: another surface right ahead of us -> climb onto it
+		var ahead := _ray(c, c + move.normalized() * 1.25)   # body is ~0.9 m from centre to head
+		if not ahead.is_empty() and (ahead["normal"] as Vector3).dot(wall_n) < 0.5:
+			hit = ahead
+	var wrapped := false
+	if hit.is_empty() and move.length() > 0.1:
+		# convex edge (top of a wall, roof edge...): look around the corner, behind and below us
+		var corner := c + move.normalized() * 0.5 - wall_n * (STICK_REACH + 0.4)
+		hit = _ray(corner, corner - move.normalized() * 1.6)
+		wrapped = not hit.is_empty()
+	if hit.is_empty():
+		_end_wall_walk(wall_n * 1.5)   # nothing to stand on: fall
 		return false
-	if not inf_chakra:
-		chakra = maxf(0.0, chakra - WALL_CHAKRA * delta)
-	# camera-relative sideways direction, flattened onto the wall
-	var cam_right := Basis(Vector3.UP, yaw) * Vector3.RIGHT
-	var along := (cam_right - wall_n * cam_right.dot(wall_n)).normalized()
-	var move := Vector3.UP * -inp.y + along * inp.x
-	if move.length() > 1.0:
-		move = move.normalized()
-	velocity = move * WALL_SPEED * speed_mult - wall_n * 2.0   # slight push keeps us on the wall
-	# body sideways on the wall: feet on the wall, head pointing the way we walk
-	var fwd := move.normalized() if move.length() > 0.1 else Vector3.UP
-	model.basis = Basis.looking_at(fwd, wall_n).scaled(model.basis.get_scale())
-	model.position = -wall_n * 0.5 + Vector3.UP * 0.9
-	Hero.play_move(model, "run" if move.length() > 0.1 else "idle", WALL_SPEED if move.length() > 0.1 else 0.0)
+	var n: Vector3 = (hit["normal"] as Vector3).normalized()
+	_feet = hit["position"]
+	if n.y > 0.7:   # walked onto ground that faces up: back to normal walking
+		_end_wall_walk(Vector3.ZERO)
+		global_position = _feet + Vector3.UP * 0.05
+		return false
+	var new_n := wall_n.slerp(n, 1.0 - exp(-14.0 * delta)).normalized() if wall_n.dot(n) > 0.2 else n
+	if new_n.dot(wall_n) < 0.99999:   # carry the controls (and facing) over the edge
+		var q := Quaternion(wall_n, new_n)
+		_ctl_fwd = q * _ctl_fwd
+		_stick_fwd = q * _stick_fwd
+	wall_n = new_n
+	if wrapped and n.y <= 0.7:   # went round an edge: put the body in front of the new face
+		wall_n = n
+		global_position = _feet + n * 0.55 - Vector3.UP * 0.9
+		c = _stick_center()
+	# move along the surface, pulled gently onto it so the body hugs it
+	var gap := (c - _feet).dot(wall_n)
+	velocity = move * spd - wall_n * clampf((gap - 0.55) * 8.0, -3.0, 6.0)
+	if move.length() > 0.1:
+		_stick_fwd = move.normalized()
+	# model: feet on the surface, head pointing away from it, facing the way we walk
+	var fwd := _stick_fwd - wall_n * wall_n.dot(_stick_fwd)
+	if fwd.length() < 0.05:
+		fwd = Vector3.UP - wall_n * wall_n.dot(Vector3.UP)
+	model.global_basis = Basis.looking_at(fwd.normalized(), wall_n).scaled(model.basis.get_scale())
+	model.global_position = _feet
+	var moving := move.length() > 0.1
+	Hero.play_move(model, "run" if moving else "idle", spd if moving else 0.0)
 	dust_t -= delta
-	if dust_t <= 0.0 and move.length() > 0.1:
-		dust_t = 0.12
-		Vfx.dust(get_parent(), global_position - wall_n * 0.4 + Vector3.UP * 0.9)
+	if dust_t <= 0.0 and moving:
+		dust_t = 0.15 if sprinting else 0.25
+		Vfx.dust(get_parent(), _feet)
 	return true
 
 func _end_wall_walk(launch: Vector3) -> void:
@@ -584,7 +671,11 @@ func _end_wall_walk(launch: Vector3) -> void:
 	_wall_cd = 0.35
 	velocity = launch
 	model.position = Vector3.ZERO
-	facing = Vector3(-wall_n.x, 0, -wall_n.z) if launch.dot(wall_n) < 0.0 else Vector3(wall_n.x, 0, wall_n.z)
+	var f := Vector3(_stick_fwd.x, 0, _stick_fwd.z)
+	if f.length() < 0.1:
+		f = Vector3(-wall_n.x, 0, -wall_n.z) if launch.dot(wall_n) <= 0.0 else Vector3(wall_n.x, 0, wall_n.z)
+	if f.length() > 0.1:
+		facing = f.normalized()
 	model.basis = Basis(Vector3.UP, atan2(-facing.x, -facing.z)).scaled(model.basis.get_scale())
 
 func _update_anim() -> void:

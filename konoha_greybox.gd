@@ -220,12 +220,22 @@ func _gate_and_wall() -> void:
 	for i in segs:
 		var a := TAU * float(i) / segs
 		var p := Vector3(sin(a), 0, cos(a)) * WALL_R
-		if p.z > 0.0 and absf(p.x) < 14.0:
-			continue   # gate opening
+		var seg_len := TAU * WALL_R / segs + 1.0
+		if p.z > 0.0 and absf(p.x) < 14.0 + seg_len * 0.5:
+			continue   # gate opening (closed up to the pillars below)
 		if p.z < -120.0:
 			continue   # Hokage Rock closes the north side (joined by the two walls below)
-		var seg_len := TAU * WALL_R / segs + 1.0
 		box("Wall", "Wall%02d" % i, p, Vector3(seg_len, 14, 3), C_WALL, Vector3(0, a, 0))
+	# short straight pieces joining the gate pillars to the ring
+	var seg := TAU * WALL_R / segs + 1.0
+	var reach := 14.0 + seg * 0.5   # first ring segment kept starts beyond this
+	var a2 := asin((reach + seg * 0.5) / WALL_R)
+	var x_end := WALL_R * sin(a2) - seg * 0.5 * cos(a2)
+	for sx in [-1.0, 1.0]:
+		var x0 := 13.5
+		var mid := (x0 + x_end) * 0.5
+		box("Wall", "GateWall%s" % ("W" if sx < 0 else "E"), Vector3(sx * mid, 0, sqrt(WALL_R * WALL_R - mid * mid)),
+			Vector3(x_end - x0 + 1.0, 14, 3), C_WALL, Vector3(0, sx * asin(mid / WALL_R), 0))
 	var jx := sqrt(WALL_R * WALL_R - 120.0 * 120.0)   # where the ring stops, straight walls to the cliff
 	for sx in [-1.0, 1.0]:
 		box("Wall", "CliffWall%s" % ("W" if sx < 0 else "E"), Vector3(sx * jx, 0, -143), Vector3(3, 14, 48), C_WALL)
