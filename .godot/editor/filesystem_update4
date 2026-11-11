@@ -1,1 +1,6 @@
-res://main.tscn
+res://network_session.gd
+res://player.gd
+res://head_look.gd
+res://hero.gd
+res://main.gd
+res://npc.gd
