@@ -33,7 +33,13 @@ const DEFAULT_APPEARANCE := {
 	"headbandmetal_texture": "",        # "" = the texture embedded in the GLB
 	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
 	"pants_color": "#FFFFFF",
+	"skin_color": "",                   # "" = the model's own skin colour
 }
+## Skin: every surface using the GLB material with this name (face, arms on the shirts, legs on the
+## pants...) takes the appearance's skin_color. Each character gets its own copy of the material.
+const SKIN_MATERIAL := "Skin Color"
+## Preset skin tones (Customize > Appearance > Skin; villagers roll from these).
+const SKIN_TONES := ["#FBE3CF", "#F4CDAE", "#EBB894", "#D9A07A", "#C08560", "#A06A48", "#7E5136", "#5B3A27"]
 ## Clothing tints: category -> appearance key. The colour multiplies the mesh's own colours.
 const CLOTH_COLORS := {"shirt": "shirt_color", "pants": "pants_color"}
 ## Extra colour targets on hair meshes. A hairstyle gets one only if it has a surface whose
@@ -173,6 +179,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var hex := str(raw.get(color_key, "")).strip_edges()
 		if Color.html_is_valid(hex):
 			safe[color_key] = "#" + Color.html(hex).to_html(false)
+	var skin := str(raw.get("skin_color", "")).strip_edges()
+	safe["skin_color"] = "#" + Color.html(skin).to_html(false) if skin != "" and Color.html_is_valid(skin) else ""
 	for slot in COLOR_SLOTS:
 		var tkey := str(COLOR_SLOTS[slot].get("texture_key", ""))
 		if tkey != "":
@@ -216,6 +224,7 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 		if not ids.is_empty():
 			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
 	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)
+	look["skin_color"] = SKIN_TONES[rng.randi() % SKIN_TONES.size()]
 	for slot in COLOR_SLOTS:
 		var info: Dictionary = COLOR_SLOTS[slot]
 		var tkey := str(info.get("texture_key", ""))
@@ -270,6 +279,42 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 			var mi := entry["node"] as MeshInstance3D
 			for surface in mi.mesh.get_surface_count():
 				_tint_surface(mi, surface, tint, false, null, true)
+	_apply_skin(model, str(look.get("skin_color", "")))   # after the clothes, so a shirt tint never tints the arms
+
+## The (mesh, surface) pairs that use the skin material, the model's own copy of it and the
+## original colour - found once per model.
+static func _skin_info(model: Node3D) -> Dictionary:
+	if model.has_meta("hero_skin"):
+		return model.get_meta("hero_skin")
+	var info := {"surfaces": [], "mat": null, "orig": Color.WHITE}
+	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var m := mi.mesh.surface_get_material(s)
+			if m is BaseMaterial3D and m.resource_name == SKIN_MATERIAL:
+				(info["surfaces"] as Array).append([mi, s])
+				if info["mat"] == null:
+					info["mat"] = (m as BaseMaterial3D).duplicate()
+					info["orig"] = (m as BaseMaterial3D).albedo_color
+	model.set_meta("hero_skin", info)
+	return info
+
+static func has_skin(model: Node3D) -> bool:
+	return model != null and not (_skin_info(model)["surfaces"] as Array).is_empty()
+
+## The model's own skin colour (what "" means).
+static func skin_original(model: Node3D) -> Color:
+	return _skin_info(model)["orig"] if model != null else Color.WHITE
+
+static func _apply_skin(model: Node3D, hex: String) -> void:
+	var info := _skin_info(model)
+	var mat := info["mat"] as BaseMaterial3D
+	if mat == null:
+		return
+	mat.albedo_color = Color.html(hex) if hex != "" and Color.html_is_valid(hex) else info["orig"]
+	for pair in info["surfaces"]:
+		(pair[0] as MeshInstance3D).set_surface_override_material(int(pair[1]), mat)
 
 
 ## Power-up look (Bloodline mode "look"). An empty look puts the normal appearance back.
