@@ -1233,6 +1233,8 @@ func _rebuild_color_targets() -> void:
 	var targets: Array = [["hair_color", "Hair"]]
 	if preview_model != null and Hero.has_skin(preview_model):
 		targets.append(["skin_color", "Skin"])
+	if preview_model != null and Hero._eye_base_texture(preview_model) != null:
+		targets.append(["eye_color", "Eyes"])
 	if preview_model != null and preview_model.has_meta("anim_player"):
 		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
 			targets.append([Hero.COLOR_SLOTS[slot]["key"], Hero.COLOR_SLOTS[slot]["label"]])
@@ -1257,15 +1259,16 @@ func _rebuild_color_targets() -> void:
 
 func _rebuild_textures() -> void:
 	_clear(texture_row)
-	if _color_target == "skin_color":   # skin: preset tones + back to the model's own skin
+	if _color_target == "skin_color" or _color_target == "eye_color":   # presets + back to the model's own
 		texture_row.visible = true
+		var key := _color_target
 		var orig_skin := _chip(texture_row, "Original")
 		orig_skin.toggle_mode = false
 		orig_skin.pressed.connect(func():
-			_working["skin_color"] = ""
+			_working[key] = ""
 			_update_color_controls(_current_color())
 			_apply_look())
-		for tone in Hero.SKIN_TONES:
+		for tone in (Hero.SKIN_TONES if key == "skin_color" else Hero.EYE_TONES):
 			var sw := _swatch(Color.html(tone))
 			sw.custom_minimum_size = Vector2(34, 28)
 			texture_row.add_child(sw)
@@ -1296,6 +1299,8 @@ func _rebuild_textures() -> void:
 func _current_color() -> Color:
 	if _color_target == "skin_color" and str(_working.get("skin_color", "")) == "":
 		return Hero.skin_original(preview_model)
+	if _color_target == "eye_color" and str(_working.get("eye_color", "")) == "":
+		return Color(0.8, 0.8, 0.8)   # the painted grey iris
 	return Color.html(str(_working.get(_color_target, _working.get("hair_color", "#E6B52E"))))
 
 func _update_color_controls(color: Color) -> void:

@@ -34,7 +34,10 @@ const DEFAULT_APPEARANCE := {
 	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
 	"pants_color": "#FFFFFF",
 	"skin_color": "",                   # "" = the model's own skin colour
+	"eye_color": "",                    # "" = the eye texture as painted (grey iris)
 }
+## Iris colours offered in Customize (villagers roll natural ones from the first six).
+const EYE_TONES := ["#3B7BD4", "#3E9A5A", "#6B4423", "#8E7A3A", "#7C8A96", "#2C2C2C", "#8A4FD8", "#C0303A", "#E0A92E"]
 ## Skin: every surface using the GLB material with this name (face, arms on the shirts, legs on the
 ## pants...) takes the appearance's skin_color. Each character gets its own copy of the material.
 const SKIN_MATERIAL := "Skin Color"
@@ -179,8 +182,9 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var hex := str(raw.get(color_key, "")).strip_edges()
 		if Color.html_is_valid(hex):
 			safe[color_key] = "#" + Color.html(hex).to_html(false)
-	var skin := str(raw.get("skin_color", "")).strip_edges()
-	safe["skin_color"] = "#" + Color.html(skin).to_html(false) if skin != "" and Color.html_is_valid(skin) else ""
+	for opt_key in ["skin_color", "eye_color"]:   # optional colours: "" = the model's own
+		var v := str(raw.get(opt_key, "")).strip_edges()
+		safe[opt_key] = "#" + Color.html(v).to_html(false) if v != "" and Color.html_is_valid(v) else ""
 	for slot in COLOR_SLOTS:
 		var tkey := str(COLOR_SLOTS[slot].get("texture_key", ""))
 		if tkey != "":
@@ -225,6 +229,7 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
 	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)
 	look["skin_color"] = SKIN_TONES[rng.randi() % SKIN_TONES.size()]
+	look["eye_color"] = EYE_TONES[rng.randi() % 6]
 	for slot in COLOR_SLOTS:
 		var info: Dictionary = COLOR_SLOTS[slot]
 		var tkey := str(info.get("texture_key", ""))
@@ -280,6 +285,59 @@ static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void
 			for surface in mi.mesh.get_surface_count():
 				_tint_surface(mi, surface, tint, false, null, true)
 	_apply_skin(model, str(look.get("skin_color", "")))   # after the clothes, so a shirt tint never tints the arms
+	_apply_eye_color(model, str(look.get("eye_color", "")))
+
+## Eye colour: a recoloured copy of the eye texture - the grey iris takes the colour (its darker
+## rings darker), the white of the eye, highlights, pupil and outline stay. Cached per colour.
+static var _eye_cache := {}
+
+static func _eye_base_texture(model: Node3D) -> Texture2D:
+	var face = (model.get_meta("hero_extra", {}) as Dictionary).get("face")
+	if face == null or not is_instance_valid(face):
+		return null
+	var mi := face as MeshInstance3D
+	for s in mi.mesh.get_surface_count():
+		var base := mi.mesh.surface_get_material(s)
+		if base is BaseMaterial3D and (base as BaseMaterial3D).albedo_texture != null:
+			var nm := base.resource_name.to_lower()
+			var tp := (base as BaseMaterial3D).albedo_texture.resource_path.to_lower()
+			if not nm.contains("brow") and (nm.ends_with("eye") or tp.contains("eye_bc")):
+				return (base as BaseMaterial3D).albedo_texture
+	return null
+
+static func eye_tint_texture(src: Texture2D, col: Color) -> Texture2D:
+	if src == null:
+		return null
+	var key := "%d|%s" % [src.get_rid().get_id(), col.to_html(false)]
+	if _eye_cache.has(key):
+		return _eye_cache[key]
+	var img := src.get_image()
+	if img == null:
+		return null
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			var v := c.get_luminance()
+			var keep_white := smoothstep(0.9, 0.97, v)    # white of the eye + highlights
+			var iris := Color(col.r * v * 1.15, col.g * v * 1.15, col.b * v * 1.15, c.a)
+			img.set_pixel(x, y, iris.lerp(Color(c.r, c.g, c.b, c.a), keep_white))
+	img.generate_mipmaps()   # the eye material samples with mipmaps
+	var tex := ImageTexture.create_from_image(img)
+	if _eye_cache.size() > 24:   # dragging the colour slider makes many - keep the cache small
+		_eye_cache.clear()
+	_eye_cache[key] = tex
+	return tex
+
+static func _apply_eye_color(model: Node3D, hex: String) -> void:
+	var tint: Texture2D = null
+	if hex != "" and Color.html_is_valid(hex):
+		tint = eye_tint_texture(_eye_base_texture(model), Color.html(hex))
+	model.set_meta("eye_tint", tint)
+	set_eyes(model, null)   # shows the tint (a power-up's eyes go on top of this afterwards)
 
 ## The (mesh, surface) pairs that use the skin material, the model's own copy of it and the
 ## original colour - found once per model.
@@ -470,8 +528,14 @@ static func set_eyes(model: Node3D, tex: Texture2D) -> void:
 			tex_path = (base as BaseMaterial3D).albedo_texture.resource_path.to_lower()
 		if nm.contains("brow") or not (nm.ends_with("eye") or tex_path.contains("eye_bc")):
 			continue
-		if tex == null:
-			mi.set_surface_override_material(surface, null)
+		if tex == null:   # normal eyes: the appearance's eye colour (or the texture as painted)
+			var tint = model.get_meta("eye_tint", null)
+			if tint is Texture2D and base is BaseMaterial3D:
+				var tm := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
+				tm.albedo_texture = tint
+				mi.set_surface_override_material(surface, tm)
+			else:
+				mi.set_surface_override_material(surface, null)
 		elif base is BaseMaterial3D:
 			var m := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
 			m.albedo_texture = tex
