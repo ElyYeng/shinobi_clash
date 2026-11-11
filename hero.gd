@@ -297,10 +297,27 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 			if outfit_glow <= 0.0:
 				om.set_surface_override_material(surface, null)
 				continue
+			# Like the hair: the glow colour over the outfit's own texture (details kept). The glow
+			# comes from the texture too, so its black lines don't emit and stay crisp "neon black".
+			var tint := Color.html(str(look.get("glow", "#FFFFFF")))
+			var neon := _neon_texture(src.albedo_texture)
+			# Emission mask: "<texture>_Glow.png" next to the outfit texture (white = glows,
+			# black = doesn't, e.g. the black lines). Without one, the texture itself is the mask.
+			var mask: Texture2D = null
+			if src.albedo_texture != null and src.albedo_texture.resource_path != "":
+				mask = Moves.tex(src.albedo_texture.resource_path.get_basename() + "_Glow.png")
 			var nm := src.duplicate() as BaseMaterial3D
+			nm.albedo_color = src.albedo_color * tint
+			nm.albedo_texture = neon
+			# The *_SP textures keep a mask in alpha (0.12 on the lines) - not transparency. As
+			# transparency the lines turned see-through and showed the layer behind them.
+			nm.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+			nm.metallic = 0.0          # glTF defaults to metal: black lines would mirror the sky
+			nm.roughness = 1.0
+			nm.metallic_specular = 0.0
 			nm.emission_enabled = true
-			nm.emission = Color.WHITE
-			nm.emission_texture = src.albedo_texture
+			nm.emission = tint
+			nm.emission_texture = mask if mask != null else neon
 			nm.emission_energy_multiplier = outfit_glow
 			om.set_surface_override_material(surface, nm)
 	if not look.has("glow"):
@@ -354,6 +371,37 @@ static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Diction
 				pmat.albedo_texture = null
 
 const EYE_GLOW := 0.9   # how bright transformed irises glow (needs <eye>_Glow.png next to the eye texture)
+
+static var _neon_cache := {}
+
+## Copy of an outfit texture with its dark lines pushed to black (they'd otherwise look brown once
+## tinted, lit and surrounded by glow), bright parts unchanged. Cached per texture.
+static func _neon_texture(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var key := tex.get_rid().get_id()
+	if _neon_cache.has(key):
+		return _neon_cache[key]
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			var l := c.get_luminance()
+			if l < NEON_DARK:
+				var k := 0.12 * l / NEON_DARK
+				img.set_pixel(x, y, Color(c.r * k, c.g * k, c.b * k, c.a))
+	img.generate_mipmaps()
+	var out := ImageTexture.create_from_image(img)
+	_neon_cache[key] = out
+	return out
+
+const NEON_DARK := 0.42  # outfit pixels darker than this become (near) black in the neon form
 
 ## Swaps the iris texture on both eyes (null = the model's own eyes). The eyes are the face
 ## surfaces whose material is called "... Eye" or uses an "Eye" texture (not the eyebrows).
