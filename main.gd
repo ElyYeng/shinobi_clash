@@ -235,6 +235,11 @@ func _start_world() -> void:
 		npcs[id] = n
 	quests.setup(player, hud, self)
 	quests.changed.connect(_refresh_markers)
+	if map.get_node_or_null("HokageRock") != null:   # Konoha greybox: villagers stroll the streets
+		var crowd := Node3D.new()
+		crowd.name = "Villagers"
+		map.add_child(crowd)
+		Villager.populate(crowd, 22)
 	_refresh_markers()
 
 func _refresh_markers() -> void:
