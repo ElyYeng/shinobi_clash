@@ -8,3 +8,7 @@ render_priority = 0
 shader = ExtResource("1_n4pdp")
 shader_parameter/atlas = ExtResource("2_gw4v8")
 shader_parameter/max_lod = null
+shader_parameter/cel_bands = null
+shader_parameter/cel_softness = null
+shader_parameter/cel_shadow_tint = null
+shader_parameter/cel_rim = null

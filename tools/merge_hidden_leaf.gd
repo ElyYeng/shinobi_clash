@@ -213,6 +213,18 @@ func _prep(img: Image) -> Image:
 	return img
 
 func _xform(node: Node3D, root: Node) -> Transform3D:
+	# Skinned meshes are placed by their skeleton (bone pose x bind pose), not by their own node
+	# transform - skip that and those pieces land rotated/mirrored. Same placement Blender shows.
+	var mi := node as MeshInstance3D
+	if mi != null and mi.skin != null and mi.skin.get_bind_count() > 0:
+		var skel := mi.get_node_or_null(mi.skeleton) as Skeleton3D
+		if skel == null:
+			skel = mi.get_parent() as Skeleton3D
+		if skel != null:
+			var bone := mi.skin.get_bind_bone(0)
+			if bone < 0:
+				bone = skel.find_bone(mi.skin.get_bind_name(0))
+			return _xform(skel, root) * skel.get_bone_global_pose(maxi(bone, 0)) * mi.skin.get_bind_pose(0)
 	var t := Transform3D.IDENTITY
 	var n: Node = node
 	while n != null and n != root:

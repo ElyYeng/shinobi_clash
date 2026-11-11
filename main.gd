@@ -108,6 +108,7 @@ func _load_map() -> void:
 			terrain.name = "WorldTerrain"
 			map.add_child(terrain)
 	add_child(map)
+	AnimePost.add_to(map)   # anime ink outlines (Forward+ only)
 
 # ---------------------------------------------------------------- Mode: FIGHT
 func _fight_spawner(delta: float) -> void:

@@ -1,54 +1,59 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://game_map.gd" id="1_f5wb5"]
-[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_opaque.tres" id="2_qv48p"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_1.res" id="3_vfbkn"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_1_col.res" id="4_xygh4"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_-1.res" id="5_dmjo2"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_-1_col.res" id="6_yrlb7"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_0.res" id="7_07kyl"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_0_col.res" id="8_4l2wo"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_1.res" id="9_tqs7i"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_1_col.res" id="10_xy7rv"]
-[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_water.tres" id="11_qpmlo"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/water_-1_1.res" id="12_mp7xl"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/water_-1_0.res" id="13_u4l4f"]
-[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_cutout.tres" id="14_ck67n"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_0.res" id="15_hodp8"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_-1.res" id="16_5nf17"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_1.res" id="17_tpr8j"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_1_0.res" id="18_r522a"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_1_0_col.res" id="19_cgat6"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_-1.res" id="20_6jeug"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_-1_col.res" id="21_ctk51"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_0.res" id="22_quton"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_0_col.res" id="23_ncfwd"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_0.res" id="24_74vji"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_-1.res" id="25_qin3i"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_1.res" id="26_6omsd"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_2.res" id="27_7grlo"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_2.res" id="28_cilnn"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_3.res" id="29_86ubw"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_1.res" id="30_6v2g5"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_3.res" id="31_o6mh6"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-2_0.res" id="32_nwin4"]
-[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-2_0_col.res" id="33_g0rt6"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-3_0.res" id="34_r2ck0"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_2.res" id="35_ref8m"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_-2.res" id="36_m6x4c"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-2_-2.res" id="37_48vy8"]
-[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_2_1.res" id="38_6ehir"]
-[ext_resource type="Shader" path="res://shaders/sky.gdshader" id="39_iun32"]
-[ext_resource type="Script" path="res://npc_spawn.gd" id="40_do3ao"]
-[ext_resource type="Resource" path="res://data/npcs/courier.tres" id="41_kdj56"]
-[ext_resource type="Resource" path="res://data/npcs/elder.tres" id="42_f4fse"]
-[ext_resource type="Resource" path="res://data/npcs/hermit.tres" id="43_lhh1o"]
-[ext_resource type="Resource" path="res://data/npcs/kakashi.tres" id="44_0jo3w"]
-[ext_resource type="Resource" path="res://data/npcs/scout.tres" id="45_1llph"]
-[ext_resource type="Resource" path="res://data/npcs/trainer.tres" id="46_naqf4"]
+[ext_resource type="Script" path="res://game_map.gd" id="1_yrlb7"]
+[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_opaque.tres" id="2_07kyl"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_-3.res" id="3_4l2wo"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_-3_col.res" id="4_tqs7i"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_-1.res" id="5_xy7rv"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_-1_col.res" id="6_qpmlo"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_-2.res" id="7_mp7xl"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_-2_col.res" id="8_u4l4f"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_-3.res" id="9_ck67n"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_-3_col.res" id="10_hodp8"]
+[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_water.tres" id="11_5nf17"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/water_0_-3.res" id="12_tpr8j"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_-2.res" id="13_r522a"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_-2_col.res" id="14_cgat6"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/water_0_-2.res" id="15_6jeug"]
+[ext_resource type="Material" path="res://assets/hidden_leaf/atlas_cutout.tres" id="16_ctk51"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_-2.res" id="17_quton"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_-1.res" id="18_ncfwd"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_0_0.res" id="19_74vji"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_0_0_col.res" id="20_qin3i"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_-1.res" id="21_6omsd"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_1_0.res" id="22_7grlo"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_1_0_col.res" id="23_cilnn"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_0.res" id="24_86ubw"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_-1.res" id="25_6v2g5"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_-1_col.res" id="26_o6mh6"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_0.res" id="27_nwin4"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_0_col.res" id="28_g0rt6"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_0.res" id="29_r2ck0"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_1.res" id="30_ref8m"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_2.res" id="31_m6x4c"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_2.res" id="32_48vy8"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-1_3.res" id="33_6ehir"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_1.res" id="34_iun32"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_1.res" id="35_do3ao"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_0_3.res" id="36_kdj56"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-2_0.res" id="37_f4fse"]
+[ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-2_0_col.res" id="38_lhh1o"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-3_0.res" id="39_0jo3w"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_2.res" id="40_1llph"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_1_-2.res" id="41_naqf4"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-2_-2.res" id="42_c80du"]
+[ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_2_1.res" id="43_xc7rq"]
+[ext_resource type="Shader" path="res://shaders/sky.gdshader" id="44_5ftli"]
+[ext_resource type="Script" path="res://npc_spawn.gd" id="45_hcdd5"]
+[ext_resource type="Resource" path="res://data/npcs/courier.tres" id="46_jh55t"]
+[ext_resource type="Resource" path="res://data/npcs/elder.tres" id="47_ge4td"]
+[ext_resource type="Resource" path="res://data/npcs/hermit.tres" id="48_vpfy4"]
+[ext_resource type="Resource" path="res://data/npcs/kakashi.tres" id="49_wwrui"]
+[ext_resource type="Resource" path="res://data/npcs/scout.tres" id="50_1rvly"]
+[ext_resource type="Resource" path="res://data/npcs/trainer.tres" id="51_3oink"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vnv4d"]
-shader = ExtResource("39_iun32")
+shader = ExtResource("44_5ftli")
 shader_parameter/top_color = Color(0.14, 0.4, 0.88, 1)
 shader_parameter/horizon_color = Color(0.74, 0.86, 0.97, 1)
 shader_parameter/ground_color = Color(0.36, 0.42, 0.36, 1)
@@ -126,169 +131,191 @@ particles_anim_loop = false
 offsets = PackedFloat32Array(0, 0.5, 1)
 colors = PackedColorArray(1, 0.95, 0.5, 0, 1, 0.92, 0.45, 1, 1, 0.9, 0.4, 0)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_c80du"]
-size = Vector3(1, 200, 660.7065)
+[sub_resource type="BoxShape3D" id="BoxShape3D_q151y"]
+size = Vector3(1, 200, 726.2623)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_xc7rq"]
-size = Vector3(1, 200, 660.7065)
+[sub_resource type="BoxShape3D" id="BoxShape3D_somwl"]
+size = Vector3(1, 200, 726.2623)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_5ftli"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_wmrxb"]
 size = Vector3(687.6395, 200, 1)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_hcdd5"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_2djca"]
 size = Vector3(687.6395, 200, 1)
 
-[node name="OpenWorld" type="Node3D" unique_id=1500994721]
-script = ExtResource("1_f5wb5")
+[node name="OpenWorld" type="Node3D" unique_id=1754889628]
+script = ExtResource("1_yrlb7")
 play_half = 420.0
 
-[node name="Village" type="Node3D" parent="." unique_id=998864977]
+[node name="Village" type="Node3D" parent="." unique_id=1008182245]
 
-[node name="opaque_0_1" type="MeshInstance3D" parent="Village" unique_id=453384057]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("3_vfbkn")
+[node name="opaque_-1_-3" type="MeshInstance3D" parent="Village" unique_id=426431851]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("3_4l2wo")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_0_1" unique_id=1972406419]
+[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_-3" unique_id=661778522]
 
-[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="Village/opaque_0_1/Col" unique_id=1698254034]
-shape = ExtResource("4_xygh4")
+[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="Village/opaque_-1_-3/Col" unique_id=1780014275]
+shape = ExtResource("4_tqs7i")
 
-[node name="opaque_0_-1" type="MeshInstance3D" parent="Village" unique_id=795917908]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("5_dmjo2")
+[node name="opaque_0_-1" type="MeshInstance3D" parent="Village" unique_id=1031177130]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("5_xy7rv")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_0_-1" unique_id=838207154]
+[node name="Col" type="StaticBody3D" parent="Village/opaque_0_-1" unique_id=316402718]
 
-[node name="@CollisionShape3D@3" type="CollisionShape3D" parent="Village/opaque_0_-1/Col" unique_id=1525795849]
-shape = ExtResource("6_yrlb7")
+[node name="@CollisionShape3D@3" type="CollisionShape3D" parent="Village/opaque_0_-1/Col" unique_id=1160400058]
+shape = ExtResource("6_qpmlo")
 
-[node name="opaque_0_0" type="MeshInstance3D" parent="Village" unique_id=524940256]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("7_07kyl")
+[node name="opaque_-1_-2" type="MeshInstance3D" parent="Village" unique_id=1445959910]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("7_mp7xl")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_0_0" unique_id=564668886]
+[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_-2" unique_id=849991708]
 
-[node name="@CollisionShape3D@4" type="CollisionShape3D" parent="Village/opaque_0_0/Col" unique_id=910468182]
-shape = ExtResource("8_4l2wo")
+[node name="@CollisionShape3D@4" type="CollisionShape3D" parent="Village/opaque_-1_-2/Col" unique_id=158336982]
+shape = ExtResource("8_u4l4f")
 
-[node name="opaque_-1_1" type="MeshInstance3D" parent="Village" unique_id=1741369924]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("9_tqs7i")
+[node name="opaque_0_-3" type="MeshInstance3D" parent="Village" unique_id=1094503712]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("9_ck67n")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_1" unique_id=2112664886]
+[node name="Col" type="StaticBody3D" parent="Village/opaque_0_-3" unique_id=1705810003]
 
-[node name="@CollisionShape3D@5" type="CollisionShape3D" parent="Village/opaque_-1_1/Col" unique_id=1642134181]
-shape = ExtResource("10_xy7rv")
+[node name="@CollisionShape3D@5" type="CollisionShape3D" parent="Village/opaque_0_-3/Col" unique_id=1823187029]
+shape = ExtResource("10_hodp8")
 
-[node name="water_-1_1" type="MeshInstance3D" parent="Village" unique_id=1059641660]
-material_override = ExtResource("11_qpmlo")
+[node name="water_0_-3" type="MeshInstance3D" parent="Village" unique_id=1848111231]
+material_override = ExtResource("11_5nf17")
 cast_shadow = 0
-mesh = ExtResource("12_mp7xl")
+mesh = ExtResource("12_tpr8j")
 
-[node name="water_-1_0" type="MeshInstance3D" parent="Village" unique_id=1350992907]
-material_override = ExtResource("11_qpmlo")
+[node name="opaque_0_-2" type="MeshInstance3D" parent="Village" unique_id=963621123]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("13_r522a")
+
+[node name="Col" type="StaticBody3D" parent="Village/opaque_0_-2" unique_id=223471395]
+
+[node name="@CollisionShape3D@6" type="CollisionShape3D" parent="Village/opaque_0_-2/Col" unique_id=831023453]
+shape = ExtResource("14_cgat6")
+
+[node name="water_0_-2" type="MeshInstance3D" parent="Village" unique_id=761378731]
+material_override = ExtResource("11_5nf17")
 cast_shadow = 0
-mesh = ExtResource("13_u4l4f")
+mesh = ExtResource("15_6jeug")
 
-[node name="cutout_0_0" type="MeshInstance3D" parent="Village" unique_id=919207678]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("15_hodp8")
+[node name="cutout_-1_-2" type="MeshInstance3D" parent="Village" unique_id=1409836520]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("17_quton")
 
-[node name="cutout_0_-1" type="MeshInstance3D" parent="Village" unique_id=474779222]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("16_5nf17")
+[node name="cutout_-1_-1" type="MeshInstance3D" parent="Village" unique_id=820541894]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("18_ncfwd")
 
-[node name="cutout_0_1" type="MeshInstance3D" parent="Village" unique_id=782322969]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("17_tpr8j")
+[node name="opaque_0_0" type="MeshInstance3D" parent="Village" unique_id=964210342]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("19_74vji")
 
-[node name="opaque_1_0" type="MeshInstance3D" parent="Village" unique_id=882428104]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("18_r522a")
+[node name="Col" type="StaticBody3D" parent="Village/opaque_0_0" unique_id=178688268]
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_1_0" unique_id=1178338429]
+[node name="@CollisionShape3D@7" type="CollisionShape3D" parent="Village/opaque_0_0/Col" unique_id=1207261995]
+shape = ExtResource("20_qin3i")
 
-[node name="@CollisionShape3D@6" type="CollisionShape3D" parent="Village/opaque_1_0/Col" unique_id=396759629]
-shape = ExtResource("19_cgat6")
+[node name="cutout_0_-1" type="MeshInstance3D" parent="Village" unique_id=677274260]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("21_6omsd")
 
-[node name="opaque_-1_-1" type="MeshInstance3D" parent="Village" unique_id=1566460861]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("20_6jeug")
+[node name="opaque_1_0" type="MeshInstance3D" parent="Village" unique_id=1187204999]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("22_7grlo")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_-1" unique_id=46808238]
+[node name="Col" type="StaticBody3D" parent="Village/opaque_1_0" unique_id=1711488720]
 
-[node name="@CollisionShape3D@7" type="CollisionShape3D" parent="Village/opaque_-1_-1/Col" unique_id=1474208228]
-shape = ExtResource("21_ctk51")
+[node name="@CollisionShape3D@8" type="CollisionShape3D" parent="Village/opaque_1_0/Col" unique_id=1035510287]
+shape = ExtResource("23_cilnn")
 
-[node name="opaque_-1_0" type="MeshInstance3D" parent="Village" unique_id=899629691]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("22_quton")
+[node name="cutout_0_0" type="MeshInstance3D" parent="Village" unique_id=122590137]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("24_86ubw")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_0" unique_id=533078781]
+[node name="opaque_-1_-1" type="MeshInstance3D" parent="Village" unique_id=1570142151]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("25_6v2g5")
 
-[node name="@CollisionShape3D@8" type="CollisionShape3D" parent="Village/opaque_-1_0/Col" unique_id=83258960]
-shape = ExtResource("23_ncfwd")
+[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_-1" unique_id=406374767]
 
-[node name="cutout_-1_0" type="MeshInstance3D" parent="Village" unique_id=472927216]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("24_74vji")
+[node name="@CollisionShape3D@9" type="CollisionShape3D" parent="Village/opaque_-1_-1/Col" unique_id=342281834]
+shape = ExtResource("26_o6mh6")
 
-[node name="cutout_-1_-1" type="MeshInstance3D" parent="Village" unique_id=61065074]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("25_qin3i")
+[node name="opaque_-1_0" type="MeshInstance3D" parent="Village" unique_id=2043289133]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("27_nwin4")
 
-[node name="cutout_-1_1" type="MeshInstance3D" parent="Village" unique_id=1187084164]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("26_6omsd")
+[node name="Col" type="StaticBody3D" parent="Village/opaque_-1_0" unique_id=209405785]
 
-[node name="cutout_-1_2" type="MeshInstance3D" parent="Village" unique_id=1331356230]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("27_7grlo")
+[node name="@CollisionShape3D@10" type="CollisionShape3D" parent="Village/opaque_-1_0/Col" unique_id=1765555728]
+shape = ExtResource("28_g0rt6")
 
-[node name="cutout_0_2" type="MeshInstance3D" parent="Village" unique_id=2071608691]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("28_cilnn")
+[node name="cutout_-1_0" type="MeshInstance3D" parent="Village" unique_id=517630309]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("29_r2ck0")
 
-[node name="cutout_-1_3" type="MeshInstance3D" parent="Village" unique_id=595729488]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("29_86ubw")
+[node name="cutout_-1_1" type="MeshInstance3D" parent="Village" unique_id=548650704]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("30_ref8m")
 
-[node name="cutout_1_1" type="MeshInstance3D" parent="Village" unique_id=1898539743]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("30_6v2g5")
+[node name="cutout_-1_2" type="MeshInstance3D" parent="Village" unique_id=1989473283]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("31_m6x4c")
 
-[node name="cutout_0_3" type="MeshInstance3D" parent="Village" unique_id=974758994]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("31_o6mh6")
+[node name="cutout_0_2" type="MeshInstance3D" parent="Village" unique_id=2086261374]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("32_48vy8")
 
-[node name="opaque_-2_0" type="MeshInstance3D" parent="Village" unique_id=265586455]
-material_override = ExtResource("2_qv48p")
-mesh = ExtResource("32_nwin4")
+[node name="cutout_-1_3" type="MeshInstance3D" parent="Village" unique_id=1853688893]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("33_6ehir")
 
-[node name="Col" type="StaticBody3D" parent="Village/opaque_-2_0" unique_id=148377969]
+[node name="cutout_0_1" type="MeshInstance3D" parent="Village" unique_id=128349250]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("34_iun32")
 
-[node name="@CollisionShape3D@9" type="CollisionShape3D" parent="Village/opaque_-2_0/Col" unique_id=1746988937]
-shape = ExtResource("33_g0rt6")
+[node name="cutout_1_1" type="MeshInstance3D" parent="Village" unique_id=833604108]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("35_do3ao")
 
-[node name="cutout_-3_0" type="MeshInstance3D" parent="Village" unique_id=1424130599]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("34_r2ck0")
+[node name="cutout_0_3" type="MeshInstance3D" parent="Village" unique_id=1815536466]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("36_kdj56")
 
-[node name="cutout_1_2" type="MeshInstance3D" parent="Village" unique_id=1022716099]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("35_ref8m")
+[node name="opaque_-2_0" type="MeshInstance3D" parent="Village" unique_id=1809953378]
+material_override = ExtResource("2_07kyl")
+mesh = ExtResource("37_f4fse")
 
-[node name="cutout_1_-2" type="MeshInstance3D" parent="Village" unique_id=195954464]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("36_m6x4c")
+[node name="Col" type="StaticBody3D" parent="Village/opaque_-2_0" unique_id=1792580681]
 
-[node name="cutout_-2_-2" type="MeshInstance3D" parent="Village" unique_id=917246731]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("37_48vy8")
+[node name="@CollisionShape3D@11" type="CollisionShape3D" parent="Village/opaque_-2_0/Col" unique_id=1340445267]
+shape = ExtResource("38_lhh1o")
 
-[node name="cutout_2_1" type="MeshInstance3D" parent="Village" unique_id=1443130906]
-material_override = ExtResource("14_ck67n")
-mesh = ExtResource("38_6ehir")
+[node name="cutout_-3_0" type="MeshInstance3D" parent="Village" unique_id=706220707]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("39_0jo3w")
+
+[node name="cutout_1_2" type="MeshInstance3D" parent="Village" unique_id=1956770097]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("40_1llph")
+
+[node name="cutout_1_-2" type="MeshInstance3D" parent="Village" unique_id=766267057]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("41_naqf4")
+
+[node name="cutout_-2_-2" type="MeshInstance3D" parent="Village" unique_id=522308093]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("42_c80du")
+
+[node name="cutout_2_1" type="MeshInstance3D" parent="Village" unique_id=1674125510]
+material_override = ExtResource("16_ctk51")
+mesh = ExtResource("43_xc7rq")
 
 [node name="Environment" type="Node3D" parent="." unique_id=344088879]
 
@@ -343,56 +370,56 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="CourierRin" type="Marker3D" parent="NPCs" unique_id=2068068341]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.8684583, 0.006958008, 1.4447701)
-script = ExtResource("40_do3ao")
-npc = ExtResource("41_kdj56")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("46_jh55t")
 
 [node name="ElderHayate" type="Marker3D" parent="NPCs" unique_id=202290230]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3459225, 6.1035156e-05, -6.716618)
-script = ExtResource("40_do3ao")
-npc = ExtResource("42_f4fse")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("47_ge4td")
 
 [node name="HermitSora" type="Marker3D" parent="NPCs" unique_id=1928266956]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5422335, 0, -6.5854473)
-script = ExtResource("40_do3ao")
-npc = ExtResource("43_lhh1o")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("48_vpfy4")
 
 [node name="Kakashi" type="Marker3D" parent="NPCs" unique_id=1954952304]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.822397, -0.026794434, 1.6763351)
-script = ExtResource("40_do3ao")
-npc = ExtResource("44_0jo3w")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("49_wwrui")
 
 [node name="ScoutMika" type="Marker3D" parent="NPCs" unique_id=1883476424]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4447701, 0, 7.8684583)
-script = ExtResource("40_do3ao")
-npc = ExtResource("45_1llph")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("50_1rvly")
 
 [node name="InstructorDaichi" type="Marker3D" parent="NPCs" unique_id=1905053713]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2669291, 3.0517578e-05, -12.938118)
-script = ExtResource("40_do3ao")
-npc = ExtResource("46_naqf4")
+script = ExtResource("45_hcdd5")
+npc = ExtResource("51_3oink")
 
-[node name="Bounds" type="Node3D" parent="." unique_id=1026997055]
+[node name="Bounds" type="Node3D" parent="." unique_id=1981571076]
 
-[node name="Wall" type="StaticBody3D" parent="Bounds" unique_id=1476221388]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 337.93552, 0, 3.995453)
+[node name="Wall" type="StaticBody3D" parent="Bounds" unique_id=529632740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 337.93552, 0, -28.782501)
 
-[node name="@CollisionShape3D@10" type="CollisionShape3D" parent="Bounds/Wall" unique_id=1770039086]
-shape = SubResource("BoxShape3D_c80du")
+[node name="@CollisionShape3D@12" type="CollisionShape3D" parent="Bounds/Wall" unique_id=579426377]
+shape = SubResource("BoxShape3D_q151y")
 
-[node name="@StaticBody3D@11" type="StaticBody3D" parent="Bounds" unique_id=1716634670]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -349.704, 0, 3.995453)
+[node name="@StaticBody3D@13" type="StaticBody3D" parent="Bounds" unique_id=1991790015]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -349.704, 0, -28.782501)
 
-[node name="@CollisionShape3D@12" type="CollisionShape3D" parent="Bounds/@StaticBody3D@11" unique_id=1334726908]
-shape = SubResource("BoxShape3D_xc7rq")
+[node name="@CollisionShape3D@14" type="CollisionShape3D" parent="Bounds/@StaticBody3D@13" unique_id=731462690]
+shape = SubResource("BoxShape3D_somwl")
 
-[node name="@StaticBody3D@13" type="StaticBody3D" parent="Bounds" unique_id=2096664390]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.884247, 0, 334.3487)
+[node name="@StaticBody3D@15" type="StaticBody3D" parent="Bounds" unique_id=1450332111]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.884247, 0, 334.34866)
 
-[node name="@CollisionShape3D@14" type="CollisionShape3D" parent="Bounds/@StaticBody3D@13" unique_id=511680952]
-shape = SubResource("BoxShape3D_5ftli")
+[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="Bounds/@StaticBody3D@15" unique_id=1604360045]
+shape = SubResource("BoxShape3D_wmrxb")
 
-[node name="@StaticBody3D@15" type="StaticBody3D" parent="Bounds" unique_id=24524158]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.884247, 0, -326.3578)
+[node name="@StaticBody3D@17" type="StaticBody3D" parent="Bounds" unique_id=2013440926]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.884247, 0, -391.91367)
 
-[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="Bounds/@StaticBody3D@15" unique_id=338373805]
-shape = SubResource("BoxShape3D_hcdd5")
+[node name="@CollisionShape3D@18" type="CollisionShape3D" parent="Bounds/@StaticBody3D@17" unique_id=80955481]
+shape = SubResource("BoxShape3D_2djca")
