@@ -960,6 +960,8 @@ func _fx_clones(_col: Color) -> void:
 		var spawn_pos := global_position + side * offs
 		var c := Clone.new()
 		c.life = clone_time
+		c.slot = i
+		c.slot_count = clone_count
 		c.position = spawn_pos
 		get_parent().add_child(c)
 		spawned_clones.append(c)
