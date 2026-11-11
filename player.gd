@@ -148,7 +148,7 @@ func apply_bloodline() -> void:
 	refresh_stats()
 	_clear_buffs()
 	_power_off()
-	aura.visible = GameData.equipped != "none"
+	aura.visible = false   # no idle glow - the aura only lights up for forms, buffs and jutsu
 	aura.light_color = def["color"]
 	aura.light_energy = 1.2
 
@@ -698,6 +698,8 @@ func _update_buffs(delta: float) -> void:
 	Enemy.time_scale = enemy_slow()
 	if buffs.is_empty() and not powered and armor_time <= 0.0 and not kurama and aura.light_energy > 1.2:
 		aura.light_energy = move_toward(aura.light_energy, 1.2, 6.0 * delta)
+		if aura.light_energy <= 1.2:
+			aura.visible = false   # buff faded: back to no glow
 
 func _aura_tick(radius: float, dps: float, col: Color) -> void:
 	for e in _foes_in(radius):
@@ -940,7 +942,7 @@ func _reset_aura() -> void:
 		aura.light_energy = 2.0
 		return
 	var def := Bloodline.get_def(GameData.equipped)
-	aura.visible = GameData.equipped != "none"
+	aura.visible = false   # no idle glow - the aura only lights up for forms, buffs and jutsu
 	aura.light_color = def["color"]
 	aura.light_energy = 1.2
 
