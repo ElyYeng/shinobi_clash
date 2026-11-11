@@ -193,10 +193,17 @@ func _process(delta: float) -> void:
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
 	var look: Vector2 = _local_player.get("look_angles") if _local_player.get("look_angles") != null else Vector2.ZERO
+	# chakra walk: the model's full rotation + where the feet are (zero offset = standing normally)
+	var stick := Vector4.ZERO
+	var feet := Vector3.ZERO
+	if _local_player.get("wall_walking") and _local_player.model != null:
+		var q: Quaternion = _local_player.model.global_basis.get_rotation_quaternion()
+		stick = Vector4(q.x, q.y, q.z, q.w)
+		feet = _local_player.model.global_position - pos
 	if multiplayer.is_server():
-		_broadcast_state.rpc(1, pos, yaw, look)
+		_broadcast_state.rpc(1, pos, yaw, look, stick, feet)
 	else:
-		_submit_state.rpc_id(1, pos, yaw, look)
+		_submit_state.rpc_id(1, pos, yaw, look, stick, feet)
 	if GameData.level != _sent_level:   # level ups show on your name tag for everyone
 		_sent_level = GameData.level
 		broadcast_level(GameData.level)
@@ -277,24 +284,25 @@ func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1, app
 	_avatars[peer_id] = avatar
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _submit_state(pos: Vector3, yaw: float, look: Vector2) -> void:
+func _submit_state(pos: Vector3, yaw: float, look: Vector2, stick: Vector4, feet: Vector3) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_broadcast_state.rpc(sender, pos, yaw, look)
-	_apply_remote_state(sender, pos, yaw, look)
+	_broadcast_state.rpc(sender, pos, yaw, look, stick, feet)
+	_apply_remote_state(sender, pos, yaw, look, stick, feet)
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _broadcast_state(peer_id: int, pos: Vector3, yaw: float, look: Vector2) -> void:
-	_apply_remote_state(peer_id, pos, yaw, look)
+func _broadcast_state(peer_id: int, pos: Vector3, yaw: float, look: Vector2, stick: Vector4, feet: Vector3) -> void:
+	_apply_remote_state(peer_id, pos, yaw, look, stick, feet)
 
-func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float, look := Vector2.ZERO) -> void:
+func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float, look := Vector2.ZERO, stick := Vector4.ZERO, feet := Vector3.ZERO) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
 		_avatars[peer_id].set_network_transform(pos, yaw, look)
+		_avatars[peer_id].set_stick_pose(stick, feet)
 
 # ---------------------------------------------------------------- level on the name tag
 ## Tells everyone this player's level (sent whenever GameData.level changes).

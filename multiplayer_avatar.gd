@@ -10,6 +10,23 @@ var character_appearance: Dictionary = {}
 var target_position := Vector3.ZERO
 var target_yaw := 0.0
 var target_look := Vector2.ZERO   # head look (yaw, pitch) relative to the body
+var stuck := false                # on a wall / ceiling (chakra walk)
+var stick_q := Quaternion.IDENTITY
+var stick_feet := Vector3.ZERO
+
+## Chakra-walk pose from the owner: model rotation (as x,y,z,w; all zero = standing normally) and
+## the feet's offset from the body.
+func set_stick_pose(q: Vector4, feet: Vector3) -> void:
+	if network_ragdoll_started:
+		return
+	var was := stuck
+	stuck = q != Vector4.ZERO
+	if stuck:
+		stick_q = Quaternion(q.x, q.y, q.z, q.w).normalized()
+		stick_feet = feet
+	elif was and model != null:   # back on the ground: stand upright again
+		model.position = Vector3.ZERO
+		model.basis = Basis(Vector3.UP, target_yaw).scaled(model.basis.get_scale())
 var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
@@ -206,11 +223,18 @@ func _process(delta: float) -> void:
 	animation_lock = maxf(0.0, animation_lock - delta)
 	global_position = global_position.lerp(target_position, minf(1.0, delta * 14.0))
 	if model != null:
-		model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
+		if stuck:   # sideways on a wall / upside down on a ceiling
+			var k := minf(1.0, delta * 14.0)
+			var sc := model.basis.get_scale()
+			var cur := model.global_basis.get_rotation_quaternion()
+			model.global_basis = Basis(cur.slerp(stick_q, k)).scaled(sc)
+			model.position = model.position.lerp(stick_feet, k)
+		else:
+			model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
 		if animation_lock <= 0.0:
 			Hero.play_move(model, Hero.move_state(speed), speed)
-		HeadLook.drive(model, target_look.x, target_look.y, delta)
+		HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
 	_last_position = global_position
 
 

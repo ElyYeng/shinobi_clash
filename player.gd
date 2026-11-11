@@ -198,6 +198,9 @@ func _zoom_step(dir: int) -> void:
 func _update_camera(delta: float) -> void:
 	# --- follow (top-level pivot eases toward the head; snaps after teleports)
 	var head := global_position + Vector3.UP * CAM_HEIGHT
+	if wall_walking:   # head sticks out from the surface we stand on
+		head = _feet + wall_n * CAM_HEIGHT
+	_cam_q = _cam_q.slerp(_surf_q, 1.0 - exp(-7.0 * delta)).normalized()
 	if not (is_dead and ragdoll):   # while ragdolled, _physics_process follows the body
 		var p := pivot.global_position
 		if p.distance_to(head) > 6.0:
@@ -223,7 +226,7 @@ func _update_camera(delta: float) -> void:
 		_land_vel += (-_land_dip * 120.0 - _land_vel * 16.0) * delta
 		_land_dip += _land_vel * delta
 		pivot.global_position = p + Vector3.UP * _land_dip
-	pivot.rotation = Vector3(pitch, yaw, 0.0)
+	pivot.global_basis = Basis(_cam_q) * Basis.from_euler(Vector3(pitch, yaw, 0.0))
 
 	# --- distance: ease to the wanted zoom, pulled in instantly by walls (characters ignored)
 	var want := cam_zoom
@@ -244,7 +247,8 @@ func _update_camera(delta: float) -> void:
 	# --- strafe roll + trauma shake
 	var right := Basis(Vector3.UP, yaw) * Vector3.RIGHT
 	var lateral := Vector2(velocity.x, velocity.z).dot(Vector2(right.x, right.z))
-	_cam_roll = lerpf(_cam_roll, clampf(-lateral * 0.0035, -0.035, 0.035), 1.0 - exp(-6.0 * delta))
+	var roll_to := 0.0 if wall_walking else clampf(-lateral * 0.0035, -0.035, 0.035)
+	_cam_roll = lerpf(_cam_roll, roll_to, 1.0 - exp(-6.0 * delta))
 	_trauma = maxf(0.0, _trauma - delta * 1.5)
 	_shake_t += delta * 28.0
 	var s := _trauma * _trauma
@@ -386,7 +390,7 @@ func _physics_process(delta: float) -> void:
 		lock_target = null
 	elif global_position.distance_to(lock_target.global_position) > 45.0:
 		lock_target = null
-	if lock_target:
+	if lock_target and not wall_walking:
 		var d := lock_target.global_position - global_position
 		yaw = lerp_angle(yaw, atan2(-d.x, -d.z), 6.0 * delta)
 		pitch = lerpf(pitch, -0.3, 3.0 * delta)
@@ -513,8 +517,8 @@ var wall_n := Vector3.ZERO          # normal of the surface we stand on (points 
 var _wall_cd := 0.0
 var _stick_fwd := Vector3.UP        # last movement direction on the surface (model faces it)
 var _feet := Vector3.ZERO           # surface point under the feet
-var _ctl_fwd := Vector3.UP          # what W means on the surface - carried across edges
-var _ctl_yaw := 0.0                 # camera yaw last frame (mouse turns steer on the surface)
+var _surf_q := Quaternion.IDENTITY  # turns world-up onto the surface we stand on (carried across edges)
+var _cam_q := Quaternion.IDENTITY   # what the camera currently uses (eases toward _surf_q)
 
 func _try_wall_walk(dir: Vector3) -> void:
 	_wall_cd = maxf(0.0, _wall_cd - get_physics_process_delta_time())
@@ -550,16 +554,18 @@ func _stick_to(n: Vector3, point: Vector3) -> void:
 	if f.length() < 0.2:
 		f = facing - n * n.dot(facing)
 	_stick_fwd = f.normalized() if f.length() > 0.01 else Vector3.FORWARD
-	# W starts as "camera forward" flattened onto the surface (straight up a wall you face)
-	var cf := -cam.global_basis.z
-	var cu := cam.global_basis.y
-	var g := cf - n * n.dot(cf)
-	var gu := cu - n * n.dot(cu)
-	# looking (nearly) at the surface -> W = camera up (straight up a wall); looking along it -> forward
-	var wgt := clampf((g.length() - 0.3) / 0.4, 0.0, 1.0)
-	g = gu.normalized().lerp(g.normalized() if g.length() > 0.01 else gu.normalized(), wgt)
-	_ctl_fwd = g.normalized() if g.length() > 0.01 else _stick_fwd
-	_ctl_yaw = yaw
+	# the camera tilts with us: the surface becomes "the ground" (looking at a wall -> looking up it)
+	_surf_q = _arc(Vector3.UP, n) * _surf_q
+
+## Shortest rotation taking direction a onto b (a stable axis when they point opposite ways).
+func _arc(a: Vector3, b: Vector3) -> Quaternion:
+	if a.dot(b) < -0.999:
+		var ax := pivot.global_basis.x
+		ax = (ax - a * a.dot(ax)).normalized()
+		if ax.length() < 0.5:
+			ax = a.cross(Vector3.RIGHT if absf(a.x) < 0.9 else Vector3.FORWARD).normalized()
+		return Quaternion(ax, PI)
+	return Quaternion(a.normalized(), b.normalized())
 
 ## Middle of the body - the point the feet probe from (the capsule stays upright).
 func _stick_center() -> Vector3:
@@ -573,22 +579,18 @@ func _ray(from: Vector3, to: Vector3) -> Dictionary:
 		return {}
 	return h
 
-## Movement on the surface: W follows _ctl_fwd (carried across edges, so W keeps going the same
-## way from a wall onto a ceiling), A/D strafe, mouse left/right steers.
+## Movement on the surface, relative to the (tilted) camera: W = forward on screen, A/D strafe,
+## the mouse turns. The camera frame is carried across edges, so W keeps going the same way.
 func _surface_move(n: Vector3) -> Vector3:
-	_ctl_fwd = _ctl_fwd.rotated(n, yaw - _ctl_yaw) if n.length() > 0.5 else _ctl_fwd
-	_ctl_yaw = yaw
-	_ctl_fwd = _ctl_fwd - n * n.dot(_ctl_fwd)
-	if _ctl_fwd.length() < 0.05:
-		_ctl_fwd = (Vector3.UP - n * n.dot(Vector3.UP))
-		if _ctl_fwd.length() < 0.05:
-			_ctl_fwd = Vector3.FORWARD - n * n.dot(Vector3.FORWARD)
-	_ctl_fwd = _ctl_fwd.normalized()
 	var inp := Input.get_vector("left", "right", "forward", "back")
 	if inp.length() < 0.1:
 		return Vector3.ZERO
-	var rgt := _ctl_fwd.cross(n).normalized()
-	var m := _ctl_fwd * -inp.y + rgt * inp.x
+	var b := Basis(_surf_q) * Basis(Vector3.UP, yaw)
+	var f := b * Vector3.FORWARD
+	var rgt := b * Vector3.RIGHT
+	f = (f - n * n.dot(f)).normalized()
+	rgt = (rgt - n * n.dot(rgt)).normalized()
+	var m := f * -inp.y + rgt * inp.x
 	return m.normalized() * minf(inp.length(), 1.0)
 
 ## One physics step while stuck. Returns false when we let go (normal movement takes over).
@@ -638,12 +640,16 @@ func _wall_walk_step(delta: float) -> bool:
 		global_position = _feet + Vector3.UP * 0.05
 		return false
 	var new_n := wall_n.slerp(n, 1.0 - exp(-14.0 * delta)).normalized() if wall_n.dot(n) > 0.2 else n
-	if new_n.dot(wall_n) < 0.99999:   # carry the controls (and facing) over the edge
-		var q := Quaternion(wall_n, new_n)
-		_ctl_fwd = q * _ctl_fwd
+	if new_n.dot(wall_n) < 0.99999:   # carry the camera frame (and facing) over the edge
+		var q := _arc(wall_n, new_n)
+		_surf_q = q * _surf_q
 		_stick_fwd = q * _stick_fwd
 	wall_n = new_n
 	if wrapped and n.y <= 0.7:   # went round an edge: put the body in front of the new face
+		if n.dot(wall_n) < 0.99999:
+			var q2 := _arc(wall_n, n)
+			_surf_q = q2 * _surf_q
+			_stick_fwd = q2 * _stick_fwd
 		wall_n = n
 		global_position = _feet + n * 0.55 - Vector3.UP * 0.9
 		c = _stick_center()
@@ -656,7 +662,8 @@ func _wall_walk_step(delta: float) -> bool:
 	var fwd := _stick_fwd - wall_n * wall_n.dot(_stick_fwd)
 	if fwd.length() < 0.05:
 		fwd = Vector3.UP - wall_n * wall_n.dot(Vector3.UP)
-	model.global_basis = Basis.looking_at(fwd.normalized(), wall_n).scaled(model.basis.get_scale())
+	if fwd.normalized().cross(wall_n).length() > 0.05:
+		model.global_basis = Basis.looking_at(fwd.normalized(), wall_n).scaled(model.basis.get_scale())
 	model.global_position = _feet
 	var moving := move.length() > 0.1
 	Hero.play_move(model, "run" if moving else "idle", spd if moving else 0.0)
@@ -668,6 +675,13 @@ func _wall_walk_step(delta: float) -> bool:
 
 func _end_wall_walk(launch: Vector3) -> void:
 	wall_walking = false
+	# fold the camera tilt back into a plain yaw so the view doesn't snap, then level out smoothly
+	var back := _arc(wall_n, Vector3.UP) * _surf_q   # now only a turn around world up
+	var v := back * Vector3.FORWARD
+	var turn := atan2(-v.x, -v.z) if Vector2(v.x, v.z).length() > 0.01 else 0.0
+	_cam_q = _cam_q * Quaternion(Vector3.UP, -turn)
+	yaw += turn
+	_surf_q = Quaternion.IDENTITY
 	_wall_cd = 0.35
 	velocity = launch
 	model.position = Vector3.ZERO
