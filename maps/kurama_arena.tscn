@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://game_map.gd" id="1_dx5y2"]
+[ext_resource type="Script" path="res://scripts/world/game_map.gd" id="1_dx5y2"]
 [ext_resource type="Shader" path="res://shaders/sky.gdshader" id="sky_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ruk6i"]

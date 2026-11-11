@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://game_map.gd" id="1_yrlb7"]
+[ext_resource type="Script" path="res://scripts/world/game_map.gd" id="1_yrlb7"]
 [ext_resource type="Material" path="res://assets/hidden_leaf/atlas_opaque.tres" id="2_07kyl"]
 [ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/opaque_-1_-3.res" id="3_4l2wo"]
 [ext_resource type="Shape3D" path="res://assets/hidden_leaf/chunks/opaque_-1_-3_col.res" id="4_tqs7i"]
@@ -44,7 +44,7 @@
 [ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_-2_-2.res" id="42_c80du"]
 [ext_resource type="ArrayMesh" path="res://assets/hidden_leaf/chunks/cutout_2_1.res" id="43_xc7rq"]
 [ext_resource type="Shader" path="res://shaders/sky.gdshader" id="44_5ftli"]
-[ext_resource type="Script" path="res://npc_spawn.gd" id="45_hcdd5"]
+[ext_resource type="Script" path="res://scripts/world/npc_spawn.gd" id="45_hcdd5"]
 [ext_resource type="Resource" path="res://data/npcs/courier.tres" id="46_jh55t"]
 [ext_resource type="Resource" path="res://data/npcs/elder.tres" id="47_ge4td"]
 [ext_resource type="Resource" path="res://data/npcs/hermit.tres" id="48_vpfy4"]

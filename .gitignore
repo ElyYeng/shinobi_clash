@@ -1,0 +1,6 @@
+# Godot's editor/import cache - regenerated automatically when the project is opened
+.godot/
+*.tmp
+# OS junk
+.DS_Store
+Thumbs.db

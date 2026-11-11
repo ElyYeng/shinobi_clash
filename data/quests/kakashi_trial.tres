@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="QuestDef" load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://quest_def.gd" id="1_def"]
-[ext_resource type="Script" path="res://quest_step.gd" id="2_step"]
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://scripts/quests/quest_step.gd" id="2_step"]
 
 [sub_resource type="Resource" id="Step_1"]
 script = ExtResource("2_step")

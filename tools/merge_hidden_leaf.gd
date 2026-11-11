@@ -248,7 +248,7 @@ func _compose_scene() -> void:
 	var old: Node3D = (load(STASH) as PackedScene).instantiate()
 	var map := Node3D.new()
 	map.name = "OpenWorld"
-	map.set_script(load("res://game_map.gd"))
+	map.set_script(load("res://scripts/world/game_map.gd"))
 	map.set("play_half", 420.0)
 	get_tree().root.add_child(map)
 	var village := Node3D.new()

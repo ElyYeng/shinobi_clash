@@ -1,8 +1,8 @@
 [gd_scene format=4 uid="uid://c8jwedtek8rkc"]
 
-[ext_resource type="Script" uid="uid://cqgiv0wj4q4g0" path="res://game_map.gd" id="1_j2yjm"]
+[ext_resource type="Script" uid="uid://cqgiv0wj4q4g0" path="res://scripts/world/game_map.gd" id="1_j2yjm"]
 [ext_resource type="PackedScene" uid="uid://b0pl8epam0gs0" path="res://maps/tree1.glb" id="3_jhtt0"]
-[ext_resource type="Script" uid="uid://cfrktdesgepsn" path="res://npc_spawn.gd" id="3_qxdqu"]
+[ext_resource type="Script" uid="uid://cfrktdesgepsn" path="res://scripts/world/npc_spawn.gd" id="3_qxdqu"]
 [ext_resource type="Texture2D" uid="uid://dtawx6ujctbu7" path="res://maps/tree1_Image_0.webp" id="4_50uj7"]
 [ext_resource type="Resource" path="res://data/npcs/courier.tres" id="4_v5ir3"]
 [ext_resource type="Resource" path="res://data/npcs/elder.tres" id="5_uq7pf"]
@@ -10,7 +10,7 @@
 [ext_resource type="Resource" path="res://data/npcs/kakashi.tres" id="7_50uj7"]
 [ext_resource type="Resource" path="res://data/npcs/scout.tres" id="8_y2voo"]
 [ext_resource type="Resource" path="res://data/npcs/trainer.tres" id="9_gl62a"]
-[ext_resource type="Script" uid="uid://to2aevvd425c" path="res://world_terrain.gd" id="10_worldterrain"]
+[ext_resource type="Script" uid="uid://to2aevvd425c" path="res://scripts/world/world_terrain.gd" id="10_worldterrain"]
 [ext_resource type="Shader" path="res://shaders/sky.gdshader" id="sky_shader"]
 
 [sub_resource type="Image" id="Image_uq7pf"]

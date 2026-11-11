@@ -5,7 +5,27 @@
 2. Press F5 - you start at the main menu. The Output panel prints the model's measured height and which animations were matched.
 
 The character is assets/naruto/scene.gltf (auto-detected). To use another .glb/.gltf, replace it or add a model
-to assets/ . Tweak size/orientation/animation names at the top of hero.gd.
+to assets/ . Tweak size/orientation/animation names at the top of scripts/player/hero.gd.
+
+## Project layout
+```
+scenes/            main.tscn (gameplay), menu.tscn (start scene), multiplayer_lobby.tscn, small UI / prefab scenes
+scripts/core/      GameData (save + progression), Fx (input map, small effects), Sfx (procedural sounds)
+scripts/player/    Player, Hero (character model / looks / animation), bloodlines, elements, moves,
+                   Susanoo, shadow clones, projectiles, ragdoll, head look
+scripts/world/     Main (mode setup), maps (GameMap, MapBuilder, KonohaGreybox, StaticBatcher),
+                   enemies, Kurama, NPCs, villagers, terrain / grass
+scripts/quests/    quest system + objectives/ (one file per objective type)
+scripts/ui/        HUD, M menu, Customize (spin_menu), main menu + parallax, lobby, dialog, UiStyle
+scripts/fx/        Vfx (procedural effects), VfxKit (imported VFX scenes), cutscenes, anime outline post
+scripts/net/       NetworkSession (autoload), remote avatars, ragdoll sync
+maps/              map scenes (konoha_greybox.tscn = main game, village.tscn = arena, kurama_arena.tscn)
+data/              quests / NPCs as .tres resources
+shaders/           shared shaders      assets/  models, textures, sounds, imported VFX packs
+tools/             editor-time generators (merge_hidden_leaf, build_konoha, bake_maps)
+docs/              notes, credits and setup guides
+```
+`.godot/` (Godot's import cache) is not in git - Godot rebuilds it the first time you open the project.
 
 ## Controls
 WASD move | Shift sprint (stamina) | Space jump x2 | Q dash | LMB combo | RMB kunai | RMB+E kunai volley
@@ -23,7 +43,7 @@ Bloodline slots (main menu > 4 CUSTOMIZE): 4 slots, Shinobi Life style. Slots 1-
 - AUTO SPIN rerolls the active slot until it hits the rarity you pick (Rare+, Epic+ or Legendary), or press STOP.
 - [ODDS] shows the chance of every rarity and bloodline. Pity is shared by all slots.
 - Old saves are migrated: your equipped bloodline goes to slot 1 and your best other one to slot 2.
-Slot unlock costs: SLOT_UNLOCK_COST in gamedata.gd.
+Slot unlock costs: SLOT_UNLOCK_COST in scripts/core/gamedata.gd.
 
 ## Bloodlines (17)
 Common: Inuzuka (speed), Akimichi (health), Sarutobi (C: Staff Sweep)
