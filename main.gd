@@ -90,8 +90,9 @@ func _load_map() -> void:
 	if map == null:
 		push_warning("[Main] %s missing - generating the map instead (open tools/bake_maps.gd and run it to create it)" % path)
 		map = MapBuilder.build(mode)
-	if mode == "world":
-		# Replace the old bounded flat test field with streamed procedural terrain.
+	if mode == "world" and map.get_node_or_null("Village") == null:
+		# Old procedural open world (maps/stash/open_world_procedural.tscn): replace the bounded
+		# flat test field with streamed terrain. The Hidden Leaf map has its own ground and walls.
 		var old_floor := map.get_node_or_null("Ground/Floor")
 		if old_floor != null:
 			old_floor.free()

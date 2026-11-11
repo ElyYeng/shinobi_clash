@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="Step_1"]
 script = ExtResource("2_step")
 type = "goto"
-pos = Vector3(-150, 0, 40)
+pos = Vector3(-75, 0, 0)
 place = "Abandoned Camp"
 radius = 6.0
 text = "Find the patrol's camp in the west"
@@ -14,15 +14,15 @@ text = "Find the patrol's camp in the west"
 [sub_resource type="Resource" id="Step_2"]
 script = ExtResource("2_step")
 type = "collect"
-pos = Vector3(-150, 0, 40)
-radius = 12.0
+pos = Vector3(-75, 0, 0)
+radius = 8.0
 count = 3
 item_name = "Patrol Badge"
 
 [sub_resource type="Resource" id="Step_3"]
 script = ExtResource("2_step")
 type = "hunt"
-pos = Vector3(-175, 0, 70)
+pos = Vector3(0, 0, 105)
 count = 2
 enemy_name = "Rogue Shinobi"
 enemy_health = 110.0

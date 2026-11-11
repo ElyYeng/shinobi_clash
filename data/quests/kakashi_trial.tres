@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="Step_1"]
 script = ExtResource("2_step")
 type = "survive"
-pos = Vector3(30, 0, 110)
+pos = Vector3(0, 0, 30)
 place = "Training Ground"
 radius = 10.0
 time = 30.0
@@ -17,7 +17,7 @@ enemy_speed = 4.6
 [sub_resource type="Resource" id="Step_2"]
 script = ExtResource("2_step")
 type = "hunt"
-pos = Vector3(30, 0, 110)
+pos = Vector3(0, 0, 30)
 count = 2
 enemy_name = "Shadow Clone"
 enemy_health = 160.0

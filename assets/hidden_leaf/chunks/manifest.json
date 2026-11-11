@@ -1,0 +1,140 @@
+[
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_0_1.res",
+		"name": "opaque_0_1",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_0_1_col.res"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_0_-1.res",
+		"name": "opaque_0_-1",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_0_-1_col.res"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_0_0.res",
+		"name": "opaque_0_0",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_0_0_col.res"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_-1_1.res",
+		"name": "opaque_-1_1",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_-1_1_col.res"
+	},
+	{
+		"kind": "water",
+		"mesh": "res://assets/hidden_leaf/chunks/water_-1_1.res",
+		"name": "water_-1_1"
+	},
+	{
+		"kind": "water",
+		"mesh": "res://assets/hidden_leaf/chunks/water_-1_0.res",
+		"name": "water_-1_0"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_0_0.res",
+		"name": "cutout_0_0"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_0_-1.res",
+		"name": "cutout_0_-1"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_0_1.res",
+		"name": "cutout_0_1"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_1_0.res",
+		"name": "opaque_1_0",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_1_0_col.res"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_-1_-1.res",
+		"name": "opaque_-1_-1",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_-1_-1_col.res"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_-1_0.res",
+		"name": "opaque_-1_0",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_-1_0_col.res"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-1_0.res",
+		"name": "cutout_-1_0"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-1_-1.res",
+		"name": "cutout_-1_-1"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-1_1.res",
+		"name": "cutout_-1_1"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-1_2.res",
+		"name": "cutout_-1_2"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_0_2.res",
+		"name": "cutout_0_2"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-1_3.res",
+		"name": "cutout_-1_3"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_1_1.res",
+		"name": "cutout_1_1"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_0_3.res",
+		"name": "cutout_0_3"
+	},
+	{
+		"kind": "opaque",
+		"mesh": "res://assets/hidden_leaf/chunks/opaque_-2_0.res",
+		"name": "opaque_-2_0",
+		"shape": "res://assets/hidden_leaf/chunks/opaque_-2_0_col.res"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-3_0.res",
+		"name": "cutout_-3_0"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_1_2.res",
+		"name": "cutout_1_2"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_1_-2.res",
+		"name": "cutout_1_-2"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_-2_-2.res",
+		"name": "cutout_-2_-2"
+	},
+	{
+		"kind": "cutout",
+		"mesh": "res://assets/hidden_leaf/chunks/cutout_2_1.res",
+		"name": "cutout_2_1"
+	}
+]

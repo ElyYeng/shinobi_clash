@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/merge_hidden_leaf.gd" id="1"]
+
+[node name="MergeHiddenLeaf" type="Node"]
+script = ExtResource("1")

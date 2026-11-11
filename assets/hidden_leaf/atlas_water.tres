@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/atlas_water.gdshader" id="1_880ju"]
+[ext_resource type="Texture2D" path="res://assets/hidden_leaf/atlas.webp" id="2_jba44"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_880ju")
+shader_parameter/atlas = ExtResource("2_jba44")
+shader_parameter/max_lod = null
+shader_parameter/flow = null
