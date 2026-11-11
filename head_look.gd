@@ -50,23 +50,13 @@ static func angles_from_camera(cam_yaw: float, cam_pitch: float, body_yaw: float
 func _find_bones(sk: Skeleton3D) -> void:
 	_found = true
 	_bones.clear()
-	# The character rig has both Ctrl_* control bones and the mixamorig_* bones the animations and
-	# the mesh actually follow - prefer mixamorig, fall back to any bone with the right name.
+	# The character rig has two copies of these bones (mixamorig_* and Ctrl_*) and different
+	# meshes (face vs. some hairs) are skinned to each - turn every copy the same way.
 	for key in SHARES:
-		var pick := -1
-		for pass_i in 2:
-			for i in sk.get_bone_count():
-				var raw := sk.get_bone_name(i).to_lower()
-				if pass_i == 0 and not raw.begins_with("mixamorig"):
-					continue
-				var bn := raw.replace("mixamorig:", "").replace("mixamorig_", "")
-				if bn == key or bn.ends_with(":" + key) or bn.ends_with("_" + key):
-					pick = i
-					break
-			if pick >= 0:
-				break
-		if pick >= 0:
-			_bones.append([pick, float(SHARES[key])])
+		for i in sk.get_bone_count():
+			var bn := sk.get_bone_name(i).to_lower().replace("mixamorig:", "").replace("mixamorig_", "")
+			if bn == key or bn.ends_with(":" + key) or bn.ends_with("_" + key):
+				_bones.append([i, float(SHARES[key])])
 
 func _process_modification() -> void:
 	var sk := get_skeleton()
