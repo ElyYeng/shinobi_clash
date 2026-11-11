@@ -24,6 +24,7 @@ var _game_root: Node
 var _sync_timer := 0.0
 var _known_players: Dictionary = {}
 var _known_levels: Dictionary = {}
+var _sent_level := -1   # last level we told the others about
 var _known_clans: Dictionary = {}   # peer id -> equipped bloodline id (shown next to the name)
 var _known_appearances: Dictionary = {}
 var _party_leader: Dictionary = {}
@@ -95,6 +96,7 @@ func disconnect_session() -> void:
 	_sync_timer = 0.0
 	_known_players.clear()
 	_known_levels.clear()
+	_sent_level = -1
 	_known_clans.clear()
 	_known_appearances.clear()
 	_party_leader.clear()
@@ -190,10 +192,14 @@ func _process(delta: float) -> void:
 			_raid_snapshot.rpc(_raid_boss.global_position, _raid_boss.model.rotation.y, _raid_boss.health, _raid_boss.phase, int(_raid_boss.state), _raid_boss.atk, _raid_boss.atk_t, _raid_boss.atk_len, _raid_boss.slam_pos)
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
+	var look: Vector2 = _local_player.get("look_angles") if _local_player.get("look_angles") != null else Vector2.ZERO
 	if multiplayer.is_server():
-		_broadcast_state.rpc(1, pos, yaw)
+		_broadcast_state.rpc(1, pos, yaw, look)
 	else:
-		_submit_state.rpc_id(1, pos, yaw)
+		_submit_state.rpc_id(1, pos, yaw, look)
+	if GameData.level != _sent_level:   # level ups show on your name tag for everyone
+		_sent_level = GameData.level
+		broadcast_level(GameData.level)
 
 func _on_connected_to_server() -> void:
 	_request_join.rpc_id(1, player_name, GameData.level, _sanitize_appearance(GameData.character_appearance))
@@ -271,24 +277,52 @@ func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1, app
 	_avatars[peer_id] = avatar
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func _submit_state(pos: Vector3, yaw: float) -> void:
+func _submit_state(pos: Vector3, yaw: float, look: Vector2) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
 	if not _known_players.has(sender):
 		return
-	_broadcast_state.rpc(sender, pos, yaw)
-	_apply_remote_state(sender, pos, yaw)
+	_broadcast_state.rpc(sender, pos, yaw, look)
+	_apply_remote_state(sender, pos, yaw, look)
 
 @rpc("authority", "call_remote", "unreliable_ordered")
-func _broadcast_state(peer_id: int, pos: Vector3, yaw: float) -> void:
-	_apply_remote_state(peer_id, pos, yaw)
+func _broadcast_state(peer_id: int, pos: Vector3, yaw: float, look: Vector2) -> void:
+	_apply_remote_state(peer_id, pos, yaw, look)
 
-func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float) -> void:
+func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float, look := Vector2.ZERO) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
-		_avatars[peer_id].set_network_transform(pos, yaw)
+		_avatars[peer_id].set_network_transform(pos, yaw, look)
+
+# ---------------------------------------------------------------- level on the name tag
+## Tells everyone this player's level (sent whenever GameData.level changes).
+func broadcast_level(level: int) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_level_changed(1, level)
+		_level_changed.rpc(1, level)
+	else:
+		_request_level.rpc_id(1, level)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_level(level: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	level = clampi(level, 1, 9999)
+	_level_changed(sender, level)
+	_level_changed.rpc(sender, level)
+
+@rpc("authority", "call_remote", "reliable")
+func _level_changed(peer_id: int, level: int) -> void:
+	_known_levels[peer_id] = level
+	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		_avatars[peer_id].set_level(level)
 
 @rpc("authority", "call_remote", "reliable")
 func _join_accepted(mode: String) -> void:

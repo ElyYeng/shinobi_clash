@@ -9,6 +9,7 @@ var is_party_member := false
 var character_appearance: Dictionary = {}
 var target_position := Vector3.ZERO
 var target_yaw := 0.0
+var target_look := Vector2.ZERO   # head look (yaw, pitch) relative to the body
 var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
@@ -192,11 +193,12 @@ func set_party_member(value: bool) -> void:
 	if name_tag != null:
 		name_tag.modulate = Color(0.55, 1.0, 0.65) if value else Color.WHITE
 
-func set_network_transform(pos: Vector3, yaw: float) -> void:
+func set_network_transform(pos: Vector3, yaw: float, look := Vector2.ZERO) -> void:
 	if network_ragdoll_started:
 		return
 	target_position = pos
 	target_yaw = yaw
+	target_look = look
 
 func _process(delta: float) -> void:
 	if network_ragdoll_started:
@@ -208,6 +210,7 @@ func _process(delta: float) -> void:
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
 		if animation_lock <= 0.0:
 			Hero.play_move(model, Hero.move_state(speed), speed)
+		HeadLook.drive(model, target_look.x, target_look.y, delta)
 	_last_position = global_position
 
 
@@ -215,6 +218,11 @@ func _process(delta: float) -> void:
 func _tag_text() -> String:
 	var c := "" if clan == "none" else "  [%s]" % Bloodline.get_def(clan)["name"]
 	return "%s%s  •  Lv. %d" % [display_name, c, player_level]
+
+func set_level(value: int) -> void:
+	player_level = value
+	if name_tag != null:
+		name_tag.text = _tag_text()
 
 func set_clan(value: String) -> void:
 	clan = value

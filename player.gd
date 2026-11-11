@@ -183,6 +183,7 @@ var _trauma := 0.0
 var _shake_t := 0.0
 var _shake_noise := FastNoiseLite.new()
 var _first_person := false
+var look_angles := Vector2.ZERO   # head look (yaw, pitch) relative to the body - sent to other players
 
 ## Screen shake: 0..1, stacks, decays on its own (Vfx.shake calls this for the player camera).
 func add_trauma(amount: float) -> void:
@@ -252,6 +253,12 @@ func _update_camera(delta: float) -> void:
 	var nz := _shake_noise.get_noise_2d(_shake_t, 77.0)
 	cam.position = Vector3(nx * s * 0.3, ny * s * 0.3, _cam_dist)
 	cam.rotation = Vector3(ny * s * 0.05, nx * s * 0.05, _cam_roll + nz * s * 0.08)
+
+	# --- head follows the camera (also what other players see)
+	if model != null:
+		var alive := not is_dead and ragdoll == null
+		look_angles = HeadLook.angles_from_camera(yaw, pitch, model.global_rotation.y) if alive else Vector2.ZERO
+		HeadLook.drive(model, look_angles.x, look_angles.y, delta, alive)
 
 ## How far the camera can sit behind the pivot before a wall gets in the way (rays from the
 ## pivot to the camera centre and the corners of a small box around it; other characters ignored).
