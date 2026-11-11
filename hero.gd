@@ -202,14 +202,17 @@ static func display_name(id: String) -> String:
 ## Random outfit for NPCs (bandits / shinobi): picks random hairstyle, shirt and pants from the
 ## meshes the model really has, a random hair colour, random colours for colour-only slots
 ## (headband) and a random texture for texture slots.
-static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null) -> Dictionary:
+## Outfits friendly villagers / Konoha NPCs never roll (shirt3 = Akatsuki cloak). Enemies still can.
+const VILLAGER_EXCLUDE := ["shirt3"]
+
+static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exclude: Array = []) -> Dictionary:
 	if rng == null:
 		rng = RandomNumberGenerator.new()
 		rng.randomize()
 	var look: Dictionary = DEFAULT_APPEARANCE.duplicate()
 	var options := get_options(model)
 	for cat in CATEGORIES:
-		var ids: Array = options.get(cat, [])
+		var ids: Array = (options.get(cat, []) as Array).filter(func(id) -> bool: return not exclude.has(str(id)))
 		if not ids.is_empty():
 			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
 	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)

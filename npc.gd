@@ -68,7 +68,7 @@ static func character_look(look: Dictionary, seed_key: String) -> Node3D:
 	if look.is_empty():
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash(seed_key)
-		Hero.randomize_look(m, rng)
+		Hero.randomize_look(m, rng, Hero.VILLAGER_EXCLUDE)   # no Akatsuki cloaks in the village
 	else:
 		Hero.apply_appearance(m, Hero.sanitize_appearance(look))
 	Hero.play(m, "idle", true)
