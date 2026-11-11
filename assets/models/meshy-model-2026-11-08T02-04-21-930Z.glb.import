@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://dtdwtbkf3pi3x"
-path="res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-cc56640bc88b87589f88e2dcc067af4a.scn"
+path="res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-c69ec6a2f50d5d4ae1d9f51f1c516be5.scn"
 
 [deps]
 
 source_file="res://assets/models/meshy-model-2026-11-08T02-04-21-930Z.glb"
-dest_files=["res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-cc56640bc88b87589f88e2dcc067af4a.scn"]
+dest_files=["res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z.glb-c69ec6a2f50d5d4ae1d9f51f1c516be5.scn"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5idd5o3asy6t"
-path.s3tc="res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-91c5b54db680e1ae2cca71df26ef491f.s3tc.ctex"
+path.s3tc="res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-ae800b95a9bc9fb99195d3d32da61289.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -15,7 +15,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/meshy-model-2026-11-08T02-04-21-930Z_0.webp"
-dest_files=["res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-91c5b54db680e1ae2cca71df26ef491f.s3tc.ctex"]
+dest_files=["res://.godot/imported/meshy-model-2026-11-08T02-04-21-930Z_0.webp-ae800b95a9bc9fb99195d3d32da61289.s3tc.ctex"]
 
 [params]
 
