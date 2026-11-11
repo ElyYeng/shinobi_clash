@@ -644,6 +644,9 @@ func _shake(strength: float, secs: float) -> void:
 	var p := _player()
 	if p == null or p.cam == null:
 		return
+	if p.has_method("add_trauma"):
+		p.add_trauma(strength * 2.0)
+		return
 	var t := create_tween()
 	t.tween_method(_shake_step.bind(p.cam), strength, 0.0, secs)
 	t.tween_callback(_shake_step.bind(0.0, p.cam))

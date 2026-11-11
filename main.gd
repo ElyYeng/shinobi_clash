@@ -179,7 +179,7 @@ func _start_kurama() -> void:
 	hud.boss = kurama
 	kurama.defeated.connect(_on_kurama_defeated)
 	kurama.enraged.connect(_on_kurama_enraged)
-	player.spring.spring_length = 12.0      # pull the camera back for the giant
+	player.cam_zoom = 12.0      # pull the camera back for the giant
 	hud.toast("KURAMA, THE NINE-TAILED BEAST")
 
 func _on_kurama_enraged(phase: int) -> void:

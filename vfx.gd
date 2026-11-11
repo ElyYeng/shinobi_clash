@@ -403,6 +403,11 @@ static func damage_number(parent: Node, pos: Vector3, amount: float, color := Co
 static func shake(cam: Camera3D, strength := 0.15, secs := 0.3) -> void:
 	if cam == null or not is_instance_valid(cam) or not cam.is_inside_tree():
 		return
+	if cam.has_meta("rig"):   # player camera: smooth trauma shake (rotation + position)
+		var rig = cam.get_meta("rig")
+		if is_instance_valid(rig):
+			rig.add_trauma(strength * 2.2)
+			return
 	var t := cam.create_tween()
 	t.tween_method(_shake_step.bind(cam), strength, 0.0, secs)
 	t.tween_callback(_shake_step.bind(0.0, cam))

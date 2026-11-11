@@ -71,7 +71,7 @@ var invuln := 0.0
 var lock_target: Node3D = null   # an Enemy, or another player's avatar in PvP
 
 var pivot: Node3D
-var spring: SpringArm3D
+var spring: Node3D          # camera boom (the camera sits on it; see _update_camera)
 var cam: Camera3D
 var model: Node3D
 var arm: Node3D
@@ -100,17 +100,21 @@ func _ready() -> void:
 	aura.omni_range = 6.0
 	add_child(aura)
 	pivot = Node3D.new()
-	pivot.position.y = 1.6
+	pivot.position.y = CAM_HEIGHT
 	add_child(pivot)
-	spring = SpringArm3D.new()
-	spring.spring_length = 6.0
-	spring.margin = 0.3
+	pivot.top_level = true          # follows the player with a little lag (_update_camera)
+	pivot.global_position = global_position + Vector3.UP * CAM_HEIGHT
+	spring = Node3D.new()
+	spring.name = "Boom"
 	pivot.add_child(spring)
-	spring.add_excluded_object(get_rid())
 	cam = Camera3D.new()
 	cam.fov = 70.0
+	cam.near = 0.05
 	spring.add_child(cam)
+	cam.set_meta("rig", self)       # Vfx.shake routes screen shake to add_trauma()
 	cam.make_current()
+	_shake_noise.seed = randi()
+	_shake_noise.frequency = 1.0
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	apply_bloodline()
 	health = max_health
@@ -159,23 +163,136 @@ func _dmg() -> float:
 	m *= _bmul("dmg")
 	return m
 
-## Mouse-wheel camera zoom: the SpringArm length eases toward cam_zoom (still collides with walls).
-const ZOOM_MIN := 2.5
-const ZOOM_MAX := 12.0
-const ZOOM_STEP := 0.7
-var cam_zoom := 6.0
+## ---- Camera rig ----------------------------------------------------------------------------
+## Mouse wheel zooms smoothly from ZOOM_MAX in to a tight over-the-shoulder view, then one more
+## notch goes first person (cam_zoom 0). The camera trails the player a little, sits over the
+## right shoulder, dips on hard landings, rolls slightly when strafing and shakes with trauma.
+const CAM_HEIGHT := 1.6
+const ZOOM_MIN := 1.1           # closest third-person distance (one more notch = first person)
+const ZOOM_MAX := 18.0
+const ZOOM_FACTOR := 0.82       # each wheel notch scales the distance by this
+const CAM_MARGIN := 0.25        # gap kept between the camera and walls
+var cam_zoom := 5.5             # wanted distance (0 = first person)
+var _cam_dist := 5.5            # actual distance after easing / wall collision
+var _cam_roll := 0.0
+var _land_dip := 0.0
+var _land_vel := 0.0
+var _fall_speed := 0.0
+var _was_floor := true
+var _trauma := 0.0
+var _shake_t := 0.0
+var _shake_noise := FastNoiseLite.new()
+var _first_person := false
+
+## Screen shake: 0..1, stacks, decays on its own (Vfx.shake calls this for the player camera).
+func add_trauma(amount: float) -> void:
+	_trauma = clampf(_trauma + amount, 0.0, 1.0)
+
+func _zoom_step(dir: int) -> void:
+	if dir < 0:   # in
+		cam_zoom = 0.0 if cam_zoom <= ZOOM_MIN + 0.01 else maxf(ZOOM_MIN, cam_zoom * ZOOM_FACTOR)
+	else:
+		cam_zoom = ZOOM_MIN if cam_zoom < ZOOM_MIN else minf(ZOOM_MAX, cam_zoom / ZOOM_FACTOR)
+
+func _update_camera(delta: float) -> void:
+	# --- follow (top-level pivot eases toward the head; snaps after teleports)
+	var head := global_position + Vector3.UP * CAM_HEIGHT
+	if not (is_dead and ragdoll):   # while ragdolled, _physics_process follows the body
+		var p := pivot.global_position
+		if p.distance_to(head) > 6.0:
+			p = head
+		else:
+			var kh := 1.0 - exp(-18.0 * delta)
+			var kv := 1.0 - exp(-11.0 * delta)
+			p = Vector3(lerpf(p.x, head.x, kh), lerpf(p.y, head.y, kv), lerpf(p.z, head.z, kh))
+			var lag := p - head   # never trail too far behind at dash speed
+			if lag.length() > 2.2:
+				p = head + lag.limit_length(2.2)
+		# landing dip: a damped spring kicked by hard landings
+		var floor_now := is_on_floor()
+		if not floor_now:
+			_fall_speed = maxf(_fall_speed, -velocity.y)
+		elif not _was_floor and _fall_speed > 7.0:
+			_land_vel -= clampf(_fall_speed * 0.09, 0.0, 2.6)
+			add_trauma(clampf((_fall_speed - 7.0) / 40.0, 0.0, 0.35))
+			_fall_speed = 0.0
+		if floor_now:
+			_fall_speed = 0.0
+		_was_floor = floor_now
+		_land_vel += (-_land_dip * 120.0 - _land_vel * 16.0) * delta
+		_land_dip += _land_vel * delta
+		pivot.global_position = p + Vector3.UP * _land_dip
+	pivot.rotation = Vector3(pitch, yaw, 0.0)
+
+	# --- distance: ease to the wanted zoom, pulled in instantly by walls (characters ignored)
+	var want := cam_zoom
+	_first_person = want < 0.05 and cam.current
+	var shoulder := 0.0 if want < 0.05 else 0.55 * clampf(1.0 - (want - ZOOM_MIN) / 9.0, 0.25, 1.0)
+	spring.position = Vector3(lerpf(spring.position.x, shoulder, 1.0 - exp(-8.0 * delta)), 0.0, 0.0)
+	var hit := _cam_block(want)
+	var target_dist := minf(want, hit)
+	if target_dist < _cam_dist:
+		_cam_dist = target_dist if hit < want else lerpf(_cam_dist, target_dist, 1.0 - exp(-12.0 * delta))
+	else:
+		_cam_dist = lerpf(_cam_dist, target_dist, 1.0 - exp(-(10.0 if hit >= want else 5.0) * delta))
+
+	# --- first person: hide our own body
+	if model != null:
+		model.visible = not (_first_person and _cam_dist < 0.3)
+
+	# --- strafe roll + trauma shake
+	var right := Basis(Vector3.UP, yaw) * Vector3.RIGHT
+	var lateral := Vector2(velocity.x, velocity.z).dot(Vector2(right.x, right.z))
+	_cam_roll = lerpf(_cam_roll, clampf(-lateral * 0.0035, -0.035, 0.035), 1.0 - exp(-6.0 * delta))
+	_trauma = maxf(0.0, _trauma - delta * 1.5)
+	_shake_t += delta * 28.0
+	var s := _trauma * _trauma
+	var nx := _shake_noise.get_noise_2d(_shake_t, 0.0)
+	var ny := _shake_noise.get_noise_2d(0.0, _shake_t)
+	var nz := _shake_noise.get_noise_2d(_shake_t, 77.0)
+	cam.position = Vector3(nx * s * 0.3, ny * s * 0.3, _cam_dist)
+	cam.rotation = Vector3(ny * s * 0.05, nx * s * 0.05, _cam_roll + nz * s * 0.08)
+
+## How far the camera can sit behind the pivot before a wall gets in the way (rays from the
+## pivot to the camera centre and the corners of a small box around it; other characters ignored).
+func _cam_block(dist: float) -> float:
+	if dist < 0.05 or not is_inside_tree():
+		return dist
+	var space := get_world_3d().direct_space_state
+	var from := spring.global_position
+	var back := pivot.global_basis.z
+	var r := pivot.global_basis.x * 0.18
+	var u := pivot.global_basis.y * 0.12
+	var best := dist
+	for off in [Vector3.ZERO, r + u, r - u, -r + u, -r - u]:
+		var a: Vector3 = from + off * 0.5
+		var b: Vector3 = from + back * (dist + CAM_MARGIN) + off
+		var exclude: Array[RID] = [get_rid()]
+		for i in 4:
+			var q := PhysicsRayQueryParameters3D.create(a, b)
+			q.exclude = exclude
+			var h := space.intersect_ray(q)
+			if h.is_empty():
+				break
+			var col: Object = h["collider"]
+			if col is CharacterBody3D or col is RigidBody3D:   # enemies, NPCs, ragdolls, players
+				exclude.append((col as CollisionObject3D).get_rid())
+				continue
+			best = minf(best, maxf(0.0, a.distance_to(h["position"]) - CAM_MARGIN))
+			break
+	return best
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
 		return
 	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			cam_zoom = clampf(cam_zoom - ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			_zoom_step(-1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			cam_zoom = clampf(cam_zoom + ZOOM_STEP, ZOOM_MIN, ZOOM_MAX)
+			_zoom_step(1)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		yaw -= event.relative.x * 0.0028 * sens_mult
-		pitch = clampf(pitch - event.relative.y * 0.0028 * sens_mult, -1.2, 0.6)
+		pitch = clampf(pitch - event.relative.y * 0.0028 * sens_mult, -1.35, 1.0)
 	elif event.is_action_pressed("pause"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
@@ -184,15 +301,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		lock_target = null if lock_target else _nearest_foe(30.0)
 
 func _process(delta: float) -> void:
-	pivot.rotation = Vector3(pitch, yaw, 0.0)
+	_update_camera(delta)
 	# FOV kick: wider when sprinting, widest when dashing
 	var target_fov := fov_base
 	if dash_time > 0.0:
-		target_fov = fov_base + 20.0
+		target_fov = fov_base + 22.0
 	elif not is_dead and Input.is_action_pressed("sprint") and Vector2(velocity.x, velocity.z).length() > WALK_SPEED * 1.2:
-		target_fov = fov_base + 8.0
-	cam.fov = lerpf(cam.fov, target_fov, 8.0 * delta)
-	spring.spring_length = lerpf(spring.spring_length, cam_zoom, 1.0 - exp(-10.0 * delta))
+		target_fov = fov_base + 10.0
+	cam.fov = lerpf(cam.fov, target_fov, 1.0 - exp(-(14.0 if target_fov > cam.fov else 5.0) * delta))
 
 func _nearest_enemy(max_dist: float) -> Enemy:
 	var best: Enemy = null
