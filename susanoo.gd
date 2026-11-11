@@ -22,12 +22,19 @@ const ANIMS := {"lpunch": "Leftpunch", "rpunch": "rightpunch", "slam": "slampunc
 const SPEED := {"lpunch": 1.5, "rpunch": 1.5, "slam": 1.25}
 const IMPACT := 1.1    # seconds into each attack animation (at speed 1) where the hit lands
 
+## Sounds (assets/susanoo/sfx, cut from the Susanoo sound pack). `peak` = seconds into the clip
+## where it's loudest - hits are timed so that lands on the impact frame.
+const SFX := "res://assets/susanoo/sfx/"
+const HITS := [{"file": "punch_hit_a.ogg", "peak": 0.36}, {"file": "punch_hit_b.ogg", "peak": 0.24}]
+const SLAM_PEAK := 1.48
+
 var color := Color.WHITE
 var follow: Node3D       # model whose facing we copy
 var ap: AnimationPlayer
 var _mats: Array[ShaderMaterial] = []
 var _fade := 0.0
 var _dying := false
+var _hit_variant := 0
 
 static var _noise: NoiseTexture2D
 
@@ -113,6 +120,7 @@ func _ready() -> void:
 	light.omni_range = 9.0
 	light.position = Vector3(0, 2.5, 0)
 	add_child(light)
+	_sound("summon.ogg", 2.0)
 	# form up: grow from small and fade in
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(self, "scale", Vector3.ONE * SCALE, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -132,12 +140,51 @@ func attack(kind: String) -> void:
 	if ap == null or _dying or not ANIMS.has(kind):
 		return
 	ap.play(ANIMS[kind], 0.12, float(SPEED[kind]))
+	var hit_at := impact_delay(kind)
+	if kind == "slam":
+		_sound("slam_windup.ogg", -2.0)
+		# the boom's loudest moment lands on the impact (start it part-way in if needed)
+		var lead := SLAM_PEAK - hit_at
+		if lead > 0.0:
+			_sound("slam.ogg", 3.0, lead)
+		else:
+			get_tree().create_timer(-lead).timeout.connect(_sound.bind("slam.ogg", 3.0, 0.0))
+	else:
+		_sound("punch_whoosh.ogg", -3.0)
+		var h: Dictionary = HITS[_hit_variant % HITS.size()]
+		_hit_variant += 1
+		get_tree().create_timer(maxf(0.0, hit_at - float(h["peak"]))).timeout.connect(_sound.bind(str(h["file"]), 1.0, 0.0))
+
+## Plays one of the Susanoo sounds from where the Susanoo is (others hear it too, by distance).
+## detached = keep playing after the Susanoo is gone (release sound).
+func _sound(file: String, db := 0.0, from := 0.0, detached := false) -> void:
+	if not is_inside_tree():
+		return
+	var stream := load(SFX + file) as AudioStream
+	if stream == null:
+		return
+	var pl := AudioStreamPlayer3D.new()
+	pl.stream = stream
+	pl.volume_db = db
+	pl.unit_size = 14.0
+	pl.max_distance = 90.0
+	pl.bus = "Master"
+	if detached and get_parent() != null and get_parent().get_parent() != null:
+		var host := get_parent().get_parent()
+		host.add_child(pl)
+		pl.global_position = global_position + Vector3.UP * 2.0
+	else:
+		add_child(pl)
+		pl.position = Vector3.UP * 2.0
+	pl.finished.connect(pl.queue_free)
+	pl.play(from)
 
 ## Shrinks and fades out, then frees itself.
 func dismiss() -> void:
 	if _dying:
 		return
 	_dying = true
+	_sound("release.ogg", -1.0, 0.0, true)
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(self, "scale", Vector3.ONE * SCALE * 0.4, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	tw.tween_method(_set_fade, _fade, 0.0, 0.4)
