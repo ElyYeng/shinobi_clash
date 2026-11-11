@@ -470,11 +470,14 @@ func _physics_process(delta: float) -> void:
 			facing = dir.normalized()
 	model.rotation.y = lerp_angle(model.rotation.y, atan2(-facing.x, -facing.z), 14.0 * delta)
 
-	# Abilities
-	if Input.is_action_pressed("attack"):
-		_melee()
-	if Input.is_action_pressed("kunai"):
-		_throw_kunai()
+	# Abilities (in Susanoo: left click = punches, right click = slam)
+	if susanoo != null:
+		_susanoo_update(delta)
+	else:
+		if Input.is_action_pressed("attack"):
+			_melee()
+		if Input.is_action_pressed("kunai"):
+			_throw_kunai()
 	if Input.is_action_just_pressed("ability"):
 		_toggle_power()
 	for k in Moves.BIND_KEYS:   # hotbar keys run whatever move is bound to them (M > Bloodline / Element)
@@ -485,12 +488,15 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("volley") and Input.is_action_pressed("kunai"):
 		_kunai_volley()
 	# C: tap = bloodline power-up on / off (needs bloodline LV 1000, drains MD), hold = charge chakra
+	# (Uchiha: keep holding - 2 s and full chakra forms the Susanoo)
 	if Input.is_action_pressed("charge"):
 		c_hold += delta
+		_susanoo_charge(delta)
 	else:
 		if c_hold > 0.0 and c_hold < 0.25:
 			_toggle_power()
 		c_hold = 0.0
+		_susanoo_charge_stop()
 
 	move_and_slide()
 	_try_wall_walk(dir)
@@ -499,6 +505,141 @@ func _physics_process(delta: float) -> void:
 		dust_t = 0.11
 		Vfx.dust(get_parent(), global_position)
 	_update_anim()
+
+# ---------------------------------------------------------------- susanoo (Uchiha)
+## Hold C with Uchiha as your C form: chakra charges, and once you've held it 2 s with full chakra
+## the Susanoo forms around you (the Sharingan turns on with it). Left click = alternating left /
+## right punches, right click = slam. Drains chakra; ends when chakra runs out, the Sharingan ends
+## (tap C) or you die. Each player has their own random Susanoo colour.
+const SUS_HOLD := 2.0
+const SUS_DRAIN := 4.0            # chakra per second while it's out
+const SUS_PUNCH := {"cd": 0.8, "ck": 6.0, "dmg": 55.0, "ahead": 6.5, "r": 4.5, "knock": 12.0}
+const SUS_SLAM := {"cd": 5.0, "ck": 20.0, "dmg": 120.0, "ahead": 5.0, "r": 7.5, "knock": 9.0}
+var susanoo: Susanoo
+var _sus_charge_fx: Node3D
+var _sus_cd := 0.0
+var _sus_slam_cd := 0.0
+var _sus_left := true
+var _sus_zoom := -1.0             # your camera distance before the Susanoo (restored after)
+
+func _susanoo_ready() -> bool:
+	return GameData.equipped == "uchiha" and _bl_level() >= Bloodline.MODE_LEVEL
+
+func _susanoo_charge(_delta: float) -> void:
+	if susanoo != null or is_dead or c_hold < 0.3 or not _susanoo_ready():
+		return
+	var col := Susanoo.palette_color(Susanoo.my_color_index())
+	if _sus_charge_fx == null or not is_instance_valid(_sus_charge_fx):
+		_sus_charge_fx = Node3D.new()
+		add_child(_sus_charge_fx)
+		Vfx.aura_flames(_sus_charge_fx, Vector3(0, 1.0, 0), 0.7, col, 22, true)
+		_toast("Charging Susanoo...  keep holding C")
+	var prog := minf(c_hold / SUS_HOLD, chakra / maxf(max_chakra, 1.0))
+	_sus_charge_fx.scale = Vector3.ONE * (0.5 + prog * 1.4)
+	if c_hold >= SUS_HOLD and chakra >= max_chakra - 0.5:
+		_susanoo_charge_stop()
+		_susanoo_on()
+
+func _susanoo_charge_stop() -> void:
+	if _sus_charge_fx != null and is_instance_valid(_sus_charge_fx):
+		_sus_charge_fx.queue_free()
+	_sus_charge_fx = null
+
+func _susanoo_on() -> void:
+	if susanoo != null:
+		return
+	if not powered:
+		_toggle_power()   # Sharingan first (needs MD like a normal power-up)
+		if not powered:
+			return
+	var idx := Susanoo.my_color_index()
+	var col := Susanoo.palette_color(idx)
+	susanoo = Susanoo.create(col, model)
+	add_child(susanoo)
+	_sus_cd = 0.6
+	_sus_zoom = cam_zoom
+	cam_zoom = maxf(cam_zoom, 13.0)   # pull back so the ribcage doesn't fill the screen
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("susanoo_on", idx)
+	Sfx.play(self, "power")
+	Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 48, 11.0, 0.3, 0.8, 0.0)
+	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 7.0, 0.45)
+	Vfx.shake(cam, 0.35, 0.5)
+	_toast("SUSANOO!   left click: punch  -  right click: slam  -  tap C: release")
+
+func _susanoo_off() -> void:
+	_susanoo_charge_stop()
+	if susanoo == null:
+		return
+	if is_instance_valid(susanoo):
+		susanoo.dismiss()
+	susanoo = null
+	if _sus_zoom >= 0.0:
+		cam_zoom = _sus_zoom
+		_sus_zoom = -1.0
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("susanoo_off", 0)
+
+func _susanoo_update(delta: float) -> void:
+	if not is_instance_valid(susanoo):
+		susanoo = null
+		return
+	_sus_cd = maxf(0.0, _sus_cd - delta)
+	_sus_slam_cd = maxf(0.0, _sus_slam_cd - delta)
+	if not inf_chakra:
+		chakra = maxf(0.0, chakra - SUS_DRAIN * delta)
+	if chakra <= 0.0 or not powered or is_dead:
+		_toast("Susanoo faded - out of chakra" if chakra <= 0.0 else "Susanoo released")
+		_susanoo_off()
+		return
+	if Input.is_action_pressed("attack") and _sus_cd <= 0.0 and chakra >= float(SUS_PUNCH["ck"]):
+		var kind := "lpunch" if _sus_left else "rpunch"
+		_sus_left = not _sus_left
+		_susanoo_attack(kind, SUS_PUNCH)
+		_sus_cd = float(SUS_PUNCH["cd"])
+	elif Input.is_action_just_pressed("kunai") and _sus_slam_cd <= 0.0 and chakra >= float(SUS_SLAM["ck"]):
+		_susanoo_attack("slam", SUS_SLAM)
+		_sus_slam_cd = float(SUS_SLAM["cd"])
+		_sus_cd = 1.2
+
+func _susanoo_attack(kind: String, d: Dictionary) -> void:
+	if not inf_chakra:
+		chakra -= float(d["ck"])
+	# face where the camera looks
+	var f := Basis(Vector3.UP, yaw) * Vector3.FORWARD
+	facing = Vector3(f.x, 0, f.z).normalized()
+	model.rotation.y = atan2(-facing.x, -facing.z)
+	susanoo.attack(kind)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("susanoo_" + kind, 0)
+	var fwd := facing
+	get_tree().create_timer(Susanoo.impact_delay(kind)).timeout.connect(func() -> void: _susanoo_impact(kind, d, fwd))
+
+func _susanoo_impact(kind: String, d: Dictionary, fwd: Vector3) -> void:
+	if susanoo == null or is_dead or not is_inside_tree():
+		return
+	var center := global_position + fwd * float(d["ahead"]) * Susanoo.SCALE / 1.3
+	var r := float(d["r"])
+	var col := susanoo.color
+	for t in _foes_in(float(d["ahead"]) + r):
+		var to := t.global_position - center
+		to.y = 0.0
+		if to.length() <= r:
+			var away := (t.global_position - global_position)
+			away.y = 0.0
+			var knock := away.normalized() * float(d["knock"]) + Vector3.UP * (7.0 if kind == "slam" else 3.0)
+			_hit_foe(t, float(d["dmg"]) * _dmg(), knock)
+	if kind == "slam":
+		Vfx.shockwave(get_parent(), center + Vector3.UP * 0.15, col, r, 0.5)
+		Vfx.burst(get_parent(), center + Vector3.UP * 0.5, col, 40, 10.0, 0.35, 0.7, 0.0)
+		for k in 8:
+			Vfx.dust(get_parent(), center + Vector3(cos(k * TAU / 8.0), 0, sin(k * TAU / 8.0)) * r * 0.6)
+		Vfx.shake(cam, 0.45, 0.5)
+	else:
+		Vfx.burst(get_parent(), center + Vector3.UP * 1.0, col, 22, 7.0, 0.25, 0.45, 0.0)
+		Vfx.dust(get_parent(), center)
+		Vfx.shake(cam, 0.18, 0.25)
+	Sfx.play(self, "hit")
 
 # ---------------------------------------------------------------- chakra walk
 ## Stick to walls and ceilings like in Naruto. Sprint into a wall (or jump into a ceiling while
@@ -522,7 +663,7 @@ var _cam_q := Quaternion.IDENTITY   # what the camera currently uses (eases towa
 
 func _try_wall_walk(dir: Vector3) -> void:
 	_wall_cd = maxf(0.0, _wall_cd - get_physics_process_delta_time())
-	if wall_walking or _wall_cd > 0.0 or dash_time > 0.0 or attack_lock > 0.0 or is_dead:
+	if wall_walking or _wall_cd > 0.0 or dash_time > 0.0 or attack_lock > 0.0 or is_dead or susanoo != null:
 		return
 	if not Input.is_action_pressed("sprint") or chakra < 5.0:
 		return
@@ -1082,6 +1223,7 @@ func _toggle_power() -> void:
 	_play_once("jutsu", 0.6)
 
 func _power_off() -> void:
+	_susanoo_off()   # the Susanoo needs the Sharingan
 	if not powered:
 		return
 	if NetworkSession.is_active():
@@ -1472,6 +1614,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	Vfx.shake(cam, clampf(amount / 120.0, 0.05, 0.3), 0.3)
 	if health <= 0.0:
 		health = 0.0
+		_susanoo_off()
 		if wall_walking:
 			_end_wall_walk(Vector3.ZERO)
 		is_dead = true

@@ -69,8 +69,13 @@ func set_kurama_visual(enabled: bool) -> void:
 		kurama_fx = null
 		model.scale = Vector3.ONE
 
+var susanoo: Susanoo
+
 func play_combat_animation(state: String, variant: int = 0) -> void:
 	if model == null or network_ragdoll_started:
+		return
+	if state.begins_with("susanoo_"):   # Susanoo (Uchiha): form / release / attacks
+		_susanoo_event(state.trim_prefix("susanoo_"), variant)
 		return
 	var lock := 0.45
 	if state == "attack":
@@ -79,6 +84,23 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 		lock = 0.25
 	Hero.play(model, state, true, variant, lock)
 	animation_lock = lock
+
+func _susanoo_event(ev: String, variant: int) -> void:
+	match ev:
+		"on":
+			if susanoo != null and is_instance_valid(susanoo):
+				susanoo.queue_free()
+			var col := Susanoo.palette_color(variant)
+			susanoo = Susanoo.create(col, model)
+			add_child(susanoo)
+			Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 40, 10.0, 0.3, 0.8, 0.0)
+		"off":
+			if susanoo != null and is_instance_valid(susanoo):
+				susanoo.dismiss()
+			susanoo = null
+		_:
+			if susanoo != null and is_instance_valid(susanoo):
+				susanoo.attack(ev)
 
 ## Starts a ragdoll for this remote avatar. The owning player sends the body
 ## transforms; this peer never runs a second independent physics simulation.

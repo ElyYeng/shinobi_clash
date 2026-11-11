@@ -43,6 +43,8 @@ static var active_slot := 0
 static var total_spins_used := 0
 static var last_new := false
 static var kurama_defeated := false
+## Your Susanoo's colour (index into Susanoo.PALETTE) - rolled randomly the first time, then kept.
+static var susanoo_color := -1
 static var quests_done: Array = []
 static var quest_active := ""
 static var quest_state := ""        # "active" | "ready"
@@ -124,6 +126,7 @@ static func load_data() -> void:
 		owned = d.get("owned", ["none"])
 		equipped = str(d.get("equipped", "none"))
 		kurama_defeated = bool(d.get("kurama_defeated", false))
+		susanoo_color = int(d.get("susanoo_color", -1))
 		var appearance_data = d.get("character_appearance", {})
 		if appearance_data is Dictionary:
 			for key in character_appearance:
@@ -270,7 +273,7 @@ static func save() -> void:
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,
 			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot, "el_bag": el_bag,
-			"kurama_defeated": kurama_defeated, "quests_done": quests_done,
+			"kurama_defeated": kurama_defeated, "susanoo_color": susanoo_color, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
