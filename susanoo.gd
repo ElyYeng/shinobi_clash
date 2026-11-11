@@ -29,6 +29,24 @@ var _mats: Array[ShaderMaterial] = []
 var _fade := 0.0
 var _dying := false
 
+static var _noise: NoiseTexture2D
+
+## Shared seamless noise for the chakra fire (generated once).
+static func fire_noise() -> NoiseTexture2D:
+	if _noise == null:
+		var fn := FastNoiseLite.new()
+		fn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		fn.frequency = 0.012
+		fn.fractal_octaves = 4
+		fn.fractal_gain = 0.55
+		_noise = NoiseTexture2D.new()
+		_noise.width = 256
+		_noise.height = 256
+		_noise.seamless = true
+		_noise.generate_mipmaps = true
+		_noise.noise = fn
+	return _noise
+
 static func palette_color(i: int) -> Color:
 	return PALETTE[posmod(i, PALETTE.size())]
 
@@ -72,6 +90,7 @@ func _ready() -> void:
 		if src != null and src.albedo_texture != null:
 			mat.set_shader_parameter("detail", src.albedo_texture)
 		mat.set_shader_parameter("fade", 0.0)
+		mat.set_shader_parameter("noise", fire_noise())
 		(mi as MeshInstance3D).material_override = mat
 		(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_mats.append(mat)
@@ -83,6 +102,11 @@ func _ready() -> void:
 			idle.loop_mode = Animation.LOOP_LINEAR
 		ap.animation_finished.connect(func(_n: StringName) -> void: ap.play("idle", 0.35))
 		ap.play("idle")
+	# chakra flames licking up off the ribcage (on the model, so they move with it)
+	var flames := Node3D.new()
+	flames.position = Vector3(0, 1.6, 0)
+	m.add_child(flames)
+	Vfx.aura_flames(flames, Vector3.ZERO, 1.5, Color(color.r, color.g, color.b, 0.55), 20, true)
 	var light := OmniLight3D.new()
 	light.light_color = color
 	light.light_energy = 2.0
