@@ -132,5 +132,13 @@ func _process(delta: float) -> void:
 		return
 	var to := p.global_position - global_position
 	to.y = 0.0
-	if to.length() < 9.0 and to.length() > 0.1:
-		model.rotation.y = lerp_angle(model.rotation.y, atan2(-to.x, -to.z), 6.0 * delta)
+	var dist := to.length()
+	var want := atan2(-to.x, -to.z)
+	if dist < 9.0 and dist > 0.1:   # turn to face the player (world angle - the spawn may be rotated)
+		model.global_rotation.y = lerp_angle(model.global_rotation.y, want, 6.0 * delta)
+	# head follows the player a bit further out than the body turns
+	if dist < 16.0 and dist > 0.1:
+		var dy := (p.global_position.y + 1.5) - (global_position.y + 1.6)
+		HeadLook.drive(model, wrapf(want - model.global_rotation.y, -PI, PI), atan2(dy, dist), delta)
+	else:
+		HeadLook.drive(model, 0.0, 0.0, delta)
