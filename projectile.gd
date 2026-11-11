@@ -27,6 +27,13 @@ func _ready() -> void:
 	add_child(col)
 	if visual_kind == "rasenshuriken":
 		_build_rasenshuriken_visual()
+	elif visual_kind == "fireball":
+		# imported fire projectile VFX (flames, tail, streaks, sparks and its own light)
+		var fx := VfxKit.fire_projectile(self, size / 0.6 * 2.2)
+		if fx != null:
+			fx.set("emission", 1.3)   # the game's bloom adds the rest - keeps the flames orange
+		if velocity.length() > 0.01:
+			look_at(global_position + velocity)
 	else:
 		var mi := MeshInstance3D.new()
 		if long_shape:
@@ -46,7 +53,7 @@ func _ready() -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
-	if aoe > 0.0 and visual_kind != "rasenshuriken":
+	if aoe > 0.0 and visual_kind != "rasenshuriken" and visual_kind != "fireball":
 		# fireball: bright core, flame trail and a light that flickers across the scenery
 		var halo := MeshInstance3D.new()
 		var hs := SphereMesh.new()
@@ -80,6 +87,8 @@ func _physics_process(delta: float) -> void:
 		if long_shape and velocity.length() > 0.01:
 			look_at(global_position + velocity)
 	global_position += velocity * delta
+	if visual_kind == "fireball" and velocity.length() > 0.01:
+		look_at(global_position + velocity)
 	if visual_kind == "rasenshuriken" and visual_root != null:
 		if velocity.length() > 0.01:
 			look_at(global_position + velocity, Vector3.UP)
@@ -164,7 +173,18 @@ func _explode() -> void:
 	done = true
 	if aoe > 0.0:
 		Sfx.play(self, "boom")
-	Fx.puff(get_parent(), global_position, color, maxf(aoe * 2.0, 0.6))
+	if visual_kind == "fireball" and get_parent() != null:
+		# burning patch on the ground where it lands + impact burst
+		var ground := global_position
+		var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.5, global_position + Vector3.DOWN * 6.0)
+		q.collide_with_areas = false
+		var h := get_world_3d().direct_space_state.intersect_ray(q)
+		if not h.is_empty():
+			ground = h["position"]
+		VfxKit.area(VfxKit.FIRE_AREA, get_parent(), ground, 1.6, null, maxf(aoe / 2.5, 1.0))
+		VfxKit.hit(get_parent(), global_position, Color(1.0, 0.55, 0.15), 1.4)
+	else:
+		Fx.puff(get_parent(), global_position, color, maxf(aoe * 2.0, 0.6))
 	if aoe > 0.0 and get_parent() != null:
 		Vfx.shake(get_viewport().get_camera_3d(), 0.12, 0.3)
 	queue_free()

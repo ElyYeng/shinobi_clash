@@ -93,6 +93,7 @@ func _susanoo_event(ev: String, variant: int) -> void:
 			var col := Susanoo.palette_color(variant)
 			susanoo = Susanoo.create(col, model)
 			add_child(susanoo)
+			VfxKit.chakra(self, 1.6, col, 2.4)
 			Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 40, 10.0, 0.3, 0.8, 0.0)
 		"off":
 			if susanoo != null and is_instance_valid(susanoo):
@@ -218,6 +219,7 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 			power_fx.queue_free()
 		power_fx = Node3D.new()
 		add_child(power_fx)
+		VfxKit.chakra(self, 1.3, color, 1.4)   # chakra flare as they transform
 		if not look.has("glow"):
 			Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
 		else:

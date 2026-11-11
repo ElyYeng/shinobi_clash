@@ -430,6 +430,7 @@ func _physics_process(delta: float) -> void:
 		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.6, 0.85, 1.0), 26, 8.0, 0.25, 0.5, 0.0)
 
 	var charging := Input.is_action_pressed("charge") and is_on_floor() and not moving
+	_charge_aura(charging)
 	var surge := _bmul("speed")
 	if kurama:
 		surge *= 1.3
@@ -570,6 +571,7 @@ func _susanoo_on() -> void:
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 48, 11.0, 0.3, 0.8, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 7.0, 0.45)
+	VfxKit.chakra(self, 1.6, col, 2.4)
 	Vfx.shake(cam, 0.35, 0.5)
 	_toast("SUSANOO!   left click: punch  -  right click: slam  -  tap C: release")
 
@@ -635,6 +637,7 @@ func _susanoo_impact(kind: String, d: Dictionary, fwd: Vector3) -> void:
 			away.y = 0.0
 			var knock := away.normalized() * float(d["knock"]) + Vector3.UP * (7.0 if kind == "slam" else 3.0)
 			_hit_foe(t, float(d["dmg"]) * _dmg(), knock)
+			VfxKit.hit(get_parent(), t.global_position + Vector3.UP * 1.2, col, 1.4)
 	if kind == "slam":
 		Vfx.shockwave(get_parent(), center + Vector3.UP * 0.15, col, r, 0.5)
 		Vfx.burst(get_parent(), center + Vector3.UP * 0.5, col, 40, 10.0, 0.35, 0.7, 0.0)
@@ -895,6 +898,7 @@ func _melee() -> void:
 		var reach := 3.2 * e.k
 		if to.length() < reach and (to.length() < 0.8 or facing.dot(to.normalized()) > 0.3):
 			e.take_damage(dmg, facing * knock)
+			VfxKit.hit(get_parent(), e.global_position + Vector3.UP * 1.1 * e.k, null, 0.7 if combo < 3 else 1.1)
 	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
 		NetworkSession.try_hit_players(dmg, facing * knock)
 	if not _play_once("attack", attack_cd + 0.1, combo - 1):
@@ -913,7 +917,7 @@ func _aim_dir(origin: Vector3) -> Vector3:
 		model.rotation.y = atan2(-facing.x, -facing.z)
 	return dir
 
-func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, long: bool, homing: bool) -> void:
+func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, long: bool, homing: bool, visual := "") -> void:
 	var origin := global_position + Vector3.UP * 1.3 + facing * 1.25
 	var dir := _aim_dir(origin)
 	var pr := Projectile.new()
@@ -926,12 +930,13 @@ func _shoot(speed: float, dmg: float, aoe: float, size: float, color: Color, lon
 	pr.color = color
 	pr.long_shape = long
 	pr.source_player = self
+	pr.visual_kind = visual
 	if homing and _alive(lock_target):
 		pr.target = lock_target
 	get_parent().add_child(pr)
 	pr.global_position = origin
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe, dmg * _dmg(), "", _peer_of(pr.target))
+		NetworkSession.broadcast_projectile(origin, dir * speed, speed, size, color, long, aoe, dmg * _dmg(), visual, _peer_of(pr.target))
 
 func _throw_kunai() -> void:
 	if kunai_cd > 0.0 or chakra < 3.0:
@@ -947,7 +952,8 @@ func _throw_kunai() -> void:
 # are handled by _use_move(); these only do the effect. `col` = the move's colour.
 func _fx_fireball(col: Color) -> void:
 	Sfx.play(self, "fire")
-	_shoot(22.0, 45.0, 5.0, 0.6, col, false, false)
+	_shoot(22.0, 45.0, 5.0, 0.6, col, false, false, "fireball")
+	VfxKit.cast(get_parent(), global_position + Vector3.UP * 1.3 + facing * 1.0, facing, Color(1.0, 0.45, 0.1), 0.75)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 
@@ -1182,6 +1188,16 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
+## Chakra aura at your feet while you hold C to charge (imported chakra VFX).
+var _charge_fx: Node3D
+func _charge_aura(on: bool) -> void:
+	if on and is_dead == false:
+		if _charge_fx == null or not is_instance_valid(_charge_fx) or _charge_fx.has_meta("closing"):
+			_charge_fx = VfxKit.chakra(self)
+	elif _charge_fx != null:
+		VfxKit.stop_area(_charge_fx)
+		_charge_fx = null
+
 func _clear_buffs() -> void:
 	buffs.clear()
 	Enemy.time_scale = 1.0
@@ -1223,6 +1239,7 @@ func _toggle_power() -> void:
 	aura.visible = true
 	aura.light_color = col
 	aura.light_energy = 1.8
+	VfxKit.chakra(self, 1.3, col, 1.4)   # chakra flares up as you transform
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
@@ -1355,6 +1372,8 @@ func _hit_foe(t, amount: float, knock: Vector3) -> void:
 func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 	if is_instance_valid(e) and e.health > 0.0:
 		e.take_damage(amount, knock)
+		if amount >= 8.0:   # not for tiny damage-over-time ticks
+			VfxKit.hit(get_parent(), e.global_position + Vector3.UP * 1.1 * e.k, null, 0.8)
 		if cur_mkey != "":
 			GameData.add_mastery(cur_mkey, GameData.MASTERY_HIT)
 
@@ -1544,6 +1563,7 @@ func _kurama_mode() -> void:
 	cloak_fx = Node3D.new()
 	add_child(cloak_fx)
 	Vfx.aura_flames(cloak_fx, Vector3(0, 1.0, 0), 0.65, Color(1.0, 0.5, 0.1), 26, true)
+	VfxKit.chakra(self, 1.4, Color(1.0, 0.5, 0.1), 1.6)
 	health = minf(max_health, health + max_health * 0.25)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	Vfx.shake(cam, 0.25, 0.4)
