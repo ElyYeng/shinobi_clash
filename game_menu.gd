@@ -17,8 +17,8 @@ const BODY_TEXT := Color(0.16, 0.1, 0.05)
 const SCROLL_SIZE := Vector2(900, 580)
 const TABS := ["Stats", "Ninja Tools", "Element", "Bloodline", "Sub-Ability", "Companions",
 	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party"]
-const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight"}
-const MODE_ORDER := ["fight", "world", "kurama"]
+const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight", "konoha": "Konoha (Greybox)"}
+const MODE_ORDER := ["fight", "world", "kurama", "konoha"]
 
 static var _font: Font
 
@@ -1321,6 +1321,14 @@ func _page_travel() -> Array:
 			for id in Quests.NPCS:
 				var n: Dictionary = Quests.NPCS[id]
 				spots.append([n["name"], str(n["name"]).substr(0, 1), n["color"].lightened(0.2), n["pos"] + Vector3(0, 1, 4), "Teleport next to this villager."])
+		"konoha":
+			spots.append(["Main Gate", "G", Color(0.78, 0.62, 0.55), Vector3(0, 1, 150), "Just inside the A-Un gate."])
+			spots.append(["Crossroads", "X", Color(0.6, 0.6, 0.6), Vector3(0, 1, 40), "Middle of the village, by Ichiraku."])
+			spots.append(["Hokage Tower", "H", Color(0.78, 0.62, 0.55), Vector3(0, 1, -75), "In front of the tower."])
+			spots.append(["Hokage Rock", "R", Color(0.5, 0.48, 0.46), Vector3(0, 63, -178), "On top of the Hokage faces."])
+			spots.append(["Academy", "A", Color(0.78, 0.62, 0.55), Vector3(-55, 1, -52), "The Academy yard and its swing."])
+			spots.append(["Training Ground 3", "T", Color(0.45, 0.56, 0.45), Vector3(-108, 1, 90), "Three posts and the memorial stone."])
+			spots.append(["Uchiha District", "U", Color(0.6, 0.6, 0.61), Vector3(112, 1, 106), "Outside the Uchiha compound gate."])
 		"kurama":
 			spots.append(["Arena Edge", "E", Color(0.6, 0.3, 0.2), Vector3(0, 1, 30), "Where the fight begins."])
 			spots.append(["Arena Center", "C", Color(0.8, 0.3, 0.1), Vector3(0, 1, 0), "The middle of the scorched arena."])

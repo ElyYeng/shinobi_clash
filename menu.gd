@@ -6,6 +6,7 @@ const MODES := [
 	["MAIN GAME", "world", "Open world - talk to villagers and take on quests"],
 	["FIGHT", "fight", "Arena battle against shinobi in the village"],
 	["KURAMA BOSS", "kurama", "Face the Nine-Tailed Beast"],
+	["KONOHA (GREYBOX)", "konoha", "Walk the blocked-out Hidden Leaf layout"],
 ]
 
 var spin: SpinMenu
@@ -101,7 +102,7 @@ func _describe(b: Button, text: String) -> void:
 	b.set_meta("desc", text)
 
 func _key_for(mode: String) -> int:
-	return {"kurama": 1, "fight": 2, "world": 3}.get(mode, 0)
+	return {"kurama": 1, "fight": 2, "world": 3, "konoha": 7}.get(mode, 0)
 
 func _refresh_info() -> void:
 	var spins := GameData.spins
@@ -143,3 +144,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				_open_multiplayer()
 			KEY_6:
 				_open_character_creator()
+			KEY_7:
+				_play("konoha")
