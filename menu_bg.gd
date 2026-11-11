@@ -4,18 +4,19 @@ extends Control
 ## res://assets/menu/ move with the mouse - far layers barely, near layers more - plus a slow
 ## idle sway and falling petals. Replace a PNG to change a layer; tune LAYERS below.
 
-## The five layers were cut from one 1624 x 887 painting; `y` is where each one sits in it, so the
-## stack lines up exactly like the art. depth = how much it follows the mouse (far small, near big).
-## The cherry branch is the exception: it frames the top-left corner of the screen.
-const ART := Vector2(1624, 887)
+## The five painted layers stack into one scene, each overlapping the one behind it: the mountains
+## cover the bottom of the sky (the moon sets behind the Hokage cliffs), the village covers the
+## mountains' base, the grass sits on the bottom edge and the cherry branch frames the top-left.
+## `top` = where the layer's top edge sits (fraction of the screen height), "bottom" = bottom edge
+## on the screen's bottom. depth = how much it follows the mouse (far small, near big).
+const LAYER_W := 1.5            # every layer is drawn this many screen-widths wide (same scale)
 const LAYERS := [
-	{"file": "res://assets/menu/parallax_1_sky.png", "depth": 0.010, "y": 24.0},
-	{"file": "res://assets/menu/parallax_2_mountains.png", "depth": 0.018, "y": 242.0},
-	{"file": "res://assets/menu/parallax_3_village.png", "depth": 0.030, "y": 418.0},
-	{"file": "res://assets/menu/parallax_5_foreground.png", "depth": 0.060, "y": 659.0},
-	{"file": "res://assets/menu/parallax_4_tree.png", "depth": 0.050, "frame_top": -0.04},
+	{"file": "res://assets/menu/parallax_1_sky.png", "depth": 0.010, "top": 0.0},
+	{"file": "res://assets/menu/parallax_2_mountains.png", "depth": 0.018, "top": 0.27},
+	{"file": "res://assets/menu/parallax_3_village.png", "depth": 0.030, "top": 0.47},
+	{"file": "res://assets/menu/parallax_5_foreground.png", "depth": 0.060, "bottom": true},
+	{"file": "res://assets/menu/parallax_4_tree.png", "depth": 0.050, "top": -0.04},
 ]
-const OVERSCAN := 1.07          # a bit bigger than the screen so the layers can slide
 const SKY_TOP := Color(0.06, 0.025, 0.04)
 const SKY_HORIZON := Color(0.33, 0.15, 0.19)
 const GROUND_DARK := Color(0.13, 0.06, 0.08)
@@ -106,14 +107,19 @@ func _draw() -> void:
 	var h := size.y
 	if w < 2.0 or h < 2.0:
 		return
-	# scale the painting to cover the screen; its bottom edge sits on the screen's bottom edge
-	var s := maxf(w * OVERSCAN / ART.x, h * OVERSCAN / ART.y)
-	var ox := (w - ART.x * s) * 0.5
-	var oy := h - ART.y * s + (ART.y * s - h) * 0.15
-	var lw := ART.x * s
+	var lw := w * LAYER_W
+	var s := lw / 1624.0            # art pixels -> screen pixels (all layers share it)
+	var ox := (w - lw) * 0.5
+	# where each layer lands (before parallax), so the seams can be filled between them
+	var rects: Array[Rect2] = []
+	for l in LAYERS:
+		var i := rects.size()
+		var th := float(_tex[i].get_height()) * s if _tex[i] != null else 0.0
+		var y := h - th if l.has("bottom") else h * float(l["top"])
+		rects.append(Rect2(ox, y, lw, th))
 
-	# sky gradient down to the horizon behind the mountains
-	var hz := oy + 400.0 * s
+	# sky gradient behind everything
+	var hz := rects[1].end.y
 	draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w, 0), Vector2(w, hz), Vector2(0, hz)]),
 		PackedColorArray([SKY_TOP, SKY_TOP, SKY_HORIZON, SKY_HORIZON]))
 	draw_rect(Rect2(0, hz - 1.0, w, h - hz + 1.0), SKY_HORIZON)
@@ -122,43 +128,38 @@ func _draw() -> void:
 		var tex := _tex[i]
 		if tex == null:
 			continue
-		var l: Dictionary = LAYERS[i]
-		var depth := float(l["depth"])
+		var depth := float(LAYERS[i]["depth"])
 		var sway := Vector2(sin(t * 0.21 + i) * 0.004, cos(t * 0.17 + i * 1.7) * 0.002) * w * depth * 20.0
 		var off := Vector2(-_mouse.x * w * depth, -_mouse.y * h * depth * 0.5) + sway
-		var th := float(tex.get_height()) * s
-		var pos: Vector2
-		if l.has("frame_top"):
-			pos = Vector2(ox - lw * 0.02, h * float(l["frame_top"])) + off
-		else:
-			pos = Vector2(ox, oy + float(l["y"]) * s) + off
+		var rc := rects[i]
+		var pos := rc.position + off
 		if i == 0:   # moon glow behind the sky layer (slow pulse)
 			var mc := pos + MOON * s
 			var gr := MOON_R * s * (2.3 + sin(t * 0.8) * 0.08)
 			draw_texture_rect(_soft, Rect2(mc - Vector2(gr, gr), Vector2(gr, gr) * 2.0), false, Color(1.0, 0.36, 0.26, 0.32))
-		if i == 1:   # mountain base continues down behind the village's tree line
+		if i == 2:   # mountain base continues down behind the village (hidden by it)
 			var mb := _base_col[1]
-			var y0 := pos.y + th - 3.0 * s
-			var y1 := oy + (418.0 + 132.0) * s   # down to the village floor (fully behind it)
+			var y0 := rects[1].end.y - 4.0
+			var y1 := rc.end.y - 4.0
 			draw_polygon(PackedVector2Array([Vector2(0, y0), Vector2(w, y0), Vector2(w, y1), Vector2(0, y1)]),
-				PackedColorArray([mb, mb, _top_col[2].lerp(mb, 0.5), _top_col[2].lerp(mb, 0.5)]))
-		if i == 3:   # ground: village mist fading into dark earth, then drifting mist
+				PackedColorArray([mb, mb, _base_col[2], _base_col[2]]))
+		if i == 3:   # ground below the village: its mist fading into dark earth, then drifting mist
 			var vb := _base_col[2]
-			var g0 := oy + (418.0 + 135.0) * s - 3.0 * s
-			var g1 := g0 + 110.0 * s
+			var g0 := rects[2].end.y - 3.0
+			var g1 := g0 + 120.0 * s
 			draw_polygon(PackedVector2Array([Vector2(0, g0), Vector2(w, g0), Vector2(w, g1), Vector2(0, g1)]),
 				PackedColorArray([vb, vb, GROUND_DARK, GROUND_DARK]))
 			draw_rect(Rect2(0, g1 - 1.0, w, h - g1 + 1.0), GROUND_DARK)
-			_draw_mist(s, ox, oy, w, h)
-		draw_texture_rect(tex, Rect2(pos, Vector2(lw, th)), false)
+			_draw_mist(s, rects[2].position.y, w)
+		draw_texture_rect(tex, Rect2(pos, rc.size), false)
 		if i == 3:          # petals between the ground and the cherry branch
 			_draw_petals(w, h)
 	_draw_shade(w, h)
 
-func _draw_mist(s: float, ox: float, oy: float, w: float, h: float) -> void:
+func _draw_mist(s: float, village_top: float, w: float) -> void:
 	for m in _mists:
-		var mw := float(m["w"]) * s
-		var c := Vector2(float(m["x"]) * w - _mouse.x * w * 0.035, oy + float(m["y"]) * s)
+		var mw := float(m["w"]) * s * 0.8
+		var c := Vector2(float(m["x"]) * w - _mouse.x * w * 0.035, village_top + (float(m["y"]) - 418.0) * s)
 		draw_texture_rect(_soft, Rect2(c - Vector2(mw, mw * 0.16), Vector2(mw * 2.0, mw * 0.32)), false,
 			Color(0.85, 0.7, 0.75, float(m["a"])))
 
