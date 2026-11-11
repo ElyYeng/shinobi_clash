@@ -16,6 +16,7 @@ const PALETTE := [
 	Color(1.0, 0.35, 0.75),   # pink
 	Color(0.9, 0.95, 1.0),    # white
 ]
+const NAMES := ["Purple", "Blue", "Red", "Green", "Orange", "Yellow", "Cyan", "Pink", "White"]
 const SCALE := 1.3
 const ANIMS := {"lpunch": "Leftpunch", "rpunch": "rightpunch", "slam": "slampunch"}
 const SPEED := {"lpunch": 1.5, "rpunch": 1.5, "slam": 1.25}
@@ -36,6 +37,14 @@ static func my_color_index() -> int:
 	if GameData.susanoo_color < 0 or GameData.susanoo_color >= PALETTE.size():
 		GameData.susanoo_color = randi() % PALETTE.size()
 		GameData.save()
+	return GameData.susanoo_color
+
+## Rolls a new random colour (never the same one again) and saves it. Customize > ROLL.
+static func reroll_color() -> int:
+	var cur := my_color_index()
+	var n := randi() % (PALETTE.size() - 1)
+	GameData.susanoo_color = n if n < cur else n + 1
+	GameData.save()
 	return GameData.susanoo_color
 
 ## Seconds from starting an attack to its hit landing.

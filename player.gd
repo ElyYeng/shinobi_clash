@@ -489,14 +489,18 @@ func _physics_process(delta: float) -> void:
 		_kunai_volley()
 	# C: tap = bloodline power-up on / off (needs bloodline LV 1000, drains MD), hold = charge chakra
 	# (Uchiha: keep holding - 2 s and full chakra forms the Susanoo)
+	# (hold C + 1..4 = forms; Uchiha: 2 = Susanoo)
 	if Input.is_action_pressed("charge"):
 		c_hold += delta
-		_susanoo_charge(delta)
+		for n in 4:
+			if Input.is_action_just_pressed("form_%d" % (n + 1)):
+				_c_form_used = true
+				_activate_form(n + 1)
 	else:
-		if c_hold > 0.0 and c_hold < 0.25:
+		if c_hold > 0.0 and c_hold < 0.25 and not _c_form_used:
 			_toggle_power()
 		c_hold = 0.0
-		_susanoo_charge_stop()
+		_c_form_used = false
 
 	move_and_slide()
 	_try_wall_walk(dir)
@@ -507,11 +511,11 @@ func _physics_process(delta: float) -> void:
 	_update_anim()
 
 # ---------------------------------------------------------------- susanoo (Uchiha)
-## Hold C with Uchiha as your C form: chakra charges, and once you've held it 2 s with full chakra
-## the Susanoo forms around you (the Sharingan turns on with it). Left click = alternating left /
+## Uchiha form 2: hold C and press 2 - the Susanoo forms around you (the Sharingan turns on with it). Left click = alternating left /
 ## right punches, right click = slam. Drains chakra; ends when chakra runs out, the Sharingan ends
 ## (tap C) or you die. Each player has their own random Susanoo colour.
-const SUS_HOLD := 2.0
+const SUS_MIN_CHAKRA := 25.0
+var _c_form_used := false         # a form key was pressed during this C hold (so no tap toggle)
 const SUS_DRAIN := 4.0            # chakra per second while it's out
 const SUS_PUNCH := {"cd": 0.8, "ck": 6.0, "dmg": 55.0, "ahead": 6.5, "r": 4.5, "knock": 12.0}
 const SUS_SLAM := {"cd": 5.0, "ck": 20.0, "dmg": 120.0, "ahead": 5.0, "r": 7.5, "knock": 9.0}
@@ -525,20 +529,22 @@ var _sus_zoom := -1.0             # your camera distance before the Susanoo (res
 func _susanoo_ready() -> bool:
 	return GameData.equipped == "uchiha" and _bl_level() >= Bloodline.MODE_LEVEL
 
-func _susanoo_charge(_delta: float) -> void:
-	if susanoo != null or is_dead or c_hold < 0.3 or not _susanoo_ready():
+## Hold C and press 1-4: bloodline forms. Uchiha form 2 = Susanoo; the others are coming.
+func _activate_form(n: int) -> void:
+	if is_dead:
 		return
-	var col := Susanoo.palette_color(Susanoo.my_color_index())
-	if _sus_charge_fx == null or not is_instance_valid(_sus_charge_fx):
-		_sus_charge_fx = Node3D.new()
-		add_child(_sus_charge_fx)
-		Vfx.aura_flames(_sus_charge_fx, Vector3(0, 1.0, 0), 0.7, col, 22, true)
-		_toast("Charging Susanoo...  keep holding C")
-	var prog := minf(c_hold / SUS_HOLD, chakra / maxf(max_chakra, 1.0))
-	_sus_charge_fx.scale = Vector3.ONE * (0.5 + prog * 1.4)
-	if c_hold >= SUS_HOLD and chakra >= max_chakra - 0.5:
-		_susanoo_charge_stop()
-		_susanoo_on()
+	if GameData.equipped == "uchiha" and n == 2:
+		if susanoo != null:
+			_susanoo_off()
+			_toast("Susanoo released")
+		elif not _susanoo_ready():
+			_toast("Susanoo unlocks at Uchiha LV %d  (you are LV %d)" % [Bloodline.MODE_LEVEL, _bl_level()])
+		elif chakra < SUS_MIN_CHAKRA:
+			_toast("Not enough chakra for Susanoo  (%d / %d)" % [int(chakra), int(SUS_MIN_CHAKRA)])
+		else:
+			_susanoo_on()
+		return
+	_toast("Form %d - coming soon" % n)
 
 func _susanoo_charge_stop() -> void:
 	if _sus_charge_fx != null and is_instance_valid(_sus_charge_fx):

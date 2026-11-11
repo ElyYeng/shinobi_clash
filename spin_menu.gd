@@ -134,6 +134,8 @@ var el_spins_label: Label
 var tab_buttons := {}            # tab id -> Button
 var pages := {}                  # tab id -> Control
 var current_tab := "bloodline"
+var sus_swatch: ColorRect
+var sus_name: Label
 var odds_panel: PanelContainer
 var banner: Label
 var flash: ColorRect
@@ -354,6 +356,21 @@ func _build_bloodline_page(page: VBoxContainer) -> void:
 	bl_rows = VBoxContainer.new()
 	bl_rows.add_theme_constant_override("separation", 4)
 	page.add_child(bl_rows)
+	# Susanoo colour (Uchiha form 2) - free reroll for now
+	var sus_row := HBoxContainer.new()
+	sus_row.add_theme_constant_override("separation", 10)
+	page.add_child(sus_row)
+	UiStyle.label(sus_row, "SUSANOO COLOR  (Uchiha  C + 2)", 16, INK)
+	sus_swatch = ColorRect.new()
+	sus_swatch.custom_minimum_size = Vector2(44, 28)
+	sus_row.add_child(sus_swatch)
+	sus_name = UiStyle.label(sus_row, "", 16, INK)
+	sus_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var roll := UiStyle.ribbon_button(sus_row, "ROLL  (FREE)", 15)
+	roll.custom_minimum_size = Vector2(150, 34)
+	roll.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	roll.pressed.connect(_roll_susanoo)
+	_show_susanoo()
 	UiStyle.divider(page)
 	var auto_row := HBoxContainer.new()
 	auto_row.add_theme_constant_override("separation", 8)
@@ -370,6 +387,19 @@ func _build_bloodline_page(page: VBoxContainer) -> void:
 	auto_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	auto_btn.pressed.connect(_on_auto)
 	pity_label = UiStyle.label(page, "", 13, Color(0.38, 0.3, 0.18))
+
+func _show_susanoo() -> void:
+	var i := Susanoo.my_color_index()
+	sus_swatch.color = Susanoo.palette_color(i)
+	sus_name.text = Susanoo.NAMES[i]
+
+func _roll_susanoo() -> void:
+	Susanoo.reroll_color()
+	_show_susanoo()
+	var tw := sus_swatch.create_tween()
+	sus_swatch.scale = Vector2(1.3, 1.3)
+	sus_swatch.pivot_offset = sus_swatch.size * 0.5
+	tw.tween_property(sus_swatch, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _build_slot(parent: Node, i: int) -> Dictionary:
 	var card := PanelContainer.new()
