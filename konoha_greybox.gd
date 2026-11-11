@@ -59,6 +59,7 @@ func _build() -> void:
 	_filler_buildings()
 	_forest()
 	_bounds()
+	_npcs()
 	var markers := _group("Markers")
 	var spawn := Marker3D.new()
 	spawn.name = "PlayerSpawn"
@@ -378,6 +379,30 @@ func _bounds() -> void:
 		var cs := CollisionShape3D.new()
 		cs.shape = _box_shape(w[1])
 		body.add_child(cs)
+
+## Where each villager stands (NpcSpawn markers - drag them in the editor). `face` = direction they look.
+const NPC_SPOTS := {
+	"elder": [Vector3(0, 0, -72), Vector3(0, 0, 1)],          # Hokage Tower plaza
+	"kakashi": [Vector3(-10, 0, 47), Vector3(1, 0, 0)],       # crossroads, across from Ichiraku
+	"trainer": [Vector3(-52, 0, -46), Vector3(0, 0, 1)],      # Academy yard
+	"courier": [Vector3(12, 0, 150), Vector3(-1, 0, 0)],      # inside the main gate
+	"scout": [Vector3(130, 0, 38), Vector3(-1, 0, 0)],        # east end of the cross street
+	"hermit": [Vector3(0, 62.3, -178), Vector3(0, 0, 1)],     # lookout on top of the Hokage Rock
+}
+
+func _npcs() -> void:
+	var g := _group("NPCs")
+	for id in NPC_SPOTS:
+		var path := "res://data/npcs/%s.tres" % id
+		if not ResourceLoader.exists(path):
+			continue
+		var sp := NpcSpawn.new()
+		sp.name = str(id).capitalize().replace(" ", "")
+		sp.npc = load(path)
+		sp.position = NPC_SPOTS[id][0]
+		var f: Vector3 = NPC_SPOTS[id][1]
+		sp.rotation.y = atan2(-f.x, -f.z)
+		g.add_child(sp, true)
 
 # ------------------------------------------------------------------ save
 static func save_scene() -> int:

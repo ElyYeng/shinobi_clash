@@ -89,8 +89,8 @@ func _load_map() -> void:
 		map = ps.instantiate() as GameMap
 	if map == null:
 		push_warning("[Main] %s missing - generating the map instead (open tools/bake_maps.gd and run it to create it)" % path)
-		map = KonohaGreybox.build() if mode == "konoha" else MapBuilder.build(mode)
-	if mode == "world" and map.get_node_or_null("Village") == null:
+		map = KonohaGreybox.build() if mode == "world" else MapBuilder.build(mode)
+	if mode == "world" and map.get_node_or_null("Village") == null and map.get_node_or_null("HokageRock") == null:
 		# Old procedural open world (maps/stash/open_world_procedural.tscn): replace the bounded
 		# flat test field with streamed terrain. The Hidden Leaf map has its own ground and walls.
 		var old_floor := map.get_node_or_null("Ground/Floor")

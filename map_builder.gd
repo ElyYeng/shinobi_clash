@@ -5,8 +5,7 @@ extends Node3D
 ## After baking, edit the maps in Godot's 3D editor - re-baking would overwrite your edits.
 ##   Bake from the editor: open tools/bake_maps.gd and use File > Run (it skips maps that already exist).
 
-const MAP_FILES := {"fight": "res://maps/village.tscn", "world": "res://maps/open_world.tscn", "kurama": "res://maps/kurama_arena.tscn",
-	"konoha": "res://maps/konoha_greybox.tscn"}
+const MAP_FILES := {"fight": "res://maps/village.tscn", "world": "res://maps/konoha_greybox.tscn", "kurama": "res://maps/kurama_arena.tscn"}
 
 var mode := "fight"
 var solids: Array[Rect2] = []   # footprints of what has been placed (keeps houses / trees apart while generating)

@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="Step_1"]
 script = ExtResource("2_step")
 type = "goto"
-pos = Vector3(-75, 0, 0)
+pos = Vector3(-122, 0, -48)
 place = "Abandoned Camp"
 radius = 6.0
 text = "Find the patrol's camp in the west"
@@ -14,7 +14,7 @@ text = "Find the patrol's camp in the west"
 [sub_resource type="Resource" id="Step_2"]
 script = ExtResource("2_step")
 type = "collect"
-pos = Vector3(-75, 0, 0)
+pos = Vector3(-122, 0, -48)
 radius = 8.0
 count = 3
 item_name = "Patrol Badge"
@@ -22,7 +22,7 @@ item_name = "Patrol Badge"
 [sub_resource type="Resource" id="Step_3"]
 script = ExtResource("2_step")
 type = "hunt"
-pos = Vector3(0, 0, 105)
+pos = Vector3(-122, 0, -48)
 count = 2
 enemy_name = "Rogue Shinobi"
 enemy_health = 110.0
@@ -47,7 +47,7 @@ order = 4
 reward_spins = 3
 reward_levels = 1
 reward_xp = 500
-offer = "A three-man patrol went quiet near the western cliffs. Find their camp, recover their badges and deal with whoever did this. Then report to the Elder."
+offer = "A three-man patrol went quiet near the ramp up the Hokage Rock, in the north-west. Find their camp, recover their badges and deal with whoever did this. Then report to the Elder."
 remind = "Follow the trail: their camp, the badges, the rogues - then the Elder."
 turn = "Thank you for bringing them home. The village owes you."
 steps = Array[ExtResource("2_step")]([SubResource("Step_1"), SubResource("Step_2"), SubResource("Step_3"), SubResource("Step_4")])

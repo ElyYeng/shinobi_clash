@@ -14,6 +14,6 @@ target = "scout"
 reward_spins = 1
 reward_xp = 300
 offer = "Scout Mika waits in the east with a letter that needs her answer. Deliver my message to her and come back."
-remind = "Scout Mika is out in the eastern fields. Find her and speak to her."
+remind = "Scout Mika is at the east end of the cross street. Find her and speak to her."
 deliver_text = "A message from the Elder? ...Hm. Tell him I understand. The bandits are a bigger problem than he thinks."
 turn = "She understood? Good. Here is something for your trouble."

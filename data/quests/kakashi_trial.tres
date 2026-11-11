@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="Step_1"]
 script = ExtResource("2_step")
 type = "survive"
-pos = Vector3(0, 0, 30)
+pos = Vector3(-108, 0, 82)
 place = "Training Ground"
 radius = 10.0
 time = 30.0
@@ -17,7 +17,7 @@ enemy_speed = 4.6
 [sub_resource type="Resource" id="Step_2"]
 script = ExtResource("2_step")
 type = "hunt"
-pos = Vector3(0, 0, 30)
+pos = Vector3(-108, 0, 82)
 count = 2
 enemy_name = "Shadow Clone"
 enemy_health = 160.0
@@ -37,7 +37,7 @@ reward_spins = 2
 reward_element_spins = 1
 reward_levels = 2
 reward_xp = 0
-offer = "Want to get stronger? Then show me. Survive my training ground, then take down my two shadow clones."
-remind = "The training ground is to the south. Survive first, then the clones. Don't hold back."
+offer = "Want to get stronger? Then show me. Survive Training Ground 3, then take down my two shadow clones."
+remind = "Training Ground 3 is in the west. Survive first, then the clones. Don't hold back."
 turn = "Not bad. Not bad at all. Keep that up and you'll go far."
 steps = Array[ExtResource("2_step")]([SubResource("Step_1"), SubResource("Step_2")])
