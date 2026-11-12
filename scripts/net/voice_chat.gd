@@ -1,34 +1,39 @@
 class_name VoiceChat
 extends Node
-## Proximity voice chat, voice-activated (K mutes / unmutes your mic): the mic is captured, cut down to 12 kHz
-## mono, squeezed to 8-bit mu-law (~96 kbit/s while talking) and sent to every peer over the
-## game's own connection (unreliable, ordered). Each player's voice plays from their character
-## in 3D, so it fades with distance. Lives under the NetworkSession autoload ("VoiceChat"),
-## so the RPC path is the same on every peer.
+## Proximity voice chat, voice-activated (K mutes / unmutes your mic). The mic is captured,
+## resampled to exactly 12 kHz mono, squeezed to 8-bit mu-law and sent to every peer over the
+## game's own connection (unreliable, ordered) in 20 ms packets. Each player's voice plays from
+## their character in 3D (fades with distance) through a small jitter buffer: playback starts
+## once ~60 ms is queued and is fed steadily from it, so network bursts don't cut words, and the
+## queue never holds more than ~200 ms, so the delay can't build up.
+## Lives under the NetworkSession autoload ("VoiceChat"), so the RPC path is the same everywhere.
 
 const MUTE_KEY := KEY_K
-const GATE := 0.018            # mic level that counts as talking
-const HANGOVER := 0.35         # keep sending this long after you stop (no clipped word ends)
-const RATE := 12000            # voice sample rate
-const CHUNK := 480             # samples per packet (40 ms)
+const GATE := 0.015            # mic level that counts as talking
+const HANGOVER := 0.4          # keep sending this long after you stop (no clipped word ends)
+const RATE := 12000            # voice sample rate (exact, resampled)
+const CHUNK := 240             # samples per packet (20 ms)
+const PREBUFFER := 720         # 60 ms queued before a voice starts playing
+const MAX_QUEUE := 2400        # 200 ms: more than this queued -> drop the oldest (no growing delay)
 const HEAR_DIST := 45.0        # metres until a voice fades out
 
 var _capture: AudioEffectCapture
 var _mic: AudioStreamPlayer
-var _talking := false         # mic open (online and not muted)
+var _talking := false          # mic open (online and not muted)
 var muted := false
 var _k_was := false
 var _open := 0.0               # voice gate: > 0 = sending
 var _level := 0.0              # own mic level (mouth)
-var _quiet := 0.0              # seconds of silence (mic restart when it's safe)
-var _since_restart := 0.0
-var _step := 4                 # mix rate / RATE
+var _ratio := 4.0              # mix rate / RATE (fractional - 44.1 kHz isn't a whole multiple)
+var _phase := 0.0
+var _last := 0.0
 var _pending := PackedFloat32Array()
-var _voices := {}              # peer id -> {"player": AudioStreamPlayer3D, "pb": AudioStreamGeneratorPlayback}
+var _preroll := PackedByteArray()   # the packet before the gate opened (keeps the first syllable)
+var _voices := {}              # peer id -> {player, pb, q (PackedFloat32Array), playing, t, level}
 var _hint: Label
 
 func _ready() -> void:
-	_step = maxi(1, int(round(AudioServer.get_mix_rate() / RATE)))
+	_ratio = AudioServer.get_mix_rate() / float(RATE)
 	var bus := AudioServer.bus_count
 	AudioServer.add_bus(bus)
 	AudioServer.set_bus_name(bus, "VoiceMic")
@@ -44,8 +49,6 @@ func _ready() -> void:
 	layer.layer = 50
 	add_child(layer)
 	_hint = Label.new()
-	_hint.text = "● TALKING"
-	_hint.add_theme_color_override("font_color", Color(0.4, 1.0, 0.45))
 	_hint.add_theme_color_override("font_outline_color", Color.BLACK)
 	_hint.add_theme_constant_override("outline_size", 6)
 	_hint.add_theme_font_size_override("font_size", 18)
@@ -53,7 +56,7 @@ func _ready() -> void:
 	_hint.visible = false
 	layer.add_child(_hint)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var ns := get_parent()
 	var online: bool = ns != null and ns.has_method("is_active") and ns.is_active()
 	var k := Input.is_physical_key_pressed(MUTE_KEY) and not _typing()
@@ -72,66 +75,57 @@ func _process(_delta: float) -> void:
 			_open = 0.0
 	if _talking:
 		_send_mic()
-		# Godot's microphone stream slowly falls behind real time (its input and output clocks
-		# drift), which is what made voices arrive seconds late. Restarting it resets that, so
-		# do it in every pause between sentences (and at least every 20 s of silence).
-		_since_restart += _delta
-		_quiet = _quiet + _delta if _open <= 0.0 else 0.0
-		if (_quiet > 0.25 and _since_restart > 4.0) or (_quiet > 0.1 and _since_restart > 20.0):
-			_mic.stop()
-			_mic.play()
-			_capture.clear_buffer()
-			_pending.clear()
-			_since_restart = 0.0
-	_open = maxf(0.0, _open - _delta)
-	_level = lerpf(_level, 0.0, minf(1.0, 12.0 * _delta))
+	_open = maxf(0.0, _open - delta)
+	_level = lerpf(_level, 0.0, minf(1.0, 12.0 * delta))
 	_hint.visible = online and (muted or _open > 0.0)
 	_hint.text = "MIC MUTED  [K]" if muted else "● TALKING"
 	_hint.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if muted else Color(0.4, 1.0, 0.45))
 	var me := get_tree().get_first_node_in_group("player")
 	if me != null and me.get("model") != null:
 		Hero.set_mouth_open(me.get("model"), _level)
-	_place_voices(_delta)
+	_feed_voices(delta)
 
 func _typing() -> bool:
 	var f := get_viewport().gui_get_focus_owner()
 	return f is LineEdit or f is TextEdit
 
-## Mic frames -> 12 kHz mono -> mu-law packets.
+## Mic frames -> exactly 12 kHz mono (linear interpolation) -> mu-law packets.
 func _send_mic() -> void:
 	var n := _capture.get_frames_available()
 	if n <= 0:
 		return
 	var mix := AudioServer.get_mix_rate()
-	var keep := int(mix * 0.05)   # Godot's mic input can fall behind and pile up: only send the newest 50 ms
-	if n > int(mix * 0.1):
-		_capture.get_buffer(n - keep)   # (thrown away)
-		n = keep
+	if n > int(mix * 0.12):   # fell behind (hitch): skip to the newest audio
+		_capture.get_buffer(n - int(mix * 0.04))
+		n = _capture.get_frames_available()
 		_pending.clear()
 	var frames := _capture.get_buffer(n)
-	var i := 0
-	while i + _step <= frames.size():
-		var s := 0.0
-		for k in _step:
-			var f: Vector2 = frames[i + k]
-			s += (f.x + f.y) * 0.5
-		_pending.append(s / _step)
-		i += _step
+	for f: Vector2 in frames:
+		var s := (f.x + f.y) * 0.5
+		_phase += 1.0
+		while _phase >= _ratio:   # emit output samples that fall inside this input step
+			_phase -= _ratio
+			var t := 1.0 - _phase   # (_phase / 1.0 into the current input sample)
+			_pending.append(lerpf(_last, s, clampf(t, 0.0, 1.0)))
+		_last = s
 	while _pending.size() >= CHUNK:
 		var rms := 0.0
 		for k in CHUNK:
 			rms += _pending[k] * _pending[k]
 		rms = sqrt(rms / CHUNK)
+		var pkt := PackedByteArray()
+		pkt.resize(CHUNK)
+		for k in CHUNK:
+			pkt[k] = _mulaw(clampf(_pending[k] * 1.6, -1.0, 1.0))
+		_pending = _pending.slice(CHUNK)
 		if rms > GATE:   # voice activation
+			if _open <= 0.0 and not _preroll.is_empty():
+				_voice.rpc(_preroll)   # the start of the word, from just before the gate opened
 			_open = HANGOVER
 			_level = maxf(_level, clampf(rms * 9.0, 0.0, 1.0))
 		if _open > 0.0:
-			var pkt := PackedByteArray()
-			pkt.resize(CHUNK)
-			for k in CHUNK:
-				pkt[k] = _mulaw(clampf(_pending[k] * 1.6, -1.0, 1.0))
 			_voice.rpc(pkt)
-		_pending = _pending.slice(CHUNK)
+		_preroll = pkt
 
 static func _mulaw(x: float) -> int:
 	var y := signf(x) * log(1.0 + 255.0 * absf(x)) / log(256.0)
@@ -149,16 +143,15 @@ func _voice(pkt: PackedByteArray) -> void:
 	var v := _voice_for(from)
 	if v.is_empty():
 		return
-	var pb := v["pb"] as AudioStreamGeneratorPlayback
-	# never let their voice queue up: if more than ~120 ms is waiting, skip to now
-	var queued := int(RATE * 0.5) - pb.get_frames_available()
-	if queued > int(RATE * 0.09) or pb.get_frames_available() < CHUNK:
-		pb.clear_buffer()
+	var q: PackedFloat32Array = v["q"]
 	var rms := 0.0
 	for b in pkt:
 		var s := _unmulaw(b)
 		rms += s * s
-		pb.push_frame(Vector2(s, s))
+		q.append(s)
+	if q.size() > MAX_QUEUE:   # too far behind: drop the oldest so the delay stays small
+		q = q.slice(q.size() - PREBUFFER)
+	v["q"] = q
 	v["t"] = Time.get_ticks_msec()
 	v["level"] = maxf(float(v.get("level", 0.0)), clampf(sqrt(rms / CHUNK) * 6.0, 0.0, 1.0))
 
@@ -173,7 +166,7 @@ func _voice_for(peer: int) -> Dictionary:
 	var p := AudioStreamPlayer3D.new()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = RATE
-	gen.buffer_length = 0.5   # (room only - the queue is kept under ~120 ms in _voice)
+	gen.buffer_length = 0.1   # (small: the queue above is the real buffer)
 	p.stream = gen
 	p.max_distance = HEAR_DIST
 	p.unit_size = 8.0
@@ -181,16 +174,33 @@ func _voice_for(peer: int) -> Dictionary:
 	(av as Node3D).add_child(p)
 	p.position = Vector3.UP * 1.6
 	p.play()
-	_voices[peer] = {"player": p, "pb": p.get_stream_playback(), "t": 0}
+	_voices[peer] = {"player": p, "pb": p.get_stream_playback(), "q": PackedFloat32Array(), "playing": false, "t": 0, "level": 0.0}
 	return _voices[peer]
 
-## Talking indicator on the speaker's name tag; forget players who left.
-func _place_voices(delta: float) -> void:
+## Feeds each voice's generator steadily from its queue; mouths + name tags.
+func _feed_voices(delta: float) -> void:
 	for peer in _voices.keys():
 		var v: Dictionary = _voices[peer]
 		if not is_instance_valid(v["player"]):
 			_voices.erase(peer)
 			continue
+		var q: PackedFloat32Array = v["q"]
+		if not bool(v["playing"]) and q.size() >= PREBUFFER:
+			v["playing"] = true
+		if bool(v["playing"]):
+			var pb := v["pb"] as AudioStreamGeneratorPlayback
+			var room := pb.get_frames_available()
+			var n := mini(room, q.size())
+			if n > 0:
+				var buf := PackedVector2Array()
+				buf.resize(n)
+				for i in n:
+					buf[i] = Vector2(q[i], q[i])
+				pb.push_buffer(buf)
+				q = q.slice(n)
+				v["q"] = q
+			if q.is_empty() and Time.get_ticks_msec() - int(v["t"]) > 120:
+				v["playing"] = false   # they stopped talking: prebuffer again next time
 		var av := (v["player"] as Node).get_parent()
 		v["level"] = lerpf(float(v.get("level", 0.0)), 0.0, minf(1.0, 12.0 * delta))
 		if av != null and av.get("model") != null:   # their mouth moves while they talk
