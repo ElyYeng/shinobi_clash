@@ -364,14 +364,14 @@ func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) 
 	var dmg := 0.0 if is_buff else float(a["dmg"]) * NPC_DMG * _bl_dmg_mult()
 	Fx.puff(get_parent(), global_position + Vector3.UP, col, 2.5 * k)
 	match kind:
-		"burst", "cone":   # hits every player in range (in front of it for a cone)
+		"burst", "cone", "cube":   # hits every player in range (in front of it for a cone)
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)
 			if dmg > 0.0:
 				var players := targetable_players()
 				for peer_id in players:
 					var to: Vector3 = (players[peer_id] as Vector3) - global_position
 					to.y = 0.0
-					if to.length() <= float(a["r"]) and (kind == "burst" or to.normalized().dot(dir) > float(a["dot"])):
+					if to.length() <= float(a["r"]) and (kind != "cone" or to.normalized().dot(dir) > float(a["dot"])):
 						hurt_peer(int(peer_id), dmg, to.normalized() * float(a["knock"]))
 		"target":
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)

@@ -1161,6 +1161,12 @@ func _use_move(id: String) -> void:
 				_stun(e, float(a["stun"]))
 				_hit_foe(e, dmg, to.normalized() * float(a["knock"]))
 			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, float(a["r"]), 0.45)
+		"cube":   # Daikokuten: a giant cube drops from the sky onto the nearest enemy
+			var spot := global_position + facing * 6.0
+			var tgt := _nearest_foe(25.0)
+			if tgt != null:
+				spot = tgt.global_position
+			_drop_cube(spot, float(a["r"]), dmg, float(a["stun"]))
 		"cone":
 			for e in _foes_in(float(a["r"])):
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
@@ -1356,6 +1362,59 @@ func _knockdown(knock: Vector3) -> void:
 	Sfx.play(self, "thud", -2.0)
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_combat_animation("knockdown", 0)
+
+## Daikokuten: a cube (2 x radius wide) falls on `spot`, hits everything under it, sinks away.
+func _drop_cube(spot: Vector3, r: float, dmg: float, stun_t: float) -> void:
+	var world := get_parent()
+	var cube := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3.ONE * r * 1.4
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.16, 0.14, 0.19)
+	bm.material = mat
+	cube.mesh = bm
+	world.add_child(cube)
+	CharToon.apply(cube)
+	var ground := spot.y
+	var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 3.0, spot + Vector3.DOWN * 20.0))
+	if not hit.is_empty():
+		ground = (hit["position"] as Vector3).y
+	var rest := Vector3(spot.x, ground + r * 0.7, spot.z)
+	cube.global_position = rest + Vector3.UP * 22.0
+	cube.rotation.y = randf() * TAU
+	# shadow warning on the ground
+	var shadow := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = r
+	cm.bottom_radius = r
+	cm.height = 0.03
+	var sm := StandardMaterial3D.new()
+	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sm.albedo_color = Color(0, 0, 0, 0.45)
+	cm.material = sm
+	shadow.mesh = cm
+	world.add_child(shadow)
+	shadow.global_position = Vector3(spot.x, ground + 0.05, spot.z)
+	Sfx.play(self, "power", -2.0)
+	var tw := cube.create_tween()
+	tw.tween_property(cube, "global_position", rest, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(shadow):
+			shadow.queue_free()
+		Sfx.play(self, "boom", 4.0)
+		Vfx.shockwave(world, Vector3(spot.x, ground + 0.2, spot.z), Color(0.5, 0.45, 0.55), r * 1.6, 0.5)
+		Fx.puff(world, Vector3(spot.x, ground + 0.5, spot.z), Color(0.6, 0.55, 0.5, 0.9), r)
+		Vfx.shake(cam, 0.3, 0.45)
+		for e in get_tree().get_nodes_in_group("enemies"):
+			var en := e as Enemy
+			var d := Vector2(en.global_position.x - spot.x, en.global_position.z - spot.z).length()
+			if d <= r + 0.6:
+				_stun(en, stun_t)
+				_hit_foe(en, dmg, Vector3.ZERO))
+	tw.tween_interval(2.0)
+	tw.tween_property(cube, "global_position", rest + Vector3.DOWN * r * 1.5, 0.8).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(cube.queue_free)
 
 ## Chakra aura around you while you hold C to charge (Aura 3D shader shell).
 const CHARGE_AURA := Color(0.2, 0.55, 1.0)

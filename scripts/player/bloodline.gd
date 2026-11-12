@@ -205,7 +205,7 @@ const DEFS := {
 		"desc": "The dark eye of the Otsutsuki: +25% damage, +40 max health, +30 max chakra.",
 		"stats": {"dmg": 1.25, "hp": 40.0, "chakra": 30.0},
 		"abilities": [
-			{"name": "Daikokuten", "kind": "burst", "r": 9.0, "dmg": 150.0, "stun": 2.0, "col": Color(0.15, 0.13, 0.18), "desc": "Drops a giant cube on everything within 9m."},
+			{"name": "Daikokuten", "kind": "cube", "r": 4.0, "dmg": 160.0, "stun": 2.5, "col": Color(0.15, 0.13, 0.18), "desc": "Drops a giant cube from the sky onto the nearest enemy (25m) - crushes everything under it."},
 			{"name": "Sukunahikona", "kind": "target", "r": 22.0, "dmg": 140.0, "stun": 2.5, "col": Color(0.82, 0.82, 0.9), "desc": "Shrinks the nearest enemy - and crushes it."},
 			{"name": "Karma Seal Barrage", "kind": "fan", "n": 5, "spread": 12.0, "speed": 48.0, "dmg": 80.0, "aoe": 2.0, "size": 0.25, "long": true, "col": Color(0.2, 0.18, 0.25), "desc": "Five black stakes fired from the Karma seal."}],
 		"mode": {"name": "Kokugan", "dmg": 1.5, "def": 0.65, "speed": 1.15, "cd": 0.7, "ck": 20.0, "cutscene": "eyes",
