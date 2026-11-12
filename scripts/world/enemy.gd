@@ -158,7 +158,7 @@ func apply_quest_network_identity(id: String, appearance: Dictionary, synced_max
 
 ## Procedural run bob + forward lean for the placeholder ninjas (skipped for models with real animations).
 func _animate_body(delta: float) -> void:
-	if is_boss or model == null or downed > 0.0:
+	if is_boss or model == null or downed > 0.0 or model.has_meta("gen_bound"):   # (bound to the genjutsu cross)
 		return
 	var sp := Vector2(velocity.x, velocity.z).length()
 	if uses_hero:

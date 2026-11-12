@@ -2241,7 +2241,7 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 			Hero.set_damage(fig, (victim as Villager)._hp / 100.0)
 			fig.global_position = _gen_world.victim_spot()
 			fig.rotation = Vector3.ZERO   # (facing the caster)
-			GenjutsuWorld.bind(fig)
+			GenjutsuWorld.bind(fig, _gen_world.bar_y())
 			set_meta("gen_fig", fig)
 	elif victim is Enemy:   # the enemy itself is pulled in (and put back where it stood after)
 		victim.set_meta("gen_home", victim.global_position)
@@ -2250,7 +2250,7 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 		var em = (victim as Enemy).model
 		if em != null:
 			em.rotation.y = 0.0
-			GenjutsuWorld.bind(em)
+			GenjutsuWorld.bind(em, _gen_world.bar_y())
 		set_meta("gen_victim", victim)
 	elif victim != null and is_instance_valid(victim):   # their body appears bound in here (for you)
 		victim.set_meta("gen_pos", _gen_world.victim_spot())
@@ -2258,7 +2258,7 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 		var am = victim.get("model")
 		if am is Node3D:
 			(am as Node3D).rotation.y = 0.0
-			GenjutsuWorld.bind(am)
+			GenjutsuWorld.bind(am, _gen_world.bar_y())
 		set_meta("gen_victim", victim)
 
 func _gen_master_exit() -> void:
@@ -2309,7 +2309,7 @@ func genjutsu_enter(caster: int) -> void:
 	global_position = _gen_world.victim_spot()
 	if model != null:
 		model.rotation.y = 0.0   # facing the caster
-	GenjutsuWorld.bind(model)   # arms out on the cross
+	GenjutsuWorld.bind(model, _gen_world.bar_y())   # arms out on the cross
 	_gen_tint = CanvasLayer.new()   # red-tinted vision
 	_gen_tint.layer = 40
 	var r := ColorRect.new()
