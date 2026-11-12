@@ -502,12 +502,12 @@ func _build_look_page(page: VBoxContainer) -> void:
 	look_box.add_theme_constant_override("separation", 6)
 	page.add_child(look_box)
 	UiStyle.divider(page)
-	UiStyle.label(page, "COLOUR", 16, INK)
+	UiStyle.label(page, "COLOUR  -  pick what to colour", 16, INK)
 	color_targets = HFlowContainer.new()
 	color_targets.add_theme_constant_override("h_separation", 5)
 	page.add_child(color_targets)
 	var grid := GridContainer.new()
-	grid.columns = 8
+	grid.columns = 16
 	grid.add_theme_constant_override("h_separation", 5)
 	grid.add_theme_constant_override("v_separation", 5)
 	page.add_child(grid)
@@ -516,11 +516,11 @@ func _build_look_page(page: VBoxContainer) -> void:
 		var sw := _swatch(Color.html(str(hex)))
 		grid.add_child(sw)
 		swatch_buttons.append(sw)
-	for ch in [["h", "HUE"], ["s", "SATURATION"], ["v", "BRIGHTNESS"]]:
+	for ch in [["h", "Hue"], ["s", "Saturation"], ["v", "Brightness"]]:
 		var r := HBoxContainer.new()
 		page.add_child(r)
-		var l := UiStyle.label(r, ch[1], 12, UiStyle.BODY_TEXT)
-		l.custom_minimum_size = Vector2(96, 0)
+		var l := UiStyle.label(r, ch[1], 13, UiStyle.BODY_TEXT)
+		l.custom_minimum_size = Vector2(110, 0)
 		var s := HSlider.new()
 		s.min_value = 0.0
 		s.max_value = 1.0
@@ -815,7 +815,7 @@ func _dropdown(parent: Node) -> OptionButton:
 
 func _swatch(color: Color) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(52, 28)
+	b.custom_minimum_size = Vector2(34, 26)
 	b.focus_mode = Control.FOCUS_NONE
 	b.set_meta("color", color)
 	for st in ["normal", "hover", "pressed"]:
@@ -1203,9 +1203,13 @@ func _build_look_options() -> void:
 		var ids: Array = options.get(cat, [])
 		if ids.is_empty():
 			continue
-		UiStyle.label(look_box, str(Hero.CATEGORIES[cat]["label"]), 16, INK)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		look_box.add_child(row)
+		# no side label: the choices already read "Hair 1", "Shirt 5", "Pants 1"
 		var key: String = Hero.CATEGORIES[cat]["key"]
-		var dd := _dropdown(look_box)
+		var dd := _dropdown(row)
+		dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		for n in ids.size():
 			dd.add_item(Hero.display_name(str(ids[n])), n)
 			dd.set_item_metadata(n, str(ids[n]))
@@ -1227,12 +1231,15 @@ func _rebuild_color_targets() -> void:
 		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
 			targets.append([Hero.COLOR_SLOTS[slot]["key"], Hero.COLOR_SLOTS[slot]["label"]])
 		var opts := Hero.get_options(preview_model)
+		var cloak := Hero.cloak_id(preview_model) != "" and str(_working.get("shirt_style", "")) == Hero.cloak_id(preview_model)
 		for cat in Hero.CLOTH_COLORS:
-			if not (opts.get(cat, []) as Array).is_empty():
-				targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
-		if str(_working.get("shirt_style", "")) == Hero.cloak_id(preview_model) and Hero.cloak_id(preview_model) != "":
-			targets.append(["cloak_color1", "Cloak colour 1"])   # colourable Akatsuki cloak
-			targets.append(["cloak_color2", "Cloak colour 2"])
+			if (opts.get(cat, []) as Array).is_empty():
+				continue
+			if cat == "shirt" and cloak:   # the colourable cloak has its own two colours instead
+				targets.append(["cloak_color1", "Coat"])
+				targets.append(["cloak_color2", "Clouds"])
+				continue
+			targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
 	if not targets.any(func(t): return t[0] == _color_target):
 		_color_target = "hair_color"
 	var group := ButtonGroup.new()
