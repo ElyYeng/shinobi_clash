@@ -58,6 +58,9 @@ adjustment_contrast = 1.08
 adjustment_saturation = 1.12
 glow_hdr_threshold = 1.25
 
+[sub_resource type="BoxShape3D" id="floor_box"]
+size = Vector3(90, 2, 90)
+
 [sub_resource type="BoxShape3D" id="wall_ns"]
 size = Vector3(200, 120, 2)
 
@@ -92,26 +95,32 @@ script = ExtResource("am")
 
 [node name="Bounds" type="Node3D" parent="."]
 
+[node name="Floor" type="StaticBody3D" parent="Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="Bounds/Floor"]
+shape = SubResource("floor_box")
+
 [node name="WallN" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, -43.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, -43)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallN"]
 shape = SubResource("wall_ns")
 
 [node name="WallS" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 43.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 43)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallS"]
 shape = SubResource("wall_ns")
 
 [node name="WallE" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.5, 50, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43, 50, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallE"]
 shape = SubResource("wall_ew")
 
 [node name="WallW" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.5, 50, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43, 50, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallW"]
 shape = SubResource("wall_ew")

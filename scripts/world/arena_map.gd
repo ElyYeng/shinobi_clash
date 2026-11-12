@@ -6,7 +6,10 @@ extends Node3D
 ## texture has no real transparency become solid (toon-shaded like the rest of the game) and the
 ## cut-outs (leaves, banners) become alpha-scissor (sharp edges, cast shadows, no sorting issues).
 
-@export var collide_max_size := 200.0   ## meshes wider than this (the far backdrop) get no collision
+## The model's own meshes as colliders (off: its grass tufts, bumpy ground layers and decals trap
+## the player). The arena plays on the flat Floor + the invisible walls under Bounds instead.
+@export var mesh_collision := false
+@export var collide_max_size := 200.0   ## (mesh_collision) meshes wider than this get no collision
 
 func _ready() -> void:
 	var col := Node3D.new()
@@ -22,7 +25,7 @@ func _ready() -> void:
 				done[m] = true
 				_fix_material(m)
 		var a := mi.get_aabb()
-		if maxf(a.size.x, a.size.z) > collide_max_size:
+		if not mesh_collision or maxf(a.size.x, a.size.z) > collide_max_size:
 			continue
 		var shape := mi.mesh.create_trimesh_shape()
 		if shape == null:
