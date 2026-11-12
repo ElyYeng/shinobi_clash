@@ -130,6 +130,64 @@ const DEFS := {
 		"mode": {"name": "Hyoton Mode", "slow": 0.6, "dmg": 1.2, "speed": 1.1, "desc": "Enemies move 40% slower, +20% damage, +10% speed."}},
 
 	# ================================================================ Legendary (8.5%)
+	# ---------------------------------------------------------------- kekkei genkai (nature fusions)
+	"lava": {"name": "Lava Release", "rarity": "Epic", "weight": 3.0, "color": Color(1.0, 0.38, 0.08),
+		"desc": "Fire + Earth: +15% damage, +25 max health.", "stats": {"dmg": 1.15, "hp": 25.0},
+		"abilities": [
+			{"name": "Lava Globs", "kind": "fan", "n": 3, "spread": 14.0, "speed": 26.0, "dmg": 55.0, "aoe": 3.5, "size": 0.45, "col": Color(1.0, 0.38, 0.08), "desc": "Three globs of molten rock that burst on impact."},
+			{"name": "Magma Pool", "kind": "aura", "t": 5.0, "r": 6.0, "dps": 16.0, "col": Color(1.0, 0.38, 0.08), "desc": "5s: the ground around you melts - enemies within 6m burn."},
+			{"name": "Rubber Wall", "kind": "burst", "r": 10.0, "dmg": 40.0, "knock": 26.0, "stun": 1.0, "col": Color(1.0, 0.38, 0.08), "desc": "A rubbery quicklime wall bursts out and flings enemies away."}],
+		"mode": {"name": "Molten Body", "dmg": 1.3, "def": 0.8, "r": 5.0, "dps": 10.0, "desc": "+30% damage, take 20% less damage, enemies within 5m burn."}},
+	"boil": {"name": "Boil Release", "rarity": "Epic", "weight": 3.0, "color": Color(0.85, 0.85, 0.75),
+		"desc": "Fire + Water: +10% damage, +30 max health, slow regeneration.", "stats": {"dmg": 1.1, "hp": 30.0, "hp_regen": 1.0},
+		"abilities": [
+			{"name": "Skilled Mist", "kind": "aura", "t": 6.0, "r": 7.0, "dps": 13.0, "col": Color(0.85, 0.85, 0.75), "desc": "6s: acid mist eats at enemies within 7m."},
+			{"name": "Unrivalled Strength", "kind": "buff", "t": 7.0, "dmg": 1.45, "def": 0.8, "desc": "7s: boiling chakra - +45% damage, take 20% less damage."},
+			{"name": "Scalding Burst", "kind": "cone", "r": 8.0, "dmg": 60.0, "knock": 14.0, "dot": 0.3, "col": Color(0.85, 0.85, 0.75), "desc": "A blast of scalding steam in front of you."}],
+		"mode": {"name": "Boiling Point", "dmg": 1.3, "def": 0.75, "hp": 4.0, "desc": "+30% damage, take 25% less damage, heal 4/s."}},
+	"storm": {"name": "Storm Release", "rarity": "Epic", "weight": 2.5, "color": Color(0.3, 0.6, 1.0),
+		"desc": "Lightning + Water: +15% damage, chakra regens 20% faster.", "stats": {"dmg": 1.15, "regen": 1.2},
+		"abilities": [
+			{"name": "Laser Circus", "kind": "fan", "n": 5, "spread": 10.0, "speed": 55.0, "dmg": 38.0, "size": 0.18, "long": true, "col": Color(0.3, 0.6, 1.0), "desc": "Five bending lightning beams."},
+			{"name": "Black Panther", "kind": "homing", "n": 1, "dmg": 120.0, "aoe": 3.5, "size": 0.5, "col": Color(0.3, 0.6, 1.0), "desc": "A black lightning panther hunts the nearest enemy."},
+			{"name": "Thunder Cloud", "kind": "burst", "r": 12.0, "dmg": 55.0, "stun": 2.0, "col": Color(0.3, 0.6, 1.0), "desc": "A storm cloud paralyses everything within 12m."}],
+		"mode": {"name": "Stormcloak", "dmg": 1.35, "speed": 1.2, "cd": 0.8, "desc": "+35% damage, +20% speed, cooldowns 20% faster."}},
+	"explosion": {"name": "Explosion Release", "rarity": "Epic", "weight": 3.0, "color": Color(1.0, 0.75, 0.3),
+		"desc": "Earth + Lightning: +20% damage.", "stats": {"dmg": 1.2},
+		"abilities": [
+			{"name": "Clay Birds", "kind": "homing", "n": 3, "dmg": 55.0, "aoe": 3.0, "size": 0.35, "col": Color(1.0, 0.75, 0.3), "desc": "Three clay birds fly at enemies and explode."},
+			{"name": "Land Mine", "kind": "burst", "r": 9.0, "dmg": 85.0, "knock": 18.0, "stun": 0.5, "col": Color(1.0, 0.75, 0.3), "desc": "The ground around you detonates."},
+			{"name": "C4 Swarm", "kind": "aura", "t": 4.0, "r": 8.0, "dps": 20.0, "col": Color(1.0, 0.75, 0.3), "desc": "4s: invisible micro bombs tear at enemies within 8m."}],
+		"mode": {"name": "Art Is An Explosion", "dmg": 1.45, "def": 0.9, "desc": "+45% damage, take 10% less damage."}},
+	"scorch": {"name": "Scorch Release", "rarity": "Legendary", "weight": 1.5, "color": Color(1.0, 0.5, 0.15),
+		"desc": "Fire + Wind: +20% damage, +20 max chakra.", "stats": {"dmg": 1.2, "chakra": 20.0},
+		"abilities": [
+			{"name": "Extreme Steaming Murder", "kind": "homing", "n": 4, "dmg": 50.0, "aoe": 2.0, "size": 0.45, "col": Color(1.0, 0.5, 0.15), "desc": "Four fireballs that dry out whatever they touch."},
+			{"name": "Halo Hurricane", "kind": "burst", "r": 11.0, "dmg": 70.0, "knock": 14.0, "stun": 1.0, "col": Color(1.0, 0.5, 0.15), "desc": "A ring of scorching fireballs spins out around you."},
+			{"name": "Mummify", "kind": "target", "r": 20.0, "dmg": 140.0, "stun": 2.0, "col": Color(1.0, 0.5, 0.15), "desc": "Evaporates the water in the nearest enemy."}],
+		"mode": {"name": "Scorching Spheres", "dmg": 1.4, "speed": 1.15, "r": 5.0, "dps": 12.0, "desc": "+40% damage, +15% speed, enemies within 5m burn."}},
+	"magnet": {"name": "Magnet Release", "rarity": "Legendary", "weight": 1.5, "color": Color(0.35, 0.33, 0.4),
+		"desc": "Wind + Earth: +15% damage, +30 max health.", "stats": {"dmg": 1.15, "hp": 30.0},
+		"abilities": [
+			{"name": "Iron Sand Drizzle", "kind": "fan", "n": 7, "spread": 9.0, "speed": 40.0, "dmg": 30.0, "size": 0.14, "long": true, "col": Color(0.35, 0.33, 0.4), "desc": "A rain of iron sand spikes."},
+			{"name": "Iron Sand Pull", "kind": "burst", "r": 16.0, "dmg": 25.0, "knock": -14.0, "stun": 1.5, "col": Color(0.35, 0.33, 0.4), "desc": "Magnetises enemies within 16m and drags them in."},
+			{"name": "Iron Sand Fist", "kind": "cone", "r": 9.0, "dmg": 75.0, "knock": 22.0, "dot": 0.3, "col": Color(0.35, 0.33, 0.4), "desc": "A giant iron sand fist smashes everything in front of you."}],
+		"mode": {"name": "Iron Sand Armor", "dmg": 1.3, "def": 0.65, "desc": "+30% damage, take 35% less damage."}},
+	"crystal": {"name": "Crystal Release", "rarity": "Legendary", "weight": 1.2, "color": Color(0.6, 0.95, 1.0),
+		"desc": "The crystal user: +20% damage, +25 max health.", "stats": {"dmg": 1.2, "hp": 25.0},
+		"abilities": [
+			{"name": "Crystal Shards", "kind": "fan", "n": 5, "spread": 12.0, "speed": 42.0, "dmg": 45.0, "size": 0.22, "long": true, "col": Color(0.6, 0.95, 1.0), "desc": "Five razor crystal shards."},
+			{"name": "Crystal Prison", "kind": "target", "r": 22.0, "dmg": 110.0, "stun": 4.0, "col": Color(0.6, 0.95, 1.0), "desc": "Encases the nearest enemy in crystal."},
+			{"name": "Crystal Spikes", "kind": "burst", "r": 10.0, "dmg": 75.0, "stun": 1.5, "col": Color(0.6, 0.95, 1.0), "desc": "Crystal spikes erupt from the ground around you."}],
+		"mode": {"name": "Crystal Armor", "dmg": 1.35, "def": 0.7, "slow": 0.85, "desc": "+35% damage, take 30% less damage, enemies 15% slower."}},
+	"dust": {"name": "Dust Release", "rarity": "Mythic", "weight": 0.8, "color": Color(0.95, 0.95, 0.85),
+		"desc": "Fire + Wind + Earth: +30% damage.", "stats": {"dmg": 1.3},
+		"abilities": [
+			{"name": "Detachment of the Primitive World", "kind": "fan", "n": 1, "speed": 30.0, "dmg": 200.0, "aoe": 4.0, "size": 0.6, "col": Color(0.95, 0.95, 0.85), "desc": "A cube of light that erases what it hits."},
+			{"name": "Dust Sphere", "kind": "burst", "r": 12.0, "dmg": 110.0, "stun": 1.5, "col": Color(0.95, 0.95, 0.85), "desc": "A sphere of dust disintegrates everything within 12m."},
+			{"name": "Particle Cone", "kind": "cone", "r": 12.0, "dmg": 130.0, "dot": 0.45, "col": Color(0.95, 0.95, 0.85), "desc": "A cone of particles in front of you."}],
+		"mode": {"name": "Atomic Dismantling", "dmg": 1.55, "def": 0.75, "cd": 0.8, "desc": "+55% damage, take 25% less damage, cooldowns 20% faster."}},
+
 	"uzumaki": {"name": "Uzumaki", "rarity": "Legendary", "weight": 2.5, "color": Color(1.0, 0.45, 0.15),
 		"desc": "Huge chakra: +50 max, 2x regen, 4 clones that last longer.",
 		"stats": {"chakra": 50.0, "regen": 2.0, "clone_count": 2, "clone_time": 6.0},
