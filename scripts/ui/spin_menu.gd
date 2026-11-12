@@ -1211,7 +1211,8 @@ func _build_look_options() -> void:
 		var dd := _dropdown(row)
 		dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		for n in ids.size():
-			dd.add_item(Hero.display_name(str(ids[n])), n)
+			var colourable := Hero.color_copy_for(preview_model, str(ids[n])) != ""
+			dd.add_item(Hero.display_name(str(ids[n])) + ("  (C)" if colourable else ""), n)   # (C) = colourable
 			dd.set_item_metadata(n, str(ids[n]))
 			if str(_working.get(key, "")) == str(ids[n]):
 				dd.select(n)
