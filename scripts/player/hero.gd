@@ -246,6 +246,27 @@ static func face_shape_names(model: Node3D) -> Array:
 				out.append(n)
 	return out
 
+## Left / right versions of a key ("Eye_Big_L" / "Eye_Big_R", "Brow.Left" ...) are one choice:
+## the face stays symmetric. Returns the key's name without the side ("Eye_Big").
+static var _side_re: RegEx
+static func face_base(n: String) -> String:
+	if _side_re == null:
+		_side_re = RegEx.new()
+		_side_re.compile("(?i)[._\\- ]?(left|right)$|[._\\- ](l|r)$|(?-i)(L|R)$")
+	return _side_re.sub(n, "").strip_edges()
+
+## The face toggles: {display base name: [every shape key it switches, both sides]}.
+static func face_groups(names: Array) -> Dictionary:
+	var out := {}
+	for n in names:
+		var b := face_base(str(n))
+		if b == "":
+			b = str(n)
+		if not out.has(b):
+			out[b] = []
+		(out[b] as Array).append(str(n))
+	return out
+
 ## Applies the face shape keys and the sex key(s) to every mesh that has them.
 static func apply_face(model: Node3D, look: Dictionary) -> void:
 	if model == null:
@@ -266,6 +287,11 @@ static func apply_face(model: Node3D, look: Dictionary) -> void:
 				v = 0.0 if female else 1.0
 			else:
 				v = float(face.get(n, 0.0))
+				if v < 0.5:   # symmetric: if the other side's key is on, this one is too
+					for k in face:
+						if float(face[k]) >= 0.5 and str(k) != n and face_base(str(k)) == face_base(n) and face_base(n) != n:
+							v = 1.0
+							break
 			mi.set_blend_shape_value(i, v)
 
 

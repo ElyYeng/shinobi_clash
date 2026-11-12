@@ -1259,12 +1259,15 @@ func _build_face() -> void:
 	flow.add_theme_constant_override("h_separation", 5)
 	flow.add_theme_constant_override("v_separation", 5)
 	face_box.add_child(flow)
-	for n in names:
-		var b := _chip(flow, str(n).replace("_", " ").capitalize())
-		b.set_pressed_no_signal(float(face.get(n, 0.0)) >= 0.5)
+	var groups := Hero.face_groups(names)   # _L / _R keys share one toggle (symmetric face)
+	for g in groups:
+		var keys: Array = groups[g]
+		var b := _chip(flow, str(g).replace("_", " ").replace(".", " ").capitalize())
+		b.set_pressed_no_signal(keys.any(func(k): return float(face.get(k, 0.0)) >= 0.5))
 		b.disabled = placeholder
 		b.toggled.connect(func(on: bool):
-			(_working["face"] as Dictionary)[str(n)] = 1.0 if on else 0.0
+			for k in keys:
+				(_working["face"] as Dictionary)[str(k)] = 1.0 if on else 0.0
 			_apply_look())
 	var acts := HBoxContainer.new()
 	acts.add_theme_constant_override("separation", 6)
@@ -1274,8 +1277,11 @@ func _build_face() -> void:
 	rnd.disabled = placeholder
 	rnd.pressed.connect(func():
 		var f := {}
-		for n in Hero.face_shape_names(preview_model):
-			f[n] = 1.0 if randf() < 0.35 else 0.0
+		var gr := Hero.face_groups(Hero.face_shape_names(preview_model))
+		for g in gr:
+			var on := 1.0 if randf() < 0.35 else 0.0
+			for k in gr[g]:
+				f[k] = on
 		_working["face"] = f
 		_apply_look()
 		_build_face())
