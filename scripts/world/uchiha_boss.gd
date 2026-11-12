@@ -14,7 +14,7 @@ signal defeated
 signal phase_changed(phase: int)
 
 const BOSS_TITLE := "CLAUDIU UCHIHA  -  Akatsuki"
-const MAX_HP := 3000.0
+const MAX_HP := 10000.0
 const LOOK := {"hair_style": "hair1", "hair_color": "#15151A", "shirt_style": "shirt3", "pants_style": "pants1",
 	"skin_color": "#F4CDAE", "headband_color": "#2B3A67", "shirt_color": "#FFFFFF", "pants_color": "#FFFFFF"}
 const SUSANOO_COLOR := Color(0.55, 0.25, 1.0)
