@@ -1039,7 +1039,9 @@ func _request_raid_boss_damage(amount: float) -> void:
 		return
 	if _avatars[sender].global_position.distance_to(_raid_boss.global_position) > 42.0:
 		return
+	_raid_boss.last_hit_peer = sender   # aggro: who hit him
 	_raid_boss.take_damage(clampf(amount, 1.0, 120.0))
+	_raid_boss.last_hit_peer = 1
 
 func raid_apply_boss_attack(move: String, boss_pos: Vector3, forward: Vector3, slam_target: Vector3, boss_phase: int) -> void:
 	if not is_active() or session_mode != "raid" or not multiplayer.is_server():
