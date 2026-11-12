@@ -226,11 +226,9 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 			power_fx.queue_free()
 		power_fx = Node3D.new()
 		add_child(power_fx)
-		VfxKit.chakra(self, 1.3, color, 1.4)   # chakra flare as they transform
-		if not look.has("glow"):
-			Vfx.aura_flames(power_fx, Vector3(0, 1.0, 0), 0.6, color, 24, true)
-		else:
-			Vfx.aura_flames(power_fx, Vector3(0, 0.9, 0), 0.45, Color(color.r, color.g, color.b, 0.35), 10, true)
+		var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
+		if look.has("glow"):
+			mode_aura.set_strength(0.45)
 	else:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()

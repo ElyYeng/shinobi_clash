@@ -970,7 +970,7 @@ func _page_tools() -> Array:
 		_item("Dash", "Q - %d chakra" % int(p.dash_cost), Color(0.5, 0.85, 0.95), "Q",
 			"A short burst of speed with brief invulnerability. Sprinting uses stamina (STM)."),
 		_item("Chakra / Power-up", "C", Color(0.3, 0.45, 1.0), "C",
-			"Tap C: bloodline power-up on / off (%s). No timer - it drains MD and ends when MD runs out.\nHold C while standing still: charge chakra, 40 per second (x%.2f).\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [pu, p.regen_mult]),
+			"Hold C while standing still: charge chakra, 40 per second (x%.2f). Keep holding to power up (%s). No timer - it drains MD and ends when MD runs out; X releases it.\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [p.regen_mult, pu]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
 			"Unlocks when you defeat Kurama. Press Z to turn it on (needs %d MD) and again to turn it off. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
 				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(Player.MODE_MAX)])]),
@@ -1216,7 +1216,7 @@ func _build_tree_info() -> void:
 		var ok := lv >= Bloodline.MODE_LEVEL
 		_bl_label("UNLOCKED" if ok else "Needs LV %d  (now %d)" % [Bloodline.MODE_LEVEL, lv], Rect2(0, 52, 196, 20), 14,
 			Color(0.1, 0.45, 0.12) if ok else Color(0.7, 0.08, 0.06), box)
-		_bl_label("%s\n\nAlways on C. No timer: drains MD while on. Tap C again to release; it ends when MD runs out." % m["desc"],
+		_bl_label("%s\n\nHold C to activate. No timer: drains MD while on. Press X to release; it ends when MD runs out." % m["desc"],
 			Rect2(2, 78, 192, 200), 14, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
 		return
 	var mv: String = moves[tree_sel_idx]
@@ -1304,7 +1304,7 @@ func _page_sub() -> Array:
 	var m := Bloodline.mode(id)
 	var ml := lv < Bloodline.MODE_LEVEL
 	out.append(_item(m["name"], "[C]  power-up  -  drains MD", m["col"], "C",
-		"%s\n\nNo timer: lasts while you have MD, tap C again to release.\nStatus: %s" % [m["desc"],
+		"%s\n\nNo timer: lasts while you have MD, press X to release.\nStatus: %s" % [m["desc"],
 			"ON" if p.powered else ("LOCKED - unlocks at LV %d" % Bloodline.MODE_LEVEL if ml else "READY (MD %d)" % int(p.mode_meter))],
 		{"locked": ml}))
 	return out
@@ -1435,7 +1435,7 @@ func _page_controls() -> Array:
 		_item("Combat", "Mouse, E, Tab", Color(0.6, 0.65, 0.8), "C",
 			"Left mouse: melee combo\nRight mouse: kunai\nRight mouse + E: kunai volley\nTab / middle mouse: lock on"),
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
-			"Tap C: bloodline power-up on / off (bloodline LV 1000, drains MD; X also works)\nHold C: charge chakra\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
+			"Hold C: charge chakra - keep holding to power up (bloodline LV 1000, drains MD)\nX: power-up on / off\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
 		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
 			"M: this menu\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]

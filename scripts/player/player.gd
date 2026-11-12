@@ -489,8 +489,8 @@ func _physics_process(delta: float) -> void:
 		_kurama_mode()
 	if Input.is_action_just_pressed("volley") and Input.is_action_pressed("kunai"):
 		_kunai_volley()
-	# C: tap = bloodline power-up on / off (needs bloodline LV 1000, drains MD), hold = charge chakra
-	# (Uchiha: keep holding - 2 s and full chakra forms the Susanoo)
+	# C: hold = charge chakra; keep holding for POWER_HOLD s to activate the bloodline power-up
+	# (like Shindo Life; needs bloodline LV 1000 and MD). X still turns it on / off.
 	# (hold C + 1..4 = forms; Uchiha: 2 = Susanoo)
 	if Input.is_action_pressed("charge"):
 		c_hold += delta
@@ -498,11 +498,16 @@ func _physics_process(delta: float) -> void:
 			if Input.is_action_just_pressed("form_%d" % (n + 1)):
 				_c_form_used = true
 				_activate_form(n + 1)
+		if not powered and not _c_form_used and not _c_activated and _power_ready():
+			if _charge_fx != null and is_instance_valid(_charge_fx):   # aura builds up while you hold
+				_charge_fx.set_strength(1.0 + 0.8 * clampf(c_hold / POWER_HOLD, 0.0, 1.0))
+			if c_hold >= POWER_HOLD:
+				_c_activated = true
+				_toggle_power()
 	else:
-		if c_hold > 0.0 and c_hold < 0.25 and not _c_form_used:
-			_toggle_power()
 		c_hold = 0.0
 		_c_form_used = false
+		_c_activated = false
 
 	move_and_slide()
 	_try_wall_walk(dir)
@@ -515,8 +520,10 @@ func _physics_process(delta: float) -> void:
 # ---------------------------------------------------------------- susanoo (Uchiha)
 ## Uchiha form 2: hold C and press 2 - the Susanoo forms around you (the Sharingan turns on with it). Left click = alternating left /
 ## right punches, right click = slam. Drains chakra; ends when chakra runs out, the Sharingan ends
-## (tap C) or you die. Each player has their own random Susanoo colour.
+## (X) or you die. Each player has their own random Susanoo colour.
 const SUS_MIN_CHAKRA := 25.0
+const POWER_HOLD := 1.2           # seconds of holding C to power up
+var _c_activated := false         # this C hold already powered you up
 var _c_form_used := false         # a form key was pressed during this C hold (so no tap toggle)
 const SUS_DRAIN := 4.0            # chakra per second while it's out
 const SUS_PUNCH := {"cd": 0.8, "ck": 6.0, "dmg": 55.0, "ahead": 6.5, "r": 4.5, "knock": 12.0}
@@ -574,7 +581,7 @@ func _susanoo_on() -> void:
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 7.0, 0.45)
 	VfxKit.chakra(self, 1.6, col, 2.4)
 	Vfx.shake(cam, 0.35, 0.5)
-	_toast("SUSANOO!   left click: punch  -  right click: slam  -  tap C: release")
+	_toast("SUSANOO!   left click: punch  -  right click: slam  -  X: release")
 
 func _susanoo_off() -> void:
 	_susanoo_charge_stop()
@@ -1205,21 +1212,29 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
-## Chakra aura at your feet while you hold C to charge (imported chakra VFX).
-var _charge_fx: Node3D
+## Chakra aura around you while you hold C to charge (Aura 3D shader shell).
+const CHARGE_AURA := Color(0.2, 0.55, 1.0)
+const CHARGE_RIM := Color(0.75, 0.92, 1.0)
+var _charge_fx: AuraShell
 func _charge_aura(on: bool) -> void:
-	if on and is_dead == false:
+	if on and is_dead == false and model != null:
 		if _charge_fx == null or not is_instance_valid(_charge_fx) or _charge_fx.has_meta("closing"):
-			_charge_fx = VfxKit.chakra(self)
+			_charge_fx = AuraShell.make(self, model, CHARGE_AURA, CHARGE_RIM)
 	elif _charge_fx != null:
-		VfxKit.stop_area(_charge_fx)
+		if is_instance_valid(_charge_fx):
+			_charge_fx.fade_out()
 		_charge_fx = null
+
+## Could you power up right now? (quiet version of the checks in _toggle_power)
+func _power_ready() -> bool:
+	var id := GameData.equipped
+	return id != "none" and _bl_level() >= Bloodline.MODE_LEVEL and mode_meter >= POWER_MIN_MD
 
 func _clear_buffs() -> void:
 	buffs.clear()
 	Enemy.time_scale = 1.0
 
-## C (tap) / X: turn the bloodline power-up on or off.
+## Hold C / X: turn the bloodline power-up on (X also turns it off).
 func _toggle_power() -> void:
 	if is_dead:
 		return
@@ -1249,14 +1264,13 @@ func _toggle_power() -> void:
 		Hero.apply_mode_look(model, m.get("look", {}))
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
-	if not m.get("look", {}).has("glow"):
-		Vfx.aura_flames(pmode_fx, Vector3(0, 1.0, 0), 0.6, col, 24, true)
-	else:   # the body already glows: keep the flames faint so they don't hide it
-		Vfx.aura_flames(pmode_fx, Vector3(0, 0.9, 0), 0.45, Color(col.r, col.g, col.b, 0.35), 10, true)
+	# the mode's aura (Aura 3D shell); faint when the body already glows so it doesn't hide it
+	var mode_aura := AuraShell.make(pmode_fx, model, col, col.lightened(0.6), 0.4)
+	if m.get("look", {}).has("glow"):
+		mode_aura.set_strength(0.45)
 	aura.visible = true
 	aura.light_color = col
 	aura.light_energy = 1.8
-	VfxKit.chakra(self, 1.3, col, 1.4)   # chakra flares up as you transform
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
@@ -1310,7 +1324,7 @@ func _gain_mastery(n: int) -> void:
 			_toast("NEW ABILITY: %s  - assign it to a key in M > Bloodline" % a["name"])
 			return
 	if old < Bloodline.MODE_LEVEL and now >= Bloodline.MODE_LEVEL:
-		_toast("POWER-UP UNLOCKED: %s  - tap C!" % Bloodline.mode(id)["name"])
+		_toast("POWER-UP UNLOCKED: %s  - hold C!" % Bloodline.mode(id)["name"])
 		Sfx.play(self, "power")
 	elif now / 100 > old / 100:
 		_toast("%s mastery LV %d" % [_bl_name(), now])
