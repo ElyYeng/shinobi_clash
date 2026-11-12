@@ -499,6 +499,22 @@ func _build_el_slot(parent: Node, i: int) -> Dictionary:
 	return {"card": card, "badge": badge, "name": nm, "sub": sub, "spin": spin, "equip": eq, "bag": bag}
 
 func _build_look_page(page: VBoxContainer) -> void:
+	UiStyle.label(page, "PRESETS", 16, INK)
+	var prow := HBoxContainer.new()
+	prow.add_theme_constant_override("separation", 6)
+	page.add_child(prow)
+	preset_name = LineEdit.new()
+	preset_name.placeholder_text = "Preset name"
+	preset_name.max_length = 20
+	preset_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prow.add_child(preset_name)
+	var save := UiStyle.green_button(prow, "SAVE LOOK", 14)
+	save.pressed.connect(_save_preset)
+	preset_box = VBoxContainer.new()
+	preset_box.add_theme_constant_override("separation", 4)
+	page.add_child(preset_box)
+	_fill_presets()
+	UiStyle.divider(page)
 	look_box = VBoxContainer.new()   # one row of choices per model part (filled in _build_look_options)
 	look_box.add_theme_constant_override("separation", 6)
 	page.add_child(look_box)
@@ -1419,6 +1435,71 @@ func _on_hex_submitted(text: String) -> void:
 		_apply_color(Color.html(hex))
 	else:
 		_update_color_controls(_current_color())
+
+# ------------------------------------------------------------------ presets (saved looks)
+const MAX_PRESETS := 12
+var preset_name: LineEdit
+var preset_box: VBoxContainer
+
+func _fill_presets() -> void:
+	if preset_box == null:
+		return
+	for c in preset_box.get_children():
+		c.queue_free()
+	if GameData.look_presets.is_empty():
+		UiStyle.label(preset_box, "No presets yet - make a look, name it and press SAVE LOOK.", 12, UiStyle.BODY_TEXT)
+		return
+	for i in GameData.look_presets.size():
+		var pr: Dictionary = GameData.look_presets[i]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		preset_box.add_child(row)
+		var load_b := UiStyle.green_button(row, str(pr.get("name", "Preset %d" % (i + 1))), 14)
+		load_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		load_b.tooltip_text = "Wear this look"
+		load_b.pressed.connect(_load_preset.bind(i))
+		var over := UiStyle.green_button(row, "OVERWRITE", 12)
+		over.tooltip_text = "Save the current look into this preset"
+		over.pressed.connect(func() -> void:
+			GameData.look_presets[i]["look"] = Hero.sanitize_appearance(_working).duplicate(true)
+			GameData.save()
+			_toast_look("Saved over \"%s\"" % str(GameData.look_presets[i]["name"])))
+		var del := UiStyle.green_button(row, "X", 12)
+		del.tooltip_text = "Delete this preset"
+		del.custom_minimum_size = Vector2(36, 0)
+		del.pressed.connect(func() -> void:
+			GameData.look_presets.remove_at(i)
+			GameData.save()
+			_fill_presets())
+
+func _save_preset() -> void:
+	if GameData.look_presets.size() >= MAX_PRESETS:
+		_toast_look("Preset list full (%d) - delete or overwrite one" % MAX_PRESETS)
+		return
+	var n := preset_name.text.strip_edges()
+	if n == "":
+		n = "Look %d" % (GameData.look_presets.size() + 1)
+	GameData.look_presets.append({"name": n, "look": Hero.sanitize_appearance(_working).duplicate(true)})
+	GameData.save()
+	preset_name.text = ""
+	_fill_presets()
+	_toast_look("Saved \"%s\"" % n)
+
+func _load_preset(i: int) -> void:
+	if i < 0 or i >= GameData.look_presets.size():
+		return
+	_working = Hero.sanitize_appearance((GameData.look_presets[i]["look"] as Dictionary).duplicate(true))
+	_apply_look()
+	_build_look_options()
+
+func _toast_look(t: String) -> void:
+	if banner != null:
+		banner.text = t
+		banner.modulate.a = 1.0
+		banner.visible = true
+		var tw := banner.create_tween()
+		tw.tween_interval(1.4)
+		tw.tween_property(banner, "modulate:a", 0.0, 0.5)
 
 func _randomize_look() -> void:
 	if preview_model == null or not preview_model.has_meta("anim_player"):

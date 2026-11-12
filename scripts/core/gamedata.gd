@@ -89,6 +89,7 @@ static var open_customize := false     # main menu opens the spin screen straigh
 
 ## Cosmetic-only character creator selections (see Hero.CATEGORIES). Style ids are the mesh
 ## names inside the character GLB (hair1, shirt2, pants1 ...); colour is an HTML string for JSON.
+static var look_presets: Array = []   # saved looks: [{"name": String, "look": Dictionary}] (Customise > Appearance)
 static var character_appearance := {
 	"hair_style": "hair1",
 	"hair_color": "#E6B52E",
@@ -139,6 +140,8 @@ static func load_data() -> void:
 		susanoo_color = int(d.get("susanoo_color", -1))
 		toon_shading = bool(d.get("toon_shading", true))
 		errands_done = int(d.get("errands_done", 0))
+		var lp = d.get("look_presets", [])
+		look_presets = (lp as Array).filter(func(x) -> bool: return x is Dictionary and x.get("look") is Dictionary) if lp is Array else []
 		var appearance_data = d.get("character_appearance", {})
 		if appearance_data is Dictionary:
 			# every saved key (skin / eye colour etc. too); sanitize_appearance drops anything unknown
@@ -299,7 +302,7 @@ static func save() -> void:
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
-			"keybinds": keybinds, "key_scheme": key_scheme, "keybinds_modern": keybinds_modern, "character_appearance": character_appearance}))
+			"keybinds": keybinds, "key_scheme": key_scheme, "keybinds_modern": keybinds_modern, "character_appearance": character_appearance, "look_presets": look_presets}))
 
 # ------------------------------------------------------------------ keybinds
 ## Fills any missing hotbar key with its default move.
