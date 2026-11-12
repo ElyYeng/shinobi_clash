@@ -337,18 +337,44 @@ static func _damage_mat(lvl: int) -> StandardMaterial3D:
 				var y := int(q.y) % n
 				if x >= 0 and y >= 0:
 					img.set_pixel(x, y, col)
-	if lvl >= 2:   # blood: splats with drips
-		for b in (18 if lvl == 2 else 45):
+	if lvl >= 2:   # blood: noisy patches (fractal noise -> ragged, uneven stains) with drips
+		var nz := FastNoiseLite.new()
+		nz.seed = 77
+		nz.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		nz.frequency = 0.018
+		nz.fractal_type = FastNoiseLite.FRACTAL_FBM
+		nz.fractal_octaves = 4
+		var grain := FastNoiseLite.new()   # fine speckle inside the stains
+		grain.seed = 9
+		grain.frequency = 0.25
+		var cut := 0.38 if lvl == 2 else 0.22   # more of the body is covered when worse
+		var half := n / 2
+		for y in half:
+			for x in half:
+				var v := nz.get_noise_2d(x, y)
+				if v < cut:
+					continue
+				var edge := clampf((v - cut) / 0.12, 0.0, 1.0)   # soft, ragged rim
+				var g := grain.get_noise_2d(x, y) * 0.5 + 0.5
+				var depth := clampf((v - cut) * 2.5, 0.0, 1.0)   # thicker = darker, dried brown at the core
+				var col := Color(0.62, 0.02, 0.03).lerp(Color(0.28, 0.02, 0.02), depth * 0.8 + g * 0.2)
+				col.a = edge * (0.7 + 0.3 * g)
+				for dy in 2:
+					for dx in 2:
+						var px := x * 2 + dx
+						var py := y * 2 + dy
+						var old := img.get_pixel(px, py)
+						img.set_pixel(px, py, col if old.a < col.a else old)
+		for b in (14 if lvl == 2 else 32):   # drips running down from the stains
 			var c2 := Vector2(rng.randf() * n, rng.randf() * n)
-			var r := rng.randf_range(5.0, 13.0)
-			var bc := Color(0.6, 0.0, 0.02, 0.95)
-			for y in range(int(-r), int(r) + 1):
-				for x in range(int(-r), int(r) + 1):
-					if x * x + y * y <= r * r:
-						img.set_pixel(posmod(int(c2.x) + x, n), posmod(int(c2.y) + y, n), bc)
-			for d in int(rng.randf_range(10.0, 34.0)):   # a drip running down
-				for dx in 3:
-					img.set_pixel(posmod(int(c2.x) + dx - 1, n), posmod(int(c2.y + r + d), n), bc)
+			if nz.get_noise_2d(c2.x / 2.0, c2.y / 2.0) < cut + 0.05:
+				continue
+			var length := rng.randf_range(14.0, 40.0)
+			for d in int(length):
+				var w := 3 if d < length * 0.7 else 2
+				var a := 0.9 * (1.0 - d / length * 0.5)
+				for dx in w:
+					img.set_pixel(posmod(int(c2.x) + dx - 1, n), posmod(int(c2.y) + d, n), Color(0.5, 0.01, 0.02, a))
 	img.generate_mipmaps()
 	var m := StandardMaterial3D.new()
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
