@@ -287,6 +287,32 @@ static func face_choice(look: Dictionary, part: String) -> String:
 		return str(face[part])
 	return ("Woriginal01" if str(look.get("sex", "male")) == "female" else "Moriginal01")
 
+## Talking: opens the chosen mouth (its "_scream" shape key, faded in by `v` 0..1 while the
+## closed mouth fades out - glTF keys are relative to the basis, so they swap, not stack).
+static func set_mouth_open(model: Node3D, v: float) -> void:
+	if model == null or not model.has_meta("face_choice"):
+		return
+	var last := float(model.get_meta("mouth_open", 0.0))
+	if absf(last - v) < 0.02 and not (v == 0.0 and last != 0.0):
+		return
+	model.set_meta("mouth_open", v)
+	var mouth := str((model.get_meta("face_choice") as Dictionary).get("mouth", ""))
+	var open := clampf(v, 0.0, 1.0) * 0.75
+	var face := model.get_meta("face_mesh") as MeshInstance3D if model.has_meta("face_mesh") else null
+	var meshes: Array = [face] if face != null and is_instance_valid(face) else model.find_children("*", "MeshInstance3D", true, false)
+	for node in meshes:
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
+			continue
+		model.set_meta("face_mesh", mi)
+		for i in mi.mesh.get_blend_shape_count():
+			var k := face_key(str(mi.mesh.get_blend_shape_name(i)))
+			if k[0] == "mouth" and k[1] == mouth:
+				if k[3] == "":
+					mi.set_blend_shape_value(i, 1.0 - open)
+				elif k[3] == "scream":
+					mi.set_blend_shape_value(i, open)
+
 ## Applies the face: the chosen variant of each part fully on, everything else off.
 ## Expression keys stay as the blinker / expressions set them.
 static func apply_face(model: Node3D, look: Dictionary) -> void:
@@ -494,9 +520,10 @@ static func _apply_eye_color(model: Node3D, hex: String) -> void:
 ## The (mesh, surface) pairs that use the skin material, the model's own copy of it and the
 ## original colour - found once per model.
 static func _skin_info(model: Node3D) -> Dictionary:
-	if model.has_meta("hero_skin"):
-		return model.get_meta("hero_skin")
-	var info := {"surfaces": [], "mat": null, "orig": Color.WHITE}
+	# (surfaces are looked up every time: colourable copies of clothes are added after the first
+	# call, and their neck / arm skin was left white)
+	var old: Dictionary = model.get_meta("hero_skin", {})
+	var info := {"surfaces": [], "mat": old.get("mat"), "orig": old.get("orig", Color.WHITE)}
 	for mi: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		if mi.mesh == null:
 			continue
@@ -685,7 +712,9 @@ const CLOAK_SOURCE := "shirt3"
 const CLOAK_DIR := "res://assets/character/ColorableStuff/"
 const COLOR_COPIES := {
 	"cloak": {"cat": "shirt", "src": "shirt3", "keys": ["cloak_color1", "cloak_color2"], "labels": ["Coat", "Clouds"],
-		"defaults": ["#1C1B24", "#B8161F"], "mask": "AkCloudMask.png", "overlays": ["AkLines.png"]},
+		"defaults": ["#1C1B24", "#B8161F"], "mask": "AkCloudMask.png", "overlays": ["AkLines.png"],
+		# the swatch corner of the original texture (neck skin, ring, lining) stays as painted
+		"keep": [[0.81, 0.81, 1.0, 1.0], [0.73, 0.94, 0.81, 1.0]], "orig": "res://assets/character/character_main_237_sin_título_20261011165935.png"},
 	"vest": {"cat": "shirt", "src": "shirt1", "keys": ["vest_color1", "vest_color2"], "labels": ["Vest", "Undershirt"],
 		"defaults": ["#848D7B", "#35394F"], "mask": "VestC2Mask.png", "overlays": ["VestShade.png", "VestExtra.png"]},
 	"naruto_pants": {"cat": "pants", "src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
@@ -762,6 +791,17 @@ static func _copy_texture(name: String, c1: Color, c2: Color) -> Texture2D:
 		if ov.get_size() != sz:
 			ov.resize(sz.x, sz.y)
 		img.blend_rect(ov, rect, Vector2i.ZERO)
+	if d.has("keep") and ResourceLoader.exists(str(d["orig"])):   # parts that keep their own colours
+		var src := (load(str(d["orig"])) as Texture2D).get_image()
+		if src != null:
+			src = src.duplicate()
+			if src.is_compressed():
+				src.decompress()
+			src.convert(Image.FORMAT_RGBA8)
+			src.resize(sz.x, sz.y)
+			for k: Array in d["keep"]:
+				var r := Rect2i(int(k[0] * sz.x), int(k[1] * sz.y), int((k[2] - k[0]) * sz.x), int((k[3] - k[1]) * sz.y))
+				img.blit_rect(src, r, r.position)
 	img.generate_mipmaps()
 	var tex := ImageTexture.create_from_image(img)
 	_copy_cache[key] = tex
