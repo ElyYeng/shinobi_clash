@@ -284,6 +284,7 @@ func _start_world() -> void:
 		Villager.populate(crowd, 28)
 	_refresh_markers()
 	_build_uchiha_gate()
+	_spawn_sparrers.call_deferred()
 	if GameData.world_return_pos != Vector3.ZERO:   # back from the boss arena
 		player.global_position = GameData.world_return_pos
 		GameData.world_return_pos = Vector3.ZERO
@@ -314,6 +315,18 @@ func _build_uchiha_gate() -> void:
 	l.modulate = Color(1.0, 0.35, 0.3)
 	l.position = Vector3(0, 3.0, 0)
 	_gate.add_child(l)
+
+## Shinobi sparring in pairs outside the village (forest and meadow past the main gate).
+const SPAR_SPOTS := [Vector3(-45, 0, 205), Vector3(-62, 0, 228), Vector3(45, 0, 205), Vector3(62, 0, 228)]   # clearings in the Outskirts forest
+func _spawn_sparrers() -> void:
+	await get_tree().physics_frame
+	var space := get_world_3d().direct_space_state
+	for i in SPAR_SPOTS.size():
+		var at: Vector3 = SPAR_SPOTS[i]
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 120.0, at + Vector3.DOWN * 50.0))
+		if not hit.is_empty():
+			at = hit["position"]
+		SparPair.spawn(self, at, 1000 + i)
 
 func _near_gate() -> bool:
 	return _gate != null and player.global_position.distance_to(_gate.global_position) < 4.0

@@ -4918,6 +4918,13 @@ size = Vector3(500, 120, 1)
 [sub_resource type="BoxShape3D" id="BoxShape3D_x2jx5"]
 size = Vector3(500, 120, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b6dk5"]
+albedo_color = Color(0.36, 0.52, 0.27, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_bd8b1"]
+material = SubResource("StandardMaterial3D_b6dk5")
+size = Vector2(250, 84)
+
 [node name="KonohaGreybox" type="Node3D" unique_id=475367734]
 script = ExtResource("1_b6dk5")
 play_half = 240.0
@@ -4933,7 +4940,6 @@ transform = Transform3D(0.963523, -0.24568065, -0.106132954, 0.2579059, 0.746489
 light_color = Color(0.88757706, 0.68986475, 0.6788702, 1)
 light_energy = 1.7
 light_volumetric_fog_energy = 0.333
-light_angular_distance = 0.0
 light_specular = 0.208
 shadow_enabled = true
 shadow_normal_bias = 1.2
@@ -10702,3 +10708,789 @@ npc = ExtResource("10_32kod")
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=527798329]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 150)
+
+[node name="Outskirts" type="Node3D" parent="." unique_id=1276767054]
+
+[node name="Grass" type="MeshInstance3D" parent="Outskirts" unique_id=63175004]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 207)
+mesh = SubResource("PlaneMesh_bd8b1")
+
+[node name="OTree1" type="StaticBody3D" parent="Outskirts" unique_id=72641038]
+transform = Transform3D(0.7875173, 0, 0.7535257, 0, 1.089947, 0, -0.7535257, 0, 0.7875173, -81.71257, 0, 233.5271)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree1" unique_id=510374247]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_excxo")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree1" unique_id=879402944]
+shape = SubResource("CylinderShape3D_7s64k")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree1" unique_id=1257159452]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.885133, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_4oo1m")
+
+[node name="OTree2" type="StaticBody3D" parent="Outskirts" unique_id=1789472537]
+transform = Transform3D(-0.10117602, 0, -0.9321016, 0, 0.93757665, 0, 0.9321016, 0, -0.10117602, -97.604034, 0, 187.76414)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree2" unique_id=128180538]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_lqeof")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree2" unique_id=675829230]
+shape = SubResource("CylinderShape3D_6vsme")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree2" unique_id=1747914007]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.1640835, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_nq8cq")
+
+[node name="OTree3" type="StaticBody3D" parent="Outskirts" unique_id=1452700011]
+transform = Transform3D(1.0358487, 0, 0.018235588, 0, 1.0360092, 0, -0.018235588, 0, 1.0358487, -14.897499, 0, 186.89226)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree3" unique_id=630955311]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_b3524")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree3" unique_id=1999562047]
+shape = SubResource("CylinderShape3D_clicf")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree3" unique_id=40937213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.780675, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_gts40")
+
+[node name="OTree4" type="StaticBody3D" parent="Outskirts" unique_id=1465651818]
+transform = Transform3D(0.8618732, 0, 0.637339, 0, 1.0719265, 0, -0.637339, 0, 0.8618732, 109.49031, 0, 194.25957)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree4" unique_id=196693615]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ujtc0")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree4" unique_id=1291594155]
+shape = SubResource("CylinderShape3D_mf8b4")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree4" unique_id=750291000]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.009165, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_34q2f")
+
+[node name="OTree5" type="StaticBody3D" parent="Outskirts" unique_id=943075777]
+transform = Transform3D(0.7110142, 0, -0.71792495, 0, 1.0104244, 0, 0.71792495, 0, 0.7110142, -75.17118, 0, 215.91943)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree5" unique_id=1929779797]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_2ma11")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree5" unique_id=2046323991]
+shape = SubResource("CylinderShape3D_t2aq8")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree5" unique_id=1063899878]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8200493, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_eqpkc")
+
+[node name="OTree6" type="StaticBody3D" parent="Outskirts" unique_id=1354701757]
+transform = Transform3D(0.5594482, 0, 1.0010626, 0, 1.1467819, 0, -1.0010626, 0, 0.5594482, 39.3546, 0, 190.05309)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree6" unique_id=948362369]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_tbsvi")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree6" unique_id=768072885]
+shape = SubResource("CylinderShape3D_sggeq")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree6" unique_id=1088834099]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.784948, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_uqcpl")
+
+[node name="OTree7" type="StaticBody3D" parent="Outskirts" unique_id=1525487824]
+transform = Transform3D(-0.45334467, 0, -1.1444323, 0, 1.2309536, 0, 1.1444323, 0, -0.45334467, -110.118195, 0, 220.64513)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree7" unique_id=1855882835]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_c1cd5")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree7" unique_id=1314064518]
+shape = SubResource("CylinderShape3D_hkqci")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree7" unique_id=1656082399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.83977, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_khuvl")
+
+[node name="OTree8" type="StaticBody3D" parent="Outskirts" unique_id=1923069964]
+transform = Transform3D(0.93048954, 0, -0.31795675, 0, 0.9833144, 0, 0.31795675, 0, 0.93048954, -36.830116, 0, 193.73135)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree8" unique_id=1186073791]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_2ma11")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree8" unique_id=991972846]
+shape = SubResource("CylinderShape3D_t2aq8")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree8" unique_id=1108026882]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8200493, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_eqpkc")
+
+[node name="OTree9" type="StaticBody3D" parent="Outskirts" unique_id=983604957]
+transform = Transform3D(-0.29562688, 0, -0.93170255, 0, 0.9774788, 0, 0.93170255, 0, -0.29562688, -104.6717, 0, 226.892)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree9" unique_id=576915632]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_c5m8o")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree9" unique_id=526313724]
+shape = SubResource("CylinderShape3D_6wsb2")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree9" unique_id=939164080]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.766621, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_dlob7")
+
+[node name="OTree10" type="StaticBody3D" parent="Outskirts" unique_id=703939128]
+transform = Transform3D(-0.7099358, 0, 1.0023612, 0, 1.2283064, 0, -1.0023612, 0, -0.7099358, 37.1297, 0, 229.01964)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree10" unique_id=1852604471]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_63a2n")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree10" unique_id=1363505609]
+shape = SubResource("CylinderShape3D_bnsm6")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree10" unique_id=229843353]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.9398355, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_0fn5e")
+
+[node name="OTree11" type="StaticBody3D" parent="Outskirts" unique_id=1246470356]
+transform = Transform3D(0.20885931, 0, -0.988236, 0, 1.0100657, 0, 0.988236, 0, 0.20885931, -54.026165, 0, 184.4868)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree11" unique_id=1634620545]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_v5u7k")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree11" unique_id=759307691]
+shape = SubResource("CylinderShape3D_143s4")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree11" unique_id=1542960163]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.7338276, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_36lcm")
+
+[node name="OTree12" type="StaticBody3D" parent="Outskirts" unique_id=193598906]
+transform = Transform3D(-0.6087088, 0, 0.69815755, 0, 0.92625606, 0, -0.69815755, 0, -0.6087088, -19.54953, 0, 224.0772)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree12" unique_id=211111550]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_l0fic")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree12" unique_id=940675564]
+shape = SubResource("CylinderShape3D_4nprd")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree12" unique_id=843056878]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.104227, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_plrwi")
+
+[node name="OTree13" type="StaticBody3D" parent="Outskirts" unique_id=158266366]
+transform = Transform3D(1.2396069, 0, 0.03403896, 0, 1.2400742, 0, -0.03403896, 0, 1.2396069, 40.874115, 0, 175.15804)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree13" unique_id=1561535333]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_1c176")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree13" unique_id=536987054]
+shape = SubResource("CylinderShape3D_ky67n")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree13" unique_id=972177770]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.395543, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_v227f")
+
+[node name="OTree14" type="StaticBody3D" parent="Outskirts" unique_id=863250302]
+transform = Transform3D(-0.5395687, 0, -0.7742693, 0, 0.94373053, 0, 0.7742693, 0, -0.5395687, 74.611435, 0, 175.31354)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree14" unique_id=345452719]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_u36st")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree14" unique_id=2095741102]
+shape = SubResource("CylinderShape3D_nt4ad")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree14" unique_id=1006552552]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.4587746, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_gqa3f")
+
+[node name="OTree15" type="StaticBody3D" parent="Outskirts" unique_id=1012122928]
+transform = Transform3D(0.48474836, 0, 0.94351834, 0, 1.0607581, 0, -0.94351834, 0, 0.48474836, 21.537704, 0, 222.25269)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree15" unique_id=1404346106]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ujtc0")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree15" unique_id=1945450048]
+shape = SubResource("CylinderShape3D_mf8b4")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree15" unique_id=147130962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.009165, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_34q2f")
+
+[node name="OTree16" type="StaticBody3D" parent="Outskirts" unique_id=1301177156]
+transform = Transform3D(-0.2970568, 0, -0.796414, 0, 0.85001063, 0, 0.796414, 0, -0.2970568, 74.05357, 0, 209.74612)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree16" unique_id=1976849056]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_es1ow")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree16" unique_id=1906318485]
+shape = SubResource("CylinderShape3D_oc8ku")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree16" unique_id=1686126266]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5240397, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_dy2pf")
+
+[node name="OTree17" type="StaticBody3D" parent="Outskirts" unique_id=519654337]
+transform = Transform3D(0.7972711, 0, -0.816172, 0, 1.1409549, 0, 0.816172, 0, 0.7972711, -21.382881, 0, 236.97952)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree17" unique_id=1101599324]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_es1ow")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree17" unique_id=1797859914]
+shape = SubResource("CylinderShape3D_oc8ku")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree17" unique_id=1495496710]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5240397, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_dy2pf")
+
+[node name="OTree18" type="StaticBody3D" parent="Outskirts" unique_id=2112123889]
+transform = Transform3D(1.0475953, 0, -0.32161427, 0, 1.095852, 0, 0.32161427, 0, 1.0475953, -45.875412, 0, 182.07735)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree18" unique_id=662754796]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_oa0hm")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree18" unique_id=601939366]
+shape = SubResource("CylinderShape3D_ekvua")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree18" unique_id=1318403453]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.4703255, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_mbojg")
+
+[node name="OTree19" type="StaticBody3D" parent="Outskirts" unique_id=740259010]
+transform = Transform3D(-0.97472155, 0, 0.56845796, 0, 1.1283734, 0, -0.56845796, 0, -0.97472155, -87.37182, 0, 190.37799)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree19" unique_id=123285792]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_7nekm")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree19" unique_id=1067253502]
+shape = SubResource("CylinderShape3D_ljkhk")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree19" unique_id=2137093213]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.031832, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_683ks")
+
+[node name="OTree20" type="StaticBody3D" parent="Outskirts" unique_id=764508512]
+transform = Transform3D(-1.0528699, 0, 0.6652163, 0, 1.2454107, 0, -0.6652163, 0, -1.0528699, -82.23987, 0, 205.0505)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree20" unique_id=659894455]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_2rt6c")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree20" unique_id=1388198951]
+shape = SubResource("CylinderShape3D_vuupd")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree20" unique_id=577987192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.686788, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_1rqny")
+
+[node name="OTree21" type="StaticBody3D" parent="Outskirts" unique_id=427407636]
+transform = Transform3D(-0.8513959, 0, 0.60331964, 0, 1.0434891, 0, -0.60331964, 0, -0.8513959, -29.087738, 0, 210.29947)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree21" unique_id=1140278568]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_mpyod")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree21" unique_id=1737001855]
+shape = SubResource("CylinderShape3D_m8wqw")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree21" unique_id=991794583]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.658071, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_m3i6n")
+
+[node name="OTree22" type="StaticBody3D" parent="Outskirts" unique_id=1579956944]
+transform = Transform3D(0.7890462, 0, -0.7890562, 0, 1.1158869, 0, 0.7890562, 0, 0.7890462, -62.31932, 0, 210.86996)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree22" unique_id=865890084]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_f40pi")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree22" unique_id=738747986]
+shape = SubResource("CylinderShape3D_qcfav")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree22" unique_id=168247181]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4535093, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_wjr6h")
+
+[node name="OTree23" type="StaticBody3D" parent="Outskirts" unique_id=935019964]
+transform = Transform3D(-0.75028175, 0, -0.6835145, 0, 1.0149456, 0, 0.6835145, 0, -0.75028175, 95.19011, 0, 232.52109)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree23" unique_id=1542217914]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ghbrq")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree23" unique_id=1797612633]
+shape = SubResource("CylinderShape3D_gqqh8")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree23" unique_id=485122701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1089563, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_3nnur")
+
+[node name="OTree24" type="StaticBody3D" parent="Outskirts" unique_id=1714454803]
+transform = Transform3D(1.1582044, 0, -0.047278117, 0, 1.159169, 0, 0.047278117, 0, 1.1582044, -28.760872, 0, 221.75333)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree24" unique_id=693268951]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_l6i5j")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree24" unique_id=205227046]
+shape = SubResource("CylinderShape3D_ryxnp")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree24" unique_id=930463366]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8119807, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_oj7rg")
+
+[node name="OTree25" type="StaticBody3D" parent="Outskirts" unique_id=876143096]
+transform = Transform3D(0.9171607, 0, -0.024735453, 0, 0.9174942, 0, 0.024735453, 0, 0.9171607, -65.79721, 0, 198.92229)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree25" unique_id=1624668379]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_44ac2")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree25" unique_id=1942722178]
+shape = SubResource("CylinderShape3D_wynfj")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree25" unique_id=627427222]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.3629656, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_qmkrb")
+
+[node name="OTree26" type="StaticBody3D" parent="Outskirts" unique_id=2023778942]
+transform = Transform3D(0.41614607, 0, -0.8849453, 0, 0.97790885, 0, 0.8849453, 0, 0.41614607, -18.036018, 0, 204.4432)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree26" unique_id=496113219]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_k52hm")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree26" unique_id=1261868658]
+shape = SubResource("CylinderShape3D_awqn3")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree26" unique_id=9328686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.737893, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_51a01")
+
+[node name="OTree27" type="StaticBody3D" parent="Outskirts" unique_id=851761549]
+transform = Transform3D(0.73063445, 0, -0.9570345, 0, 1.2040522, 0, 0.9570345, 0, 0.73063445, 81.210815, 0, 194.82248)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree27" unique_id=905111221]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_m88tt")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree27" unique_id=141015624]
+shape = SubResource("CylinderShape3D_p54id")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree27" unique_id=1730843529]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.595491, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_8ftgv")
+
+[node name="OTree28" type="StaticBody3D" parent="Outskirts" unique_id=536150883]
+transform = Transform3D(-0.20106663, 0, -0.9511537, 0, 0.9721734, 0, 0.9511537, 0, -0.20106663, 81.948105, 0, 216.83673)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree28" unique_id=95252159]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_eyeg7")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree28" unique_id=467880572]
+shape = SubResource("CylinderShape3D_g5650")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree28" unique_id=1965135136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5402417, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_xfa3v")
+
+[node name="OTree29" type="StaticBody3D" parent="Outskirts" unique_id=1835786897]
+transform = Transform3D(-0.87904525, 0, -0.7621329, 0, 1.163429, 0, 0.7621329, 0, -0.87904525, 79.85904, 0, 242.65836)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree29" unique_id=565188887]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_eedkv")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree29" unique_id=2007371056]
+shape = SubResource("CylinderShape3D_okovk")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree29" unique_id=229078912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.7343464, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_csdfo")
+
+[node name="OTree30" type="StaticBody3D" parent="Outskirts" unique_id=2089446253]
+transform = Transform3D(0.768686, 0, 0.9169042, 0, 1.1964914, 0, -0.9169042, 0, 0.768686, -93.13725, 0, 238.98404)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree30" unique_id=1385236600]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_3odxh")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree30" unique_id=21402034]
+shape = SubResource("CylinderShape3D_sa057")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree30" unique_id=281601010]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.168958, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_nca10")
+
+[node name="OTree31" type="StaticBody3D" parent="Outskirts" unique_id=1618267553]
+transform = Transform3D(-0.8803709, 0, 0.8797016, 0, 1.2445593, 0, -0.8797016, 0, -0.8803709, -29.487213, 0, 185.82967)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree31" unique_id=318777888]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_v33hw")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree31" unique_id=895086207]
+shape = SubResource("CylinderShape3D_a8niy")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree31" unique_id=1076136138]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.592356, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_82ar4")
+
+[node name="OTree32" type="StaticBody3D" parent="Outskirts" unique_id=645066042]
+transform = Transform3D(-1.0799757, 0, 0.6272738, 0, 1.2489275, 0, -0.6272738, 0, -1.0799757, 98.41295, 0, 207.69023)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree32" unique_id=1246281695]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ym4pw")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree32" unique_id=1564039706]
+shape = SubResource("CylinderShape3D_w1w0d")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree32" unique_id=48685152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1504097, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_6475d")
+
+[node name="OTree33" type="StaticBody3D" parent="Outskirts" unique_id=513101299]
+transform = Transform3D(-0.9106058, 0, 0.55350786, 0, 1.065633, 0, -0.55350786, 0, -0.9106058, 65.763626, 0, 213.48727)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree33" unique_id=21890752]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_osr47")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree33" unique_id=1784528672]
+shape = SubResource("CylinderShape3D_6cgqk")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree33" unique_id=250178434]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.07752, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_i3ci2")
+
+[node name="OTree34" type="StaticBody3D" parent="Outskirts" unique_id=783015200]
+transform = Transform3D(0.97938997, 0, 0.032977737, 0, 0.979945, 0, -0.032977737, 0, 0.97938997, -64.326775, 0, 242.83685)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree34" unique_id=1080919651]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_cg01m")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree34" unique_id=740478460]
+shape = SubResource("CylinderShape3D_0bcdg")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree34" unique_id=240672940]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.079759, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_my8dx")
+
+[node name="OTree35" type="StaticBody3D" parent="Outskirts" unique_id=414448699]
+transform = Transform3D(-0.8262219, 0, -0.2554272, 0, 0.86480385, 0, 0.2554272, 0, -0.8262219, 63.172623, 0, 181.46112)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree35" unique_id=1993207776]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_k52hm")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree35" unique_id=1508879044]
+shape = SubResource("CylinderShape3D_awqn3")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree35" unique_id=666585492]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.737893, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_51a01")
+
+[node name="OTree36" type="StaticBody3D" parent="Outskirts" unique_id=79610112]
+transform = Transform3D(0.9035515, 0, 0.25451392, 0, 0.9387133, 0, -0.25451392, 0, 0.9035515, 26.033691, 0, 231.52567)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree36" unique_id=1562644105]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_fdm2x")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree36" unique_id=379496914]
+shape = SubResource("CylinderShape3D_rmrnr")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree36" unique_id=1765179942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.7737374, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_crheg")
+
+[node name="OTree37" type="StaticBody3D" parent="Outskirts" unique_id=825073485]
+transform = Transform3D(0.87397057, 0, 0.4190996, 0, 0.9692621, 0, -0.4190996, 0, 0.87397057, -111.08443, 0, 206.28952)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree37" unique_id=1674579078]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_x74yw")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree37" unique_id=934376411]
+shape = SubResource("CylinderShape3D_5uosd")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree37" unique_id=1203752572]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.2187405, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_xasa6")
+
+[node name="OTree38" type="StaticBody3D" parent="Outskirts" unique_id=1058269842]
+transform = Transform3D(0.6177451, 0, -0.7521158, 0, 0.9732868, 0, 0.7521158, 0, 0.6177451, -90.38284, 0, 225.16614)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree38" unique_id=1332938521]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_eyeg7")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree38" unique_id=1696856810]
+shape = SubResource("CylinderShape3D_g5650")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree38" unique_id=60475694]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5402417, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_xfa3v")
+
+[node name="OTree39" type="StaticBody3D" parent="Outskirts" unique_id=596091428]
+transform = Transform3D(-0.7796331, 0, -0.7610385, 0, 1.0894986, 0, 0.7610385, 0, -0.7796331, -39.20466, 0, 184.87128)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree39" unique_id=1995481304]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_qntwx")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree39" unique_id=1820647138]
+shape = SubResource("CylinderShape3D_n7vac")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree39" unique_id=383169049]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.7641907, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_r58ii")
+
+[node name="OTree40" type="StaticBody3D" parent="Outskirts" unique_id=1732004255]
+transform = Transform3D(-0.51894164, 0, 0.8768516, 0, 1.0189059, 0, -0.8768516, 0, -0.51894164, 98.801865, 0, 218.14445)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree40" unique_id=1951733691]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_os8ca")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree40" unique_id=1424122832]
+shape = SubResource("CylinderShape3D_wu61q")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree40" unique_id=1055272024]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.026191, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_8ompw")
+
+[node name="OTree41" type="StaticBody3D" parent="Outskirts" unique_id=909742805]
+transform = Transform3D(-1.0097061, 0, -0.1291012, 0, 1.0179261, 0, 0.1291012, 0, -1.0097061, 64.89851, 0, 192.09058)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree41" unique_id=1053267068]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_fx7lw")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree41" unique_id=87423984]
+shape = SubResource("CylinderShape3D_5a8a1")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree41" unique_id=1969765953]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.573783, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_n77nl")
+
+[node name="OTree42" type="StaticBody3D" parent="Outskirts" unique_id=286319770]
+transform = Transform3D(0.78630185, 0, -0.95326304, 0, 1.2357107, 0, 0.95326304, 0, 0.78630185, -101.67028, 0, 241.01657)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree42" unique_id=977706972]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_os8ca")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree42" unique_id=1323093966]
+shape = SubResource("CylinderShape3D_wu61q")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree42" unique_id=1892033407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.026191, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_8ompw")
+
+[node name="OTree43" type="StaticBody3D" parent="Outskirts" unique_id=854009732]
+transform = Transform3D(0.5935784, 0, -0.6330104, 0, 0.8677773, 0, 0.6330104, 0, 0.5935784, 20.720932, 0, 186.98866)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree43" unique_id=557209309]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_u66ev")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree43" unique_id=2015350525]
+shape = SubResource("CylinderShape3D_sgreu")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree43" unique_id=1462069076]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.784974, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_ge5df")
+
+[node name="OTree44" type="StaticBody3D" parent="Outskirts" unique_id=1432129891]
+transform = Transform3D(-0.8155952, 0, 0.5090208, 0, 0.961404, 0, -0.5090208, 0, -0.8155952, 111.04227, 0, 211.77835)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree44" unique_id=1452222145]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_a7lnx")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree44" unique_id=798498445]
+shape = SubResource("CylinderShape3D_uo5kt")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree44" unique_id=579199065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4964185, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_o2bfv")
+
+[node name="OTree45" type="StaticBody3D" parent="Outskirts" unique_id=1959221226]
+transform = Transform3D(0.4096702, 0, 0.95352024, 0, 1.0378008, 0, -0.95352024, 0, 0.4096702, 90.57109, 0, 241.9432)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree45" unique_id=2085868297]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_sywei")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree45" unique_id=186998056]
+shape = SubResource("CylinderShape3D_11w8m")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree45" unique_id=392860564]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.9726233, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_0b4mq")
+
+[node name="OTree46" type="StaticBody3D" parent="Outskirts" unique_id=1692536449]
+transform = Transform3D(-0.7794918, 0, -0.86153156, 0, 1.1618279, 0, 0.86153156, 0, -0.7794918, -109.05034, 0, 197.0129)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree46" unique_id=1309293963]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ghbrq")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree46" unique_id=632667679]
+shape = SubResource("CylinderShape3D_gqqh8")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree46" unique_id=48625797]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.1089563, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_3nnur")
+
+[node name="OTree47" type="StaticBody3D" parent="Outskirts" unique_id=796128103]
+transform = Transform3D(1.0702707, 0, -0.12729163, 0, 1.0778137, 0, 0.12729163, 0, 1.0702707, -101.573715, 0, 207.67757)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree47" unique_id=886614817]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_x8hnr")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree47" unique_id=669707375]
+shape = SubResource("CylinderShape3D_ugvrj")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree47" unique_id=1892442123]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.7325754, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_myj8c")
+
+[node name="OTree48" type="StaticBody3D" parent="Outskirts" unique_id=60775120]
+transform = Transform3D(0.3456137, 0, 0.8823525, 0, 0.9476258, 0, -0.8823525, 0, 0.3456137, -99.466354, 0, 197.19879)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree48" unique_id=650391159]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_4g152")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree48" unique_id=350993410]
+shape = SubResource("CylinderShape3D_2us6d")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree48" unique_id=74670166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.892727, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_3jy8a")
+
+[node name="OTree49" type="StaticBody3D" parent="Outskirts" unique_id=1774466698]
+transform = Transform3D(-0.0005247782, 0, -0.8558017, 0, 0.8558019, 0, 0.8558017, 0, -0.0005247782, 24.049484, 0, 179.8549)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree49" unique_id=1824854580]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_ehhux")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree49" unique_id=338583814]
+shape = SubResource("CylinderShape3D_qd4y1")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree49" unique_id=1449444408]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.928218, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_y5wpe")
+
+[node name="OTree50" type="StaticBody3D" parent="Outskirts" unique_id=1698438083]
+transform = Transform3D(0.68698424, 0, 0.61123437, 0, 0.9195405, 0, -0.61123437, 0, 0.68698424, 78.30908, 0, 224.5637)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree50" unique_id=231296313]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_hauxd")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree50" unique_id=893013031]
+shape = SubResource("CylinderShape3D_itgt2")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree50" unique_id=1581861718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.5472736, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_x84fr")
+
+[node name="OTree51" type="StaticBody3D" parent="Outskirts" unique_id=1602662139]
+transform = Transform3D(-0.25600687, 0, 0.9266868, 0, 0.96139896, 0, -0.9266868, 0, -0.25600687, 15.287918, 0, 209.68837)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree51" unique_id=1312747541]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_s5tm5")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree51" unique_id=1908092426]
+shape = SubResource("CylinderShape3D_52mgc")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree51" unique_id=1415518162]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.2984667, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_iwt34")
+
+[node name="OTree52" type="StaticBody3D" parent="Outskirts" unique_id=583113442]
+transform = Transform3D(0.37926164, 0, 0.9682149, 0, 1.039846, 0, -0.9682149, 0, 0.37926164, 109.43346, 0, 218.86096)
+
+[node name="Mesh" type="MeshInstance3D" parent="Outskirts/OTree52" unique_id=1418859983]
+material_override = SubResource("ShaderMaterial_iyukh")
+mesh = SubResource("CylinderMesh_vgcfy")
+
+[node name="Shape" type="CollisionShape3D" parent="Outskirts/OTree52" unique_id=104670998]
+shape = SubResource("CylinderShape3D_exe6h")
+
+[node name="Leaves" type="MeshInstance3D" parent="Outskirts/OTree52" unique_id=312134462]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.603856, 0)
+material_override = SubResource("ShaderMaterial_1xyan")
+mesh = SubResource("SphereMesh_cdl2b")
