@@ -234,9 +234,10 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 		power_fx = Node3D.new()
 		add_child(power_fx)
 		_power_col = color
-		var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
-		if look.has("glow"):
-			mode_aura.set_strength(0.45)
+		if not (look.has("eyes") and not look.has("glow") and not look.has("outfit")):   # eye modes: just the eyes
+			var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
+			if look.has("glow"):
+				mode_aura.set_strength(0.45)
 	else:
 		if power_fx != null and is_instance_valid(power_fx):
 			power_fx.queue_free()

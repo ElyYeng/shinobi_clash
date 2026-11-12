@@ -1299,13 +1299,15 @@ func _toggle_power() -> void:
 		Hero.apply_mode_look(model, m.get("look", {}))
 	pmode_fx = Node3D.new()
 	add_child(pmode_fx)
-	# the mode's aura (Aura 3D shell); faint when the body already glows so it doesn't hide it
-	var mode_aura := AuraShell.make(pmode_fx, model, col, col.lightened(0.6), 0.4)
-	if m.get("look", {}).has("glow"):
-		mode_aura.set_strength(0.45)
-	aura.visible = true
-	aura.light_color = col
-	aura.light_energy = 1.8
+	# the mode's aura (Aura 3D shell); faint when the body already glows so it doesn't hide it.
+	# Eye techniques get none - their glowing eyes are the effect.
+	if not Bloodline.eye_mode(m):
+		var mode_aura := AuraShell.make(pmode_fx, model, col, col.lightened(0.6), 0.4)
+		if m.get("look", {}).has("glow"):
+			mode_aura.set_strength(0.45)
+		aura.visible = true
+		aura.light_color = col
+		aura.light_energy = 1.8
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
@@ -1492,7 +1494,7 @@ func _element_color() -> Color:
 	return GameData.get_element_color()
 
 func _reset_aura() -> void:
-	if powered:
+	if powered and not Bloodline.eye_mode(pmode):
 		aura.visible = true
 		aura.light_color = pmode["col"]
 		aura.light_energy = 1.8

@@ -217,3 +217,9 @@ static func roll(guarantee_legendary: bool) -> String:
 		if r <= 0.0:
 			return id
 	return pool[pool.size() - 1]
+
+## Eye techniques (Sharingan, Byakugan ...): the power-up only changes the eyes - no body aura or
+## coloured light, the glowing irises are the effect.
+static func eye_mode(m: Dictionary) -> bool:
+	var look: Dictionary = m.get("look", {})
+	return look.has("eyes") and not look.has("glow") and not look.has("outfit")

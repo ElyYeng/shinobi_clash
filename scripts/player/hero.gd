@@ -488,7 +488,7 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 			if flat and pmat != null:
 				pmat.albedo_texture = null
 
-const EYE_GLOW := 0.9   # how bright transformed irises glow (needs <eye>_Glow.png next to the eye texture)
+const EYE_GLOW := 1.6   # how bright transformed irises glow (needs <eye>_Glow.png next to the eye texture)
 
 static var _neon_cache := {}
 
