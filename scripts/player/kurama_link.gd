@@ -148,8 +148,12 @@ func seat_position() -> Vector3:
 		return _seat.global_position + Vector3.UP * 0.95   # head bone = base of the skull: stand on top
 	return global_position + Vector3.UP * 3.8
 
-## Run cycle speed per m/s of ground speed (so the paws keep up instead of sliding).
-const RUN_RATE := 0.32
+## Ground speeds while riding (m/s).
+const WALK_SPEED := 13.0
+const SPRINT_SPEED := 34.0
+## The run clip covers ~14.8 m/s of ground at speed 1 (measured from the planted paws), so the
+## playback rate is ground speed / 14.8: the paws stick to the ground at walk and sprint alike.
+const RUN_RATE := 1.0 / 14.8
 func set_moving(on: bool, speed := 8.0) -> void:
 	if ap == null or _dying:
 		return
@@ -159,7 +163,7 @@ func set_moving(on: bool, speed := 8.0) -> void:
 	var want := RUN if on else IDLE
 	if ap.current_animation != want:
 		ap.play(want, 0.2)
-	ap.speed_scale = clampf(speed * RUN_RATE, 1.3, 4.0) if on else 1.0
+	ap.speed_scale = clampf(speed * RUN_RATE, 0.4, 3.0) if on else 1.0
 
 func attack(kind: String) -> void:
 	if ap == null or _dying or not MOVES.has(kind):

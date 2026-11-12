@@ -454,8 +454,6 @@ func _physics_process(delta: float) -> void:
 	var surge := _bmul("speed")
 	if kurama:
 		surge *= 1.3
-	if klink != null:
-		surge *= 1.6   # riding Kurama: big strides
 
 	if dash_time > 0.0:
 		dash_time -= delta
@@ -466,12 +464,15 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, dir.z * 2.0, 40.0 * delta)
 	else:
 		var speed := WALK_SPEED * speed_mult * surge
-		if Input.is_action_pressed("sprint") and moving and stamina > 1.0:
+		if klink != null:   # riding Kurama: huge, fast strides (no stamina cost)
+			speed = (KuramaLink.SPRINT_SPEED if Input.is_action_pressed("sprint") else KuramaLink.WALK_SPEED) * speed_mult
+		elif Input.is_action_pressed("sprint") and moving and stamina > 1.0:
 			speed = SPRINT_SPEED * speed_mult * surge
 			stamina -= 18.0 * delta
 			stam_delay = 0.8
-		velocity.x = move_toward(velocity.x, dir.x * speed, 70.0 * delta)
-		velocity.z = move_toward(velocity.z, dir.z * speed, 70.0 * delta)
+		var acc := 140.0 if klink != null else 70.0
+		velocity.x = move_toward(velocity.x, dir.x * speed, acc * delta)
+		velocity.z = move_toward(velocity.z, dir.z * speed, acc * delta)
 
 	_footsteps(delta)
 	var regen := (40.0 if charging else 5.0) * regen_mult
