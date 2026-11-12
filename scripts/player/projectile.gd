@@ -69,7 +69,7 @@ func _ready() -> void:
 		add_child(halo)
 		Vfx.trail(self, color, size * 2.2, 40, 0.5)
 		Vfx.glow_light(self, color, 3.0, 12.0)
-	else:
+	elif visual_kind != "fireball":   # (the fireball VFX brings its own flames and light)
 		Vfx.trail(self, Color(0.85, 0.92, 1.0), 0.16, 22, 0.28)
 		Vfx.glow_light(self, Color(0.8, 0.9, 1.0), 0.6, 4.0)
 	body_entered.connect(_on_body)

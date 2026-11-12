@@ -248,10 +248,12 @@ func _start_world() -> void:
 		map.add_child(crowd)
 		Villager.populate(crowd, 28)
 	_refresh_markers()
-	_spawn_test_ninja()
+	if TEST_NINJA:
+		_spawn_test_ninja()
 
 ## TEST: a 1000 HP ninja near the spawn to try combos / knockdowns on. It only fights back once
 ## you hit it, and comes back 5 s after it's beaten.
+const TEST_NINJA := false   # stashed - set true to spawn it again
 const TEST_NINJA_HP := 1000.0
 func _spawn_test_ninja() -> void:
 	if not is_inside_tree() or player == null:
