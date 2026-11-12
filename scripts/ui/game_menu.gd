@@ -1354,8 +1354,18 @@ func _page_travel() -> Array:
 		_act("TELEPORT", _to_title, "[Main-Menu]"),
 		_act("GO", _switch_mode.bind(next_mode), "[Switch Mode: %s]" % MODE_NAMES[next_mode]),
 		_act("TELEPORT", _teleport.bind(qpos), "[Quest Target]", qpos == Vector3.INF),
+		_act("ABANDON", _abandon_quest, "[Abandon Quest]", GameData.quest_active == ""),
 	]
 	return out
+
+## Drops the current quest (the giver offers it again later). In a party: the whole party's.
+func _abandon_quest() -> void:
+	var qs = main.get("quests") if main != null else null
+	if qs == null or GameData.quest_active == "":
+		return
+	qs.abandon()
+	Sfx.play(self, "poof", -6.0)
+	_reload_page()
 
 func _page_mastery() -> Array:
 	var q := GameData.quests_done.size()
