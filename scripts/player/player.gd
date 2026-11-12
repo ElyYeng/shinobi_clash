@@ -545,7 +545,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_try_wall_walk(dir)
 	dust_t -= delta
-	if dust_t <= 0.0 and is_on_floor() and Vector2(velocity.x, velocity.z).length() > SPRINT_SPEED * 0.55 * speed_mult:
+	if dust_t <= 0.0 and is_on_floor() and not _floating() and Vector2(velocity.x, velocity.z).length() > SPRINT_SPEED * 0.55 * speed_mult:
 		dust_t = 0.11
 		Vfx.dust(get_parent(), global_position)
 	Hero.float_pose(model, velocity, delta, _floating())   # Six Paths / Kokugan hover
@@ -1273,7 +1273,7 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 var _step_t := 0.0
 func _footsteps(delta: float) -> void:
 	var sp := Vector2(velocity.x, velocity.z).length()
-	if not is_on_floor() or sp < 1.0 or wall_walking:
+	if not is_on_floor() or sp < 1.0 or wall_walking or _floating():   # hovering: no steps
 		_step_t = 0.0
 		return
 	_step_t -= delta
