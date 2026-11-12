@@ -102,6 +102,8 @@ func _setup() -> void:
 	_update_label()
 
 func _update_label() -> void:
+	if model != null and is_instance_valid(model) and max_health > 0.0:   # scratches / blood when hurt
+		Hero.set_damage(model, health / max_health)
 	# Some special enemies (including Kurama) create their own model/setup.
 	# Their label may not exist yet when the first multiplayer snapshot arrives.
 	if not is_instance_valid(label):

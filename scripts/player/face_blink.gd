@@ -18,6 +18,10 @@ func _process(delta: float) -> void:
 		_closing = 0.12
 		_eyes(1.0)
 
+## Re-apply the eyes now (e.g. the swollen eye from battle damage changed).
+func refresh() -> void:
+	_eyes(0.0)
+
 func _eyes(v: float) -> void:
 	var model := get_parent()
 	if model == null or not model.has_meta("face_choice"):
@@ -31,5 +35,9 @@ func _eyes(v: float) -> void:
 			var k := Hero.face_key(str(mi.mesh.get_blend_shape_name(i)))
 			if k[0] == "eyes" and k[1] == eyes:
 				# glTF keys are relative to the basis, so the blink key is the whole closed eye:
-				# swap open -> closed rather than stacking them
-				mi.set_blend_shape_value(i, v if k[3] == "blink" else 1.0 - v)
+				# swap open -> closed rather than stacking them. Battle damage keeps one eye
+				# (the left) swollen almost shut.
+				var c := v
+				if k[2] == "L":
+					c = maxf(v, float(model.get_meta("eye_hurt", 0.0)))
+				mi.set_blend_shape_value(i, c if k[3] == "blink" else 1.0 - c)

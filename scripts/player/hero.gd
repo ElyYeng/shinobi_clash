@@ -288,6 +288,77 @@ static func face_choice(look: Dictionary, part: String) -> String:
 		return str(face[part])
 	return ("Woriginal01" if str(look.get("sex", "male")) == "female" else "Moriginal01")
 
+## ---------------------------------------------------------------- battle damage
+## Low health shows on the body: scratches from 60% health, then more cuts and blood, and below
+## 25% one eye is swollen almost shut. `ratio` = health / max health. Cheap to call every frame.
+static var _dmg_mats := {}
+static func set_damage(model: Node3D, ratio: float) -> void:
+	if model == null or not model.has_meta("hero_parts"):
+		return
+	var lvl := clampi(int(ceil((0.6 - ratio) / 0.2)), 0, 3)   # 0 none, 1 scratched, 2 cut, 3 bloody
+	if ratio <= 0.0:
+		lvl = 3
+	var eye := 0.8 if ratio < 0.25 and ratio > 0.0 else 0.0
+	if int(model.get_meta("dmg_level", 0)) == lvl and float(model.get_meta("eye_hurt", 0.0)) == eye:
+		return
+	model.set_meta("dmg_level", lvl)
+	model.set_meta("eye_hurt", eye)
+	var mat: Material = _damage_mat(lvl) if lvl > 0 else null
+	for node in model.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.has_meta("no_aura") or mi.name == "TruthSeekingOrbs":
+			continue
+		mi.material_overlay = mat
+	var fb := model.get_node_or_null("FaceBlink")
+	if fb != null and fb.has_method("refresh"):
+		fb.refresh()
+
+## Scratches / cuts / blood drawn as an overlay over the body's own textures.
+static func _damage_mat(lvl: int) -> StandardMaterial3D:
+	if _dmg_mats.has(lvl):
+		return _dmg_mats[lvl]
+	var n := 512
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	var cuts: int = [0, 45, 90, 140][lvl]
+	for c in cuts:   # thin cuts: short, slightly curved strokes, darker in the middle
+		var p := Vector2(rng.randf() * n, rng.randf() * n)
+		var a := rng.randf() * TAU
+		var length := rng.randf_range(22.0, 60.0)
+		var col := Color(0.7, 0.03, 0.03, 1.0) if rng.randf() < 0.7 else Color(0.4, 0.02, 0.02, 1.0)
+		for k in int(length):
+			var t := float(k) / length
+			var q := p + Vector2(cos(a + t * 0.4), sin(a + t * 0.4)) * k
+			var w := 2 if t < 0.15 or t > 0.85 else 4
+			for dx in w:
+				var x := int(q.x + dx) % n
+				var y := int(q.y) % n
+				if x >= 0 and y >= 0:
+					img.set_pixel(x, y, col)
+	if lvl >= 2:   # blood: splats with drips
+		for b in (18 if lvl == 2 else 45):
+			var c2 := Vector2(rng.randf() * n, rng.randf() * n)
+			var r := rng.randf_range(5.0, 13.0)
+			var bc := Color(0.6, 0.0, 0.02, 0.95)
+			for y in range(int(-r), int(r) + 1):
+				for x in range(int(-r), int(r) + 1):
+					if x * x + y * y <= r * r:
+						img.set_pixel(posmod(int(c2.x) + x, n), posmod(int(c2.y) + y, n), bc)
+			for d in int(rng.randf_range(10.0, 34.0)):   # a drip running down
+				for dx in 3:
+					img.set_pixel(posmod(int(c2.x) + dx - 1, n), posmod(int(c2.y + r + d), n), bc)
+	img.generate_mipmaps()
+	var m := StandardMaterial3D.new()
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_texture = ImageTexture.create_from_image(img)
+	m.roughness = 0.6
+	m.uv1_scale = Vector3(1, 1, 1)
+	m.render_priority = 1
+	_dmg_mats[lvl] = m
+	return m
+
 ## Talking: opens the chosen mouth (its "_scream" shape key, faded in by `v` 0..1 while the
 ## closed mouth fades out - glTF keys are relative to the basis, so they swap, not stack).
 static func set_mouth_open(model: Node3D, v: float) -> void:

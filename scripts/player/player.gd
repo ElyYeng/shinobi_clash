@@ -320,6 +320,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		lock_target = null if lock_target else _nearest_foe(30.0)
 
 func _process(delta: float) -> void:
+	if model != null and max_health > 0.0:   # scratches / blood / a swollen eye when low
+		Hero.set_damage(model, health / max_health)
 	_update_camera(delta)
 	# FOV kick: wider when sprinting, widest when dashing
 	var target_fov := fov_base
