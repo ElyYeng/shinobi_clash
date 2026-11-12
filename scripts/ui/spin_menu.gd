@@ -1231,13 +1231,15 @@ func _rebuild_color_targets() -> void:
 		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
 			targets.append([Hero.COLOR_SLOTS[slot]["key"], Hero.COLOR_SLOTS[slot]["label"]])
 		var opts := Hero.get_options(preview_model)
-		var cloak := Hero.cloak_id(preview_model) != "" and str(_working.get("shirt_style", "")) == Hero.cloak_id(preview_model)
 		for cat in Hero.CLOTH_COLORS:
 			if (opts.get(cat, []) as Array).is_empty():
 				continue
-			if cat == "shirt" and cloak:   # the colourable cloak has its own two colours instead
-				targets.append(["cloak_color1", "Coat"])
-				targets.append(["cloak_color2", "Clouds"])
+			var copy := Hero.color_copy_id(preview_model, cat)
+			var key: String = Hero.CATEGORIES[cat]["key"]
+			if copy != "" and str(_working.get(key, "")) == copy:   # colourable copy: its own two colours
+				var d: Dictionary = Hero.COLOR_COPIES[cat]
+				targets.append([d["keys"][0], d["labels"][0]])
+				targets.append([d["keys"][1], d["labels"][1]])
 				continue
 			targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
 	if not targets.any(func(t): return t[0] == _color_target):
@@ -1321,7 +1323,7 @@ func _apply_look() -> void:
 func _on_part_chosen(cat: String, id: String) -> void:
 	_working[Hero.CATEGORIES[cat]["key"]] = id
 	_apply_look()
-	if cat == "hair" or cat == "shirt":   # headband / colourable cloak targets come and go
+	if cat == "hair" or cat == "shirt" or cat == "pants":   # headband / colourable copy targets come and go
 		_rebuild_color_targets()
 
 func _apply_color(color: Color) -> void:

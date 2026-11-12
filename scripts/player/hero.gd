@@ -37,6 +37,8 @@ const DEFAULT_APPEARANCE := {
 	"eye_color": "",                    # "" = the eye texture as painted (grey iris)
 	"cloak_color1": "#1C1B24",          # colourable Akatsuki cloak: the coat ...
 	"cloak_color2": "#B8161F",          # ... and the clouds
+	"pants_color1": "#E3804F",          # colourable Naruto pants
+	"pants_color2": "#32354C",
 }
 ## Iris colours offered in Customize (villagers roll natural ones from the first six).
 const EYE_TONES := ["#3B7BD4", "#3E9A5A", "#6B4423", "#8E7A3A", "#7C8A96", "#2C2C2C", "#8A4FD8", "#C0303A", "#E0A92E"]
@@ -182,7 +184,7 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var number := id.substr(String(cat).length())
 		if id.begins_with(String(cat)) and number.is_valid_int() and number.length() <= 2:
 			safe[key] = id
-	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2"]
+	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "pants_color1", "pants_color2"]
 	for slot in COLOR_SLOTS:
 		color_keys.append(COLOR_SLOTS[slot]["key"])
 	for color_key in color_keys:
@@ -535,74 +537,99 @@ static func float_pose(model: Node3D, vel: Vector3, delta: float, on: bool) -> v
 		fixer.position = fixer.get_meta("base_pos")
 		fixer.remove_meta("base_basis")
 
-# ---------------------------------------------------------------- colourable Akatsuki cloak
-## A copy of the Akatsuki cloak (shirt3) added as the next shirt option, whose coat and clouds
-## take two colours (cloak_color1 / cloak_color2). Its texture is built from
-## assets/character/ColorableStuff: AkCloudMask (where the clouds are) and AkLines (the white
-## outlines and black lines, kept as painted). Cached per colour pair.
+# ---------------------------------------------------------------- colourable outfit copies
+## Copies of existing outfits added as the next option of their category, whose texture is built
+## from two colours: colour 1 fills everything, colour 2 goes where "mask" is, then the overlays
+## (painted shading, lines, parts that keep their colours) go on top. Layers live in
+## assets/character/ColorableStuff. Cached per colour pair.
 const CLOAK_SOURCE := "shirt3"
 const CLOAK_DIR := "res://assets/character/ColorableStuff/"
-static var _cloak_cache := {}
+const COLOR_COPIES := {
+	"shirt": {"src": "shirt3", "keys": ["cloak_color1", "cloak_color2"], "labels": ["Coat", "Clouds"],
+		"defaults": ["#1C1B24", "#B8161F"], "mask": "AkCloudMask.png", "overlays": ["AkLines.png"]},
+	"pants": {"src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
+		"defaults": ["#E3804F", "#32354C"], "mask": "NarutoPC2Mask.png", "overlays": ["NarutoPShade.png", "NarutoPCE.png"]},
+}
+static var _copy_cache := {}
+
+## Option id of the colourable copy in a category ("" = none on this model).
+static func color_copy_id(model: Node3D, cat: String) -> String:
+	return str(model.get_meta("color_copy_" + cat, "")) if model != null else ""
 
 static func cloak_id(model: Node3D) -> String:
-	return str(model.get_meta("color_cloak_id", "")) if model != null else ""
+	return color_copy_id(model, "shirt")
 
-static func _add_color_cloak(model: Node3D) -> void:
+static func _add_color_cloak(model: Node3D) -> void:   # (all colourable copies)
 	var parts: Dictionary = model.get_meta("hero_parts")
-	var shirts: Array = parts.get("shirt", [])
-	var src: MeshInstance3D = null
-	var top := 0
-	for e in shirts:
-		top = maxi(top, int(e["num"]))
-		if e["id"] == CLOAK_SOURCE:
-			src = e["node"]
-	if src == null or not ResourceLoader.exists(CLOAK_DIR + "AkCloudMask.png"):
-		return
-	var copy := src.duplicate() as MeshInstance3D
-	copy.name = "shirt%d" % (top + 1)
-	src.get_parent().add_child(copy)
-	copy.owner = src.owner
-	var id := "shirt%d" % (top + 1)
-	shirts.append({"id": id, "num": top + 1, "node": copy})
-	model.set_meta("color_cloak_id", id)
+	for cat in COLOR_COPIES:
+		var d: Dictionary = COLOR_COPIES[cat]
+		if not ResourceLoader.exists(CLOAK_DIR + str(d["mask"])):
+			continue
+		var list: Array = parts.get(cat, [])
+		var src: MeshInstance3D = null
+		var top := 0
+		for e in list:
+			top = maxi(top, int(e["num"]))
+			if e["id"] == d["src"]:
+				src = e["node"]
+		if src == null:
+			continue
+		var copy := src.duplicate() as MeshInstance3D
+		var id := "%s%d" % [cat, top + 1]
+		copy.name = id
+		src.get_parent().add_child(copy)
+		copy.owner = src.owner
+		list.append({"id": id, "num": top + 1, "node": copy})
+		model.set_meta("color_copy_" + cat, id)
 
-static func _cloak_texture(c1: Color, c2: Color) -> Texture2D:
-	var key := c1.to_html() + c2.to_html()
-	if _cloak_cache.has(key):
-		return _cloak_cache[key]
-	var mask := (load(CLOAK_DIR + "AkCloudMask.png") as Texture2D).get_image()
-	var lines := (load(CLOAK_DIR + "AkLines.png") as Texture2D).get_image()
-	for im in [mask, lines]:
-		if im.is_compressed():
-			im.decompress()
-		im.convert(Image.FORMAT_RGBA8)
+static func _img(file: String) -> Image:
+	var im := (load(CLOAK_DIR + file) as Texture2D).get_image()
+	if im.is_compressed():
+		im.decompress()
+	im.convert(Image.FORMAT_RGBA8)
+	return im
+
+static func _copy_texture(cat: String, c1: Color, c2: Color) -> Texture2D:
+	var key := cat + c1.to_html() + c2.to_html()
+	if _copy_cache.has(key):
+		return _copy_cache[key]
+	var d: Dictionary = COLOR_COPIES[cat]
+	var mask := _img(str(d["mask"]))
 	var sz := mask.get_size()
+	var rect := Rect2i(Vector2i.ZERO, sz)
 	var img := Image.create(sz.x, sz.y, false, Image.FORMAT_RGBA8)
-	img.fill(c1)                                   # the coat
-	var cl := Image.create(sz.x, sz.y, false, Image.FORMAT_RGBA8)
-	cl.fill(c2)
-	img.blend_rect_mask(cl, mask, Rect2i(Vector2i.ZERO, sz), Vector2i.ZERO)   # the clouds
-	img.blend_rect(lines, Rect2i(Vector2i.ZERO, sz), Vector2i.ZERO)           # outlines + lines on top
+	img.fill(c1)
+	var second := Image.create(sz.x, sz.y, false, Image.FORMAT_RGBA8)
+	second.fill(c2)
+	img.blend_rect_mask(second, mask, rect, Vector2i.ZERO)
+	for o in d["overlays"]:
+		var ov := _img(str(o))
+		if ov.get_size() != sz:
+			ov.resize(sz.x, sz.y)
+		img.blend_rect(ov, rect, Vector2i.ZERO)
 	img.generate_mipmaps()
 	var tex := ImageTexture.create_from_image(img)
-	_cloak_cache[key] = tex
+	_copy_cache[key] = tex
 	return tex
 
-static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:
-	var id := cloak_id(model)
-	if id == "":
-		return
-	for e in (model.get_meta("hero_parts") as Dictionary).get("shirt", []):
-		if e["id"] != id:
+static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:   # (all colourable copies)
+	for cat in COLOR_COPIES:
+		var id := color_copy_id(model, cat)
+		if id == "":
 			continue
-		var mi := e["node"] as MeshInstance3D
-		var base := mi.mesh.surface_get_material(0) as BaseMaterial3D
-		if base == null:
-			return
-		var m := base.duplicate() as BaseMaterial3D
-		m.albedo_texture = _cloak_texture(Color.html(str(look.get("cloak_color1", "#1C1B24"))), Color.html(str(look.get("cloak_color2", "#B8161F"))))
-		m.albedo_color = Color.WHITE
-		mi.set_surface_override_material(0, m)
+		var d: Dictionary = COLOR_COPIES[cat]
+		for e in (model.get_meta("hero_parts") as Dictionary).get(cat, []):
+			if e["id"] != id:
+				continue
+			var mi := e["node"] as MeshInstance3D
+			var base := mi.mesh.surface_get_material(0) as BaseMaterial3D
+			if base == null:
+				continue
+			var m := base.duplicate() as BaseMaterial3D
+			m.albedo_texture = _copy_texture(cat, Color.html(str(look.get(d["keys"][0], d["defaults"][0]))),
+				Color.html(str(look.get(d["keys"][1], d["defaults"][1]))))
+			m.albedo_color = Color.WHITE
+			mi.set_surface_override_material(0, m)
 
 ## Truth-Seeking Orbs (look "orbs": n): a ring of black orbs floating behind the shoulders,
 ## bobbing gently. 0 removes them.
