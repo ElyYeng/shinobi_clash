@@ -17,6 +17,8 @@ static func batch(root: Node3D, skip_groups := ["NPCs", "Markers", "Villagers", 
 	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
 		if mi.skin != null or mi.get_script() != null or not mi.visible or mi.mesh == null:
 			continue
+		if mi.extra_cull_margin > 0.0:   # full-screen effects (anime outline quad) must stay as they are
+			continue
 		if _under_skipped(mi, root, skip_groups):
 			continue
 		var n := mi.mesh.get_surface_count()

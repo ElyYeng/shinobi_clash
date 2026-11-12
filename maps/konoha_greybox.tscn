@@ -4933,11 +4933,11 @@ transform = Transform3D(0.963523, -0.24568065, -0.106132954, 0.2579059, 0.746489
 light_color = Color(0.88757706, 0.68986475, 0.6788702, 1)
 light_energy = 1.7
 light_volumetric_fog_energy = 0.333
-light_angular_distance = 0.6
+light_angular_distance = 0.0
 light_specular = 0.208
 shadow_enabled = true
 shadow_normal_bias = 1.2
-shadow_blur = 1.4
+shadow_blur = 0.25
 directional_shadow_blend_splits = true
 directional_shadow_max_distance = 130.0
 
