@@ -42,14 +42,20 @@ const ROLE := ["Shopkeeper", "Farmer", "Baker", "Fisher", "Potter", "Tea Seller"
 var index := 0
 var _marker: Label3D
 var held := false        # stands still (and looks at you) while you talk to them
+var held_by_other := false   # another player is talking to them (multiplayer)
+var held_since := 0          # (a talk never lasts a minute: if their "free" got lost, walk on)
 var _catch := 0.0        # after talking: seconds left easing back onto the shared route
 var _stun := 0.0         # beaten up: reeling / knocked down for this long
 var _hp := 100.0
 
 ## Punched by the player: flinch (or get knocked down on a combo finisher), bruise up, then walk
 ## it off back onto their route. Out of health: they stay down a while, then get up healed.
-func get_hit(dir: Vector3, finisher: bool, dmg: float) -> void:
-	if model == null or _far:
+func get_hit(dir: Vector3, finisher: bool, dmg: float, share := true) -> void:
+	if model == null:
+		return
+	if share and NetworkSession.is_active():   # everyone sees the beating
+		NetworkSession.broadcast_villager(index, "hit", dir, finisher, dmg)
+	if _far:
 		return
 	_hp = maxf(0.0, _hp - dmg)
 	Hero.set_damage(model, _hp / 100.0)
@@ -204,7 +210,9 @@ func _process(delta: float) -> void:
 		_catch = 2.0
 		_update_marker()
 		return
-	if held:   # talking: stay put and look at you (the route keeps running - we catch up after)
+	if held_by_other and Time.get_ticks_msec() - held_since > 60000:
+		held_by_other = false
+	if held or held_by_other:   # talking: stay put and look at you (the route keeps running - we catch up after)
 		moving = false
 		_catch = 1.5
 	elif _catch > 0.0:   # walk briskly back onto the route

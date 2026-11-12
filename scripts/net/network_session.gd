@@ -185,14 +185,53 @@ var _villager_timer := 0.0
 
 @rpc("authority", "call_remote", "unreliable")
 func _villager_clock(host_time: float) -> void:
-	Villager.sync_clock(host_time)
+	# the message took ~half a round trip to get here: the host's clock is that much further on
+	var lag := 0.0
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet != null and enet.get_peer(1) != null:
+		lag = enet.get_peer(1).get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME) / 2000.0
+	Villager.sync_clock(host_time + lag)
+
+## Villager events everyone sees: "hit" (beaten up), "hold" / "free" (someone is talking to them).
+func broadcast_villager(index: int, kind: String, dir := Vector3.ZERO, finisher := false, dmg := 0.0) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_villager_event.rpc(index, kind, dir, finisher, dmg)
+	else:
+		_request_villager_event.rpc_id(1, index, kind, dir, finisher, dmg)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_villager_event(index: int, kind: String, dir: Vector3, finisher: bool, dmg: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	_apply_villager_event(index, kind, dir, finisher, dmg)
+	for id in _known_players:   # everyone else (not back to the sender)
+		if int(id) != 1 and int(id) != sender:
+			_villager_event.rpc_id(int(id), index, kind, dir, finisher, dmg)
+
+@rpc("authority", "call_remote", "reliable")
+func _villager_event(index: int, kind: String, dir: Vector3, finisher: bool, dmg: float) -> void:
+	_apply_villager_event(index, kind, dir, finisher, dmg)
+
+func _apply_villager_event(index: int, kind: String, dir: Vector3, finisher: bool, dmg: float) -> void:
+	var v := Villager.by_index(index)
+	if v == null:
+		return
+	match kind:
+		"hit": v.get_hit(dir.normalized(), finisher, clampf(dmg, 0.0, 200.0), false)
+		"hold":
+			v.held_by_other = true
+			v.held_since = Time.get_ticks_msec()
+		"free": v.held_by_other = false
 
 func _process(delta: float) -> void:
 	if not is_active() or _local_player == null:
 		return
 	if multiplayer.is_server():   # villagers' shared clock (Konoha)
 		_villager_timer += delta
-		if _villager_timer >= 2.0:
+		if _villager_timer >= 1.0:
 			_villager_timer = 0.0
 			_villager_clock.rpc(Villager.now())
 	_sync_timer += delta

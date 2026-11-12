@@ -403,6 +403,7 @@ func _world_interact() -> void:
 	if _held_villager != null:   # dialog closed: let them walk on
 		if is_instance_valid(_held_villager):
 			_held_villager.held = false
+			NetworkSession.broadcast_villager(_held_villager.index, "free")
 		_held_villager = null
 	if _near_gate():
 		hud.prompt_text = "[E]  Challenge Claudiu Uchiha  (boss)"
@@ -441,9 +442,10 @@ const VILLAGER_LINES := ["Nice weather today.", "Have you tried Ichiraku's ramen
 func _talk_villager(i: int) -> void:
 	var nm := Villager.name_for(i)
 	var v := Villager.by_index(i)
-	if v != null:   # stand still while we talk
+	if v != null:   # stand still while we talk (for everyone)
 		v.held = true
 		_held_villager = v
+		NetworkSession.broadcast_villager(i, "hold")
 	var none := Callable()
 	var act := quests.active_def()
 	if not act.is_empty():
