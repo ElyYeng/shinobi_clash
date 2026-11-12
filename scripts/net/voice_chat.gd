@@ -33,7 +33,7 @@ var _voices := {}              # peer id -> {player, pb, q (PackedFloat32Array),
 var _hint: Label
 
 func _ready() -> void:
-	_ratio = AudioServer.get_mix_rate() / float(RATE)
+	_ratio = maxf(AudioServer.get_mix_rate() / float(RATE), 1.0)   # (never 0: that would loop forever)
 	var bus := AudioServer.bus_count
 	AudioServer.add_bus(bus)
 	AudioServer.set_bus_name(bus, "VoiceMic")
