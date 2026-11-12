@@ -269,6 +269,8 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 		add_child(power_fx)
 		_power_col = color
 		_float = bool(look.get("float", false))
+		if look.has("crystal"):   # Crystal Armor
+			CrystalAura.make(power_fx)
 		if not Bloodline.eye_mode({"look": look}):   # eye modes: just the eyes
 			var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
 			if look.has("glow"):

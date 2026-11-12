@@ -432,6 +432,7 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 	if eye_tex != null and look.has("eye_col"):   # personal colour (Ink Mode): recolour the iris
 		eye_tex = recolor_iris(eye_tex, Color.html(str(look["eye_col"])))
 	set_eyes(model, eye_tex, str(look.get("eye_side", "")))
+	set_chrome(model, bool(look.get("chrome", false)))
 	_set_orbs(model, int(look.get("orbs", 0)))
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
 	var outfit_glow := float(look.get("outfit_glow", 0.0))
@@ -790,6 +791,47 @@ static func recolor_iris(tex: Texture2D, col: Color) -> Texture2D:
 	out.set_meta("src", tex.resource_path)
 	_iris_cache[key] = out
 	return out
+
+## Full Steel Body: every body / clothes / hair surface turns into polished chrome (toon-lit
+## metal with a hard specular and rim); the eyes stay. Off restores the previous materials.
+static var _chrome_mat: StandardMaterial3D
+static func set_chrome(model: Node3D, on: bool) -> void:
+	if model == null:
+		return
+	var saved: Array = model.get_meta("chrome_saved", [])
+	if not on:
+		for e in saved:
+			if is_instance_valid(e[0]):
+				(e[0] as MeshInstance3D).set_surface_override_material(e[1], e[2])
+		model.set_meta("chrome_saved", [])
+		return
+	if not saved.is_empty():
+		return
+	if _chrome_mat == null:
+		_chrome_mat = StandardMaterial3D.new()
+		_chrome_mat.albedo_color = Color(0.78, 0.8, 0.85)
+		_chrome_mat.metallic = 1.0
+		_chrome_mat.roughness = 0.12
+		_chrome_mat.metallic_specular = 1.0
+		_chrome_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+		_chrome_mat.specular_mode = BaseMaterial3D.SPECULAR_TOON
+		_chrome_mat.rim_enabled = true
+		_chrome_mat.rim = 1.0
+		_chrome_mat.rim_tint = 0.2
+		_chrome_mat.emission_enabled = true   # a little self-light so it never goes pitch black
+		_chrome_mat.emission = Color(0.12, 0.13, 0.16)
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if not m.visible or m.has_meta("no_aura") or m.mesh == null:
+			continue
+		for s in m.mesh.get_surface_count():
+			var base := m.mesh.surface_get_material(s)
+			var nm := base.resource_name.to_lower() if base != null else ""
+			if nm.ends_with("eye") or nm.contains("black lines"):
+				continue   # keep the eyes and the face lines
+			saved.append([m, s, m.get_surface_override_material(s)])
+			m.set_surface_override_material(s, _chrome_mat)
+	model.set_meta("chrome_saved", saved)
 
 ## side: "" = both eyes, "left" / "righ" = only that eye (the other stays normal), e.g. Kakashi.
 static func set_eyes(model: Node3D, tex: Texture2D, side := "") -> void:

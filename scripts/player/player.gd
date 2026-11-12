@@ -1630,6 +1630,8 @@ func _toggle_power() -> void:
 	add_child(pmode_fx)
 	# the mode's aura (Aura 3D shell); faint when the body already glows so it doesn't hide it.
 	# Eye techniques get none - their glowing eyes are the effect.
+	if m.get("look", {}).has("crystal"):   # Crystal Armor: the aura is made of crystal
+		CrystalAura.make(pmode_fx)
 	if not Bloodline.eye_mode(m):
 		var mode_aura := AuraShell.make(pmode_fx, model, col, col.lightened(0.6), 0.4)
 		if m.get("look", {}).has("glow"):

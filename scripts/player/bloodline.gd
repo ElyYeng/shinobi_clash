@@ -179,7 +179,7 @@ const DEFS := {
 			{"name": "Crystal Shards", "vfx": "crystal", "kind": "fan", "n": 5, "spread": 12.0, "speed": 42.0, "dmg": 45.0, "size": 0.22, "long": true, "col": Color(0.6, 0.95, 1.0), "desc": "Five razor crystal shards."},
 			{"name": "Crystal Prison", "vfx": "crystal_prison", "kind": "target", "r": 22.0, "dmg": 110.0, "stun": 4.0, "col": Color(0.6, 0.95, 1.0), "desc": "Encases the nearest enemy in crystal."},
 			{"name": "Crystal Spikes", "vfx": "crystal_spikes", "kind": "burst", "r": 10.0, "dmg": 75.0, "stun": 1.5, "col": Color(0.6, 0.95, 1.0), "desc": "Crystal spikes erupt from the ground around you."}],
-		"mode": {"name": "Crystal Armor", "dmg": 1.35, "def": 0.7, "slow": 0.85, "desc": "+35% damage, take 30% less damage, enemies 15% slower."}},
+		"mode": {"name": "Crystal Armor", "dmg": 1.35, "def": 0.7, "slow": 0.85, "look": {"crystal": true}, "desc": "+35% damage, take 30% less damage, enemies 15% slower."}},
 	"dust": {"name": "Dust Release", "rarity": "Mythic", "weight": 0.8, "color": Color(0.95, 0.95, 0.85),
 		"desc": "Fire + Wind + Earth: +30% damage.", "stats": {"dmg": 1.3},
 		"abilities": [
@@ -201,7 +201,7 @@ const DEFS := {
 			{"name": "Steel Skin", "vfx": "steel_skin", "kind": "buff", "t": 8.0, "def": 0.5, "dmg": 1.15, "desc": "8s: your body turns to steel - take 50% less damage, +15% damage."},
 			{"name": "Steel Fist", "vfx": "steel_fist", "kind": "cone", "r": 7.0, "dmg": 85.0, "knock": 24.0, "dot": 0.3, "col": Color(0.7, 0.74, 0.8), "desc": "A steel punch that sends enemies flying."},
 			{"name": "Iron Quake", "vfx": "iron_quake", "kind": "burst", "r": 10.0, "dmg": 70.0, "stun": 1.5, "col": Color(0.7, 0.74, 0.8), "desc": "Slam the ground with a steel body - stuns everything within 10m."}],
-		"mode": {"name": "Full Steel Body", "dmg": 1.3, "def": 0.55, "speed": 0.9, "desc": "+30% damage, take 45% less damage, 10% slower."}},
+		"mode": {"name": "Full Steel Body", "dmg": 1.3, "def": 0.55, "speed": 0.9, "look": {"chrome": true}, "desc": "+30% damage, take 45% less damage, 10% slower."}},
 	"dark": {"name": "Dark Release", "rarity": "Legendary", "weight": 1.2, "color": Color(0.35, 0.1, 0.45),
 		"desc": "Devours chakra: +15% damage, +30 max chakra, slow regeneration.", "stats": {"dmg": 1.15, "chakra": 30.0, "hp_regen": 1.0},
 		"abilities": [
