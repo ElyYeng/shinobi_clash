@@ -158,6 +158,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	wrapper.set_meta("hero_extra", _find_extras(inst))
 	wrapper.set_meta("hero_outfits", _find_outfits(inst))
 	apply_appearance(wrapper, appearance)
+	EyeLook.attach(wrapper, "camera")   # every character's eyes move (follow the camera, glance around)
 	return wrapper
 
 

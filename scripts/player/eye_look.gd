@@ -27,10 +27,15 @@ static func attach(model: Node3D, look_mode := "aim") -> EyeLook:
 	model.add_child(e)
 	return e
 
+const NEAR := 22.0          # further than this from the camera: nobody can see the eyes - skip
+
+
 func _process(delta: float) -> void:
 	var model := get_parent() as Node3D
 	var cam := get_viewport().get_camera_3d()
 	if model == null or cam == null or not model.is_visible_in_tree():
+		return
+	if cam.global_position.distance_to(model.global_position) > NEAR:
 		return
 	var eye := Hero.eyes_position(model)
 	var target := cam.global_position if mode == "camera" else cam.global_position - cam.global_basis.z * 40.0
