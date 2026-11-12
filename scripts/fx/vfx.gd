@@ -366,6 +366,49 @@ static func sprite_flash(parent: Node, pos: Vector3, path: String, color: Color,
 	t.tween_property(mat, "albedo_color:a", 0.0, secs).set_ease(Tween.EASE_IN)
 	t.chain().tween_callback(m.queue_free)
 
+## Fire flipbook (4 x 4 frames, assets/vfx_tex/effects/Fire_Flipbook_4x4.png) on billboard
+## particles: every fire in the game uses it. additive = bright fire; false = dark (Amaterasu).
+const FIRE_BOOK := "effects/Fire_Flipbook_4x4.png"
+static func flame_mat(additive := true, boost := 1.6) -> StandardMaterial3D:
+	var m := particle_mat(additive, boost)
+	var t := tex(FIRE_BOOK)
+	if t != null:
+		m.albedo_texture = t
+		m.particles_anim_h_frames = 4
+		m.particles_anim_v_frames = 4
+		m.particles_anim_loop = false
+	return m
+
+## Make a CPUParticles3D play the fire flipbook once over each particle's life.
+static func use_flame(p: CPUParticles3D, additive := true, boost := 1.6) -> void:
+	p.material_override = flame_mat(additive, boost)
+	if tex(FIRE_BOOK) != null:
+		p.anim_speed_min = 1.0
+		p.anim_speed_max = 1.0
+		p.angle_min = -15.0
+		p.angle_max = 15.0
+
+## Melee swing: a crescent slash (VFX pack) in front of the attacker, turned per combo hit.
+static func slash(parent: Node, pos: Vector3, facing: Vector3, color: Color, combo := 1, size := 2.2) -> void:
+	if parent == null or not parent.is_inside_tree() or tex("slashes/Slash_23.png") == null:
+		return
+	var m := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(size, size)
+	m.mesh = pm
+	var mat := tex_mat("slashes/Slash_23.png", color, 1.8)
+	m.material_override = mat
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(m)
+	m.global_position = pos + facing * 0.9
+	m.look_at(m.global_position + facing, Vector3.UP)
+	m.rotate_object_local(Vector3.FORWARD, [0.5, -0.5, PI * 0.5][(combo - 1) % 3])   # alternate swing angles
+	m.rotate_object_local(Vector3.RIGHT, PI * 0.5)   # plane faces forward
+	var t := m.create_tween().set_parallel(true)
+	t.tween_property(m, "scale", Vector3.ONE * 1.25, 0.16).set_ease(Tween.EASE_OUT)
+	t.tween_property(mat, "albedo_color:a", 0.0, 0.18).set_ease(Tween.EASE_IN)
+	t.chain().tween_callback(m.queue_free)
+
 ## The standard hit / poof effect used by Fx.puff: glow core + sparks + light (+ smoke + shockwave when big).
 static func hit(parent: Node, pos: Vector3, color: Color, size := 1.0) -> void:
 	if parent == null or not parent.is_inside_tree():
@@ -393,7 +436,13 @@ static func dust(parent: Node, pos: Vector3) -> void:
 	p.explosiveness = 1.0
 	p.local_coords = false
 	p.mesh = quad()
-	p.material_override = particle_mat(false, 1.0)
+	var dm := particle_mat(false, 1.0)
+	if tex("effects/Smoke_Dissolve_03.png") != null:
+		dm.albedo_texture = tex("effects/Smoke_Dissolve_03.png")
+		dm.albedo_color = Color(1.3, 1.3, 1.3, 1.0)
+		p.angle_min = -180.0
+		p.angle_max = 180.0
+	p.material_override = dm
 	p.direction = Vector3.UP
 	p.spread = 70.0
 	p.initial_velocity_min = 0.4
@@ -492,7 +541,7 @@ static func aura_flames(node: Node3D, offset: Vector3, radius: float, color: Col
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	p.emission_sphere_radius = radius
 	p.mesh = quad()
-	p.material_override = particle_mat(true, 0.9 if soft else 1.7)
+	use_flame(p, true, 0.9 if soft else 1.7)
 	p.direction = Vector3.UP
 	p.spread = 25.0
 	p.initial_velocity_min = radius * 0.6

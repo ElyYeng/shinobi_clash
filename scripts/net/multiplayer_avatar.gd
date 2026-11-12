@@ -97,6 +97,10 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 	if state.begins_with("susanoo_"):   # Susanoo (Uchiha): form / release / attacks
 		_susanoo_event(state.trim_prefix("susanoo_"), variant)
 		return
+	if state == "attack" and model != null:   # their melee swing
+		var fwd := -model.global_basis.z
+		fwd.y = 0.0
+		Vfx.slash(get_parent(), global_position + Vector3.UP * 1.1, fwd.normalized(), Color(0.85, 0.92, 1.0), variant + 1, 2.0)
 	var lock := 0.45
 	if state == "attack":
 		lock = 0.5

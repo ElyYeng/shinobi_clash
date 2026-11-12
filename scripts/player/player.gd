@@ -1094,6 +1094,7 @@ func _melee() -> void:
 	velocity.x = facing.x * 10.0
 	velocity.z = facing.z * 10.0
 	Sfx.play(self, "swing", -4.0)
+	Vfx.slash(get_parent(), global_position + Vector3.UP * 1.1, facing, Color(0.85, 0.92, 1.0), combo, 2.4 if combo == 3 else 2.0)
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_combat_animation("attack", combo - 1)
 	var dmg := (10.0 + combo * 4.0) * _dmg()
