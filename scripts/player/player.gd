@@ -306,12 +306,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			if lock_target:   # locked on: the wheel switches targets instead of zooming
+			if lock_target and not event.alt_pressed:   # locked on: the wheel switches targets (Alt + wheel still zooms)
 				_switch_target(1)
 			else:
 				_zoom_step(-1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			if lock_target:
+			if lock_target and not event.alt_pressed:
 				_switch_target(-1)
 			else:
 				_zoom_step(1)
