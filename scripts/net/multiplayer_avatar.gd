@@ -77,9 +77,28 @@ var susanoo: Susanoo
 var _kd_rag: Ragdoll   # knocked down (ragdoll / getting up)
 var sitting := false   # sitting on the floor (P); held until they stand or move
 
+var _charge_fx: AuraShell
+
 func play_combat_animation(state: String, variant: int = 0) -> void:
 	if model == null or network_ragdoll_started:
 		return
+	match state:   # chakra charge aura / chakra on the feet (wall walking)
+		"charge_on":
+			if _charge_fx == null or not is_instance_valid(_charge_fx):
+				var col: Color = Susanoo.palette_color(variant) if variant >= 0 else Player.CHARGE_AURA
+				_charge_fx = AuraShell.make(self, model, col, col.lightened(0.6) if variant >= 0 else Player.CHARGE_RIM)
+			return
+		"charge_off":
+			if _charge_fx != null and is_instance_valid(_charge_fx):
+				_charge_fx.fade_out()
+			_charge_fx = null
+			return
+		"feet_on":
+			FeetChakra.attach(model)
+			return
+		"feet_off":
+			FeetChakra.detach(model)
+			return
 	if state == "knockdown":   # their combo-finisher knockdown: ragdoll here too, then get up
 		if _kd_rag == null or not is_instance_valid(_kd_rag):
 			var back := model.global_basis.z.normalized()

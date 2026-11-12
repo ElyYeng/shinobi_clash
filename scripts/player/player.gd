@@ -890,6 +890,10 @@ func _climbable(col: Object) -> bool:
 	return not (n.name.begins_with("Bound") or (n.get_parent() != null and n.get_parent().name == "Bounds"))
 
 func _stick_to(n: Vector3, point: Vector3) -> void:
+	if not wall_walking:   # chakra in the soles (everyone sees it)
+		FeetChakra.attach(model)
+		if NetworkSession.is_active():
+			NetworkSession.broadcast_combat_animation("feet_on", 0)
 	wall_walking = true
 	wall_n = n
 	_feet = point
@@ -1020,6 +1024,9 @@ func _wall_walk_step(delta: float) -> bool:
 
 func _end_wall_walk(launch: Vector3) -> void:
 	wall_walking = false
+	FeetChakra.detach(model)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("feet_off", 0)
 	# fold the camera tilt back into a plain yaw so the view doesn't snap, then level out smoothly
 	var back := _arc(wall_n, Vector3.UP) * _surf_q   # now only a turn around world up
 	var v := back * Vector3.FORWARD
@@ -1584,7 +1591,12 @@ func _foes_near(p: Vector3, rad: float) -> Array[Node3D]:
 const CHARGE_AURA := Color(0.2, 0.55, 1.0)
 const CHARGE_RIM := Color(0.75, 0.92, 1.0)
 var _charge_fx: AuraShell
+var _charge_shared := false   # what the other players were last told (charging or not)
 func _charge_aura(on: bool) -> void:
+	if NetworkSession.is_active() and on != _charge_shared:   # the others see you charge too
+		_charge_shared = on
+		var ci := Susanoo.color_index_for(str(GameData.equipped)) if susanoo != null and is_instance_valid(susanoo) else -1
+		NetworkSession.broadcast_combat_animation("charge_on" if on else "charge_off", ci)
 	if on and is_dead == false and model != null:
 		# in the Susanoo your chakra takes its colour
 		var col := CHARGE_AURA
