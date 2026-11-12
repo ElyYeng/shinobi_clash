@@ -968,6 +968,11 @@ static func build_environment(parent: Node, style: String, sun_rot_deg: Vector3,
 	sm.set_shader_parameter("sun_dir", toward_sun)
 	var sky := Sky.new()
 	sky.sky_material = sm
+	# The clouds animate (TIME), so the sky's reflection is rebuilt every frame: realtime mode at a
+	# small size is made for that. The default full-quality rebuild each frame was hanging AMD
+	# GPUs (RX 5700: "Vulkan device lost" in SKY_PASS).
+	sky.process_mode = Sky.PROCESS_MODE_REALTIME
+	sky.radiance_size = Sky.RADIANCE_SIZE_128
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY

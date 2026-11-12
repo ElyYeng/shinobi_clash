@@ -70,7 +70,8 @@ shader_parameter/star_amount = 0.0
 
 [sub_resource type="Sky" id="Sky_xlewh"]
 sky_material = SubResource("ShaderMaterial_vnv4d")
-process_mode = 1
+process_mode = 3
+radiance_size = 2
 
 [sub_resource type="Environment" id="Environment_8lleg"]
 background_mode = 2
