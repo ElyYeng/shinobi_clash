@@ -1254,29 +1254,18 @@ func _build_face() -> void:
 	if not (_working.get("face") is Dictionary):
 		_working["face"] = {}
 	var face: Dictionary = _working["face"]
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 2)
-	face_box.add_child(grid)
+	# each shape key is either fully on or off (0 / 1): a toggle per key
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 5)
+	flow.add_theme_constant_override("v_separation", 5)
+	face_box.add_child(flow)
 	for n in names:
-		var cell := HBoxContainer.new()
-		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		grid.add_child(cell)
-		var l := UiStyle.label(cell, str(n).replace("_", " ").capitalize(), 12, UiStyle.BODY_TEXT)
-		l.custom_minimum_size = Vector2(100, 0)
-		var sl := HSlider.new()
-		sl.min_value = 0.0
-		sl.max_value = 1.0
-		sl.step = 0.01
-		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		sl.value = float(face.get(n, 0.0))
-		sl.editable = not placeholder
-		sl.value_changed.connect(func(v: float):
-			(_working["face"] as Dictionary)[str(n)] = v
+		var b := _chip(flow, str(n).replace("_", " ").capitalize())
+		b.set_pressed_no_signal(float(face.get(n, 0.0)) >= 0.5)
+		b.disabled = placeholder
+		b.toggled.connect(func(on: bool):
+			(_working["face"] as Dictionary)[str(n)] = 1.0 if on else 0.0
 			_apply_look())
-		cell.add_child(sl)
 	var acts := HBoxContainer.new()
 	acts.add_theme_constant_override("separation", 6)
 	face_box.add_child(acts)
@@ -1286,7 +1275,7 @@ func _build_face() -> void:
 	rnd.pressed.connect(func():
 		var f := {}
 		for n in Hero.face_shape_names(preview_model):
-			f[n] = snappedf(randf() * 0.8, 0.01)
+			f[n] = 1.0 if randf() < 0.35 else 0.0
 		_working["face"] = f
 		_apply_look()
 		_build_face())

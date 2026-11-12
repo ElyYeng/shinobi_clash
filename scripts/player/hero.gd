@@ -216,13 +216,13 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 				break
 			var n := str(k).strip_edges().left(48)
 			if n != "" and (rf[k] is float or rf[k] is int):
-				face[n] = clampf(float(rf[k]), 0.0, 1.0)
+				face[n] = 1.0 if float(rf[k]) >= 0.5 else 0.0   # shape keys are on / off, no in-betweens
 	safe["face"] = face
 	return safe
 
 ## ---------------------------------------------------------------- face customisation
 ## The face is sculpted with shape keys (Blender -> glTF morph targets -> Godot blend shapes).
-## appearance["face"] = {shape key name: 0..1}; appearance["sex"] = "male" / "female".
+## appearance["face"] = {shape key name: 0 or 1 - each key fully on or off}; appearance["sex"] = "male" / "female".
 ## The sliders list the model's own shape keys; until the face model is in, FACE_PLACEHOLDER
 ## shows the planned ones (they do nothing yet). Keys named "female" / "male" (any case) are
 ## driven by the sex choice instead of a slider.
