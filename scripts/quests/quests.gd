@@ -62,6 +62,28 @@ static func ensure_loaded() -> void:
 	for d in list:
 		DEFS[d["id"]] = d
 
+## A quest's dictionary by id - quest files, or a generated villager errand (Errands).
+static func def(id: String) -> Dictionary:
+	if DEFS.has(id):
+		return DEFS[id]
+	if Errands.is_errand(id):
+		if not _errands.has(id):
+			_errands[id] = Errands.make(id)
+		return _errands[id]
+	return {}
+
+static var _errands := {}
+
+## Name and position of a quest giver: an NPC, or a walking villager ("villager_<n>").
+static func giver_info(gid: String) -> Dictionary:
+	if NPCS.has(gid):
+		return NPCS[gid]
+	if gid.begins_with("villager_"):
+		var v := Villager.by_index(int(gid.trim_prefix("villager_")))
+		var nm := Villager.name_for(int(gid.trim_prefix("villager_")))
+		return {"name": nm, "pos": v.global_position if v != null else Vector3.INF}
+	return {"name": "?", "pos": Vector3.INF}
+
 ## .tres files in a folder (also finds them in exported games, where they get a .remap suffix).
 static func _files(dir: String) -> Array[String]:
 	var out: Array[String] = []
@@ -90,7 +112,7 @@ static func reward_text(d: Dictionary) -> String:
 ## Next (state, progress) after the current step of `quest_id` is done: the next step, or
 ## "ready" (go back to the giver) after the last one. Used locally and by the co-op host.
 static func advance(quest_id: String, progress: int) -> Array:
-	var d: Dictionary = DEFS.get(quest_id, {})
+	var d: Dictionary = def(quest_id)
 	var n := (d.get("steps", []) as Array).size()
 	var step := progress / STEP
 	if step + 1 < n:
@@ -100,7 +122,7 @@ static func advance(quest_id: String, progress: int) -> Array:
 ## Co-op host: a quest enemy of this party died. Returns the new [state, progress], or [] if the
 ## current step doesn't count kills.
 static func after_enemy_kill(quest_id: String, progress: int) -> Array:
-	var d: Dictionary = DEFS.get(quest_id, {})
+	var d: Dictionary = def(quest_id)
 	var steps: Array = d.get("steps", [])
 	var step := progress / STEP
 	if step >= steps.size():
@@ -130,7 +152,7 @@ func setup(p: Player, h: HUD, w: Node3D) -> void:
 	player = p
 	hud = h
 	world = w
-	if GameData.quest_active != "" and not DEFS.has(GameData.quest_active):
+	if GameData.quest_active != "" and def(GameData.quest_active).is_empty():
 		GameData.quest_active = ""   # save from a version with different quests
 		GameData.quest_state = ""
 	var shared_loaded := false
@@ -157,7 +179,7 @@ func available_for(npc_id: String) -> String:
 func active_def() -> Dictionary:
 	if GameData.quest_active == "":
 		return {}
-	return DEFS[GameData.quest_active]
+	return def(GameData.quest_active)
 
 func step_index() -> int:
 	return GameData.quest_progress / STEP
@@ -189,7 +211,7 @@ func target_position() -> Vector3:
 	if d.is_empty():
 		return Vector3.INF
 	if GameData.quest_state == "ready":
-		return NPCS[d["giver"]]["pos"]
+		return giver_info(d["giver"])["pos"]
 	if objective != null:
 		return objective.target_position()
 	return Vector3.INF
@@ -207,7 +229,7 @@ func accept(id: String) -> void:
 	GameData.quest_progress = 0
 	GameData.save()
 	_activate_objective()
-	var d: Dictionary = DEFS[id]
+	var d: Dictionary = def(id)
 	hud.toast("Quest accepted: %s" % d["title"])
 	_refresh_hud()
 	changed.emit()
@@ -235,6 +257,8 @@ func turn_in() -> void:
 			xp += GameData.xp_needed(GameData.level + i)
 		if xp > 0:
 			player.gain_xp(xp)
+	if Errands.is_errand(GameData.quest_active):
+		GameData.errands_done += 1   # villagers get new errands
 	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(GameData.quest_active):
 		GameData.quests_done.append(GameData.quest_active)
 	GameData.quest_active = ""
@@ -292,7 +316,7 @@ func _set_ready() -> void:
 	GameData.save()
 	_clear_objective()
 	var d := active_def()
-	var giver: Dictionary = NPCS[d["giver"]]
+	var giver: Dictionary = giver_info(d["giver"])
 	hud.toast("Objective complete! Return to %s" % giver["name"])
 	_refresh_hud()
 	changed.emit()
@@ -451,7 +475,7 @@ func _refresh_hud() -> void:
 		t += "  (%d/%d)" % [step_index() + 1, steps.size()]
 	t += "\n"
 	if GameData.quest_state == "ready":
-		var giver: Dictionary = NPCS[d["giver"]]
+		var giver: Dictionary = giver_info(d["giver"])
 		hud.quest_text = t + "Return to %s" % giver["name"]
 		return
 	hud.quest_text = t + (objective.hud_text() if objective != null else "")

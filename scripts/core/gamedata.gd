@@ -47,6 +47,7 @@ static var kurama_defeated := false
 static var susanoo_color := -1
 ## Toon / cel shading on characters and maps (M > Settings).
 static var toon_shading := true
+static var errands_done := 0   # villager errands finished (new errands come from this)
 static var quests_done: Array = []
 static var quest_active := ""
 static var quest_state := ""        # "active" | "ready"
@@ -130,6 +131,7 @@ static func load_data() -> void:
 		kurama_defeated = bool(d.get("kurama_defeated", false))
 		susanoo_color = int(d.get("susanoo_color", -1))
 		toon_shading = bool(d.get("toon_shading", true))
+		errands_done = int(d.get("errands_done", 0))
 		var appearance_data = d.get("character_appearance", {})
 		if appearance_data is Dictionary:
 			# every saved key (skin / eye colour etc. too); sanitize_appearance drops anything unknown
@@ -276,7 +278,7 @@ static func save() -> void:
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,
 			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot, "el_bag": el_bag,
-			"kurama_defeated": kurama_defeated, "susanoo_color": susanoo_color, "toon_shading": toon_shading, "quests_done": quests_done,
+			"kurama_defeated": kurama_defeated, "susanoo_color": susanoo_color, "toon_shading": toon_shading, "errands_done": errands_done, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,

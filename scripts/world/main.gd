@@ -271,10 +271,46 @@ func _world_interact() -> void:
 		if d < best:
 			best = d
 			near = n
-	hud.prompt_text = "[E]  Talk to %s" % near.display_name if near != null else ""
-	if near != null and Input.is_action_just_pressed("interact") and not Input.is_action_pressed("kunai"):
+	var vil: Villager = null
+	if near == null:   # walking villagers (some have errands)
+		vil = Villager.near(player.global_position, 3.5)
+	if near != null:
+		hud.prompt_text = "[E]  Talk to %s" % near.display_name
+	elif vil != null:
+		hud.prompt_text = "[E]  Talk to %s" % Villager.name_for(vil.index)
+	else:
 		hud.prompt_text = ""
-		_talk(near)
+	if (near != null or vil != null) and Input.is_action_just_pressed("interact") and not Input.is_action_pressed("kunai"):
+		hud.prompt_text = ""
+		if near != null:
+			_talk(near)
+		else:
+			_talk_villager(vil.index)
+
+const VILLAGER_LINES := ["Nice weather today.", "Have you tried Ichiraku's ramen?", "The Hokage works so hard...",
+	"Stay safe out there, shinobi.", "My kids want to join the Academy!", "Busy day at the market."]
+
+## Walking villagers: their errand (Errands) if they have one, otherwise small talk.
+func _talk_villager(i: int) -> void:
+	var nm := Villager.name_for(i)
+	var none := Callable()
+	var act := quests.active_def()
+	if not act.is_empty():
+		if Errands.is_errand(GameData.quest_active) and Errands.villager_of(GameData.quest_active) == i:
+			if GameData.quest_state == "ready":
+				dialog.open(nm, str(act["turn"]), [["Complete quest  (%s)" % Quests.reward_text(act), quests.turn_in]])
+			else:
+				dialog.open(nm, str(act["remind"]), [["Okay, I'm on it", none], ["Abandon quest", quests.abandon]])
+			return
+		dialog.open(nm, VILLAGER_LINES[(i + GameData.errands_done) % VILLAGER_LINES.size()], [["Goodbye", none]])
+		return
+	if Errands.offers(i):
+		var qid := Errands.id_for(i)
+		var q := Quests.def(qid)
+		var txt := "%s\n\n[Quest: %s   Reward: %s]" % [q["offer"], q["title"], Quests.reward_text(q)]
+		dialog.open(nm, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
+	else:
+		dialog.open(nm, VILLAGER_LINES[(i + GameData.errands_done) % VILLAGER_LINES.size()], [["Goodbye", none]])
 
 func _talk(npc: Npc) -> void:
 	if ARENA_NPCS.has(npc.npc_id):

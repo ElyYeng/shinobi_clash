@@ -596,7 +596,7 @@ func _server_party_quest_accept(sender_id: int, quest_id: String) -> void:
 	if not _known_players.has(sender_id):
 		return
 	Quests.ensure_loaded()
-	if not Quests.DEFS.has(quest_id):
+	if Quests.def(quest_id).is_empty():
 		return
 	var leader := int(_party_leader.get(sender_id, sender_id))
 	# The world currently owns one quest-enemy simulation manager, so prevent
@@ -724,7 +724,7 @@ func _server_party_quest_turn_in(sender_id: int, quest_id: String, player_level:
 	if str(state.get("id", "")) != quest_id or str(state.get("state", "")) != "ready":
 		return
 	Quests.ensure_loaded()
-	var d: Dictionary = Quests.DEFS.get(quest_id, {})
+	var d: Dictionary = Quests.def(quest_id)
 	if d.is_empty():
 		return
 	var base_level := clampi(player_level, 1, GameData.MAX_LEVEL)

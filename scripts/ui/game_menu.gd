@@ -1476,7 +1476,7 @@ func _quest_target() -> Vector3:
 		return Vector3.INF
 	var pos: Vector3 = qs.target_position()
 	if pos == Vector3.INF:
-		pos = Quests.NPCS[act["giver"]]["pos"]
+		pos = Quests.giver_info(act["giver"])["pos"]
 	return pos + Vector3(0, 1, 3)
 
 func _to_title() -> void:

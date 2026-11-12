@@ -33,6 +33,32 @@ var _t1 := 0.0
 var _t2 := 0.0
 
 static var _adj: Dictionary = {}
+static var _all: Array = []        # villagers by index (quest givers are looked up by it)
+const FIRST := ["Haruto", "Yui", "Sota", "Hina", "Ren", "Aoi", "Kaito", "Mei", "Riku", "Sakura",
+	"Takumi", "Nanami", "Daiki", "Emi", "Kenta", "Mio", "Shin", "Rika", "Yuto", "Kana"]
+const ROLE := ["Shopkeeper", "Farmer", "Baker", "Fisher", "Potter", "Tea Seller", "Carpenter", "Old", "Young",
+	"Weaver", "Courier", "Herbalist"]
+
+var index := 0
+var _marker: Label3D
+
+static func name_for(i: int) -> String:
+	return "%s %s" % [ROLE[(i * 7 + 3) % ROLE.size()], FIRST[(i * 11 + 5) % FIRST.size()]]
+
+static func by_index(i: int) -> Villager:
+	return _all[i] if i >= 0 and i < _all.size() and is_instance_valid(_all[i]) else null
+
+## Villagers within `r` m of `pos` (nearest first).
+static func near(pos: Vector3, r: float) -> Villager:
+	var best: Villager = null
+	var bd := r
+	for v in _all:
+		if is_instance_valid(v):
+			var d: float = (v as Villager).global_position.distance_to(pos)
+			if d < bd:
+				bd = d
+				best = v
+	return best
 ## Shared villager clock: seconds since the host's villagers started (clients get the host's value).
 static var _clock_base := 0.0
 
@@ -47,10 +73,13 @@ static func sync_clock(host_time: float) -> void:
 static func populate(parent: Node, count: int, seed_base := 77) -> void:
 	_build_adj()
 	_clock_base = Time.get_ticks_msec() / 1000.0   # host / single player: start the clock now
+	_all.clear()
 	var edges := EDGES.duplicate()
 	for i in count:
 		var v := Villager.new()
 		v.name = "Villager%d" % i
+		v.index = i
+		_all.append(v)
 		v.rng.seed = seed_base * 1000 + i
 		var e: Array = edges[i % edges.size()]
 		var a := NODES[e[0]] as Vector2
@@ -80,6 +109,14 @@ func _ready() -> void:
 	if model == null:
 		model = Fx.make_ninja(Color.from_hsv(rng.randf(), 0.4, 0.7), Color(0.2, 0.2, 0.25))
 	add_child(model)
+	_marker = Label3D.new()
+	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_marker.font_size = 96
+	_marker.outline_size = 18
+	_marker.modulate = Color(1.0, 0.9, 0.2)
+	_marker.position = Vector3(0, 2.5, 0)
+	_marker.no_depth_test = true
+	add_child(_marker)
 	_set_goal()
 	position += _lane_offset(from_id, to_id)   # start on our side of the road
 	_leg_start = position
@@ -134,6 +171,7 @@ func _process(delta: float) -> void:
 	var moving := t >= _t0 and t < _t1
 	var k := clampf(inverse_lerp(_t0, _t1, t), 0.0, 1.0) if _t1 > _t0 else 1.0
 	global_position = _leg_start.lerp(goal, k)
+	_update_marker()
 	if far:
 		return
 	if moving and dir != Vector3.ZERO:
@@ -146,3 +184,14 @@ func _process(delta: float) -> void:
 		HeadLook.drive(model, want, atan2(dy, pd), delta)
 	else:
 		HeadLook.drive(model, 0.0, 0.0, delta)
+
+## "!" = has an errand for you, "?" = you finished their errand (come back to them).
+func _update_marker() -> void:
+	var t := ""
+	if GameData.quest_active == "":
+		t = "!" if Errands.offers(index) else ""
+	elif Errands.is_errand(GameData.quest_active) and Errands.villager_of(GameData.quest_active) == index:
+		t = "?" if GameData.quest_state == "ready" else ""
+	if _marker.text != t:
+		_marker.text = t
+	_marker.visible = t != "" and not _far
