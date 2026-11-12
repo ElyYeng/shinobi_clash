@@ -148,6 +148,7 @@ func _ready() -> void:
 	add_child(light)
 	if form == 3:
 		_add_eyes(m)
+		_grip_sword(m)
 	_sound("summon.ogg", 2.0)
 	# form up: grow from small and fade in
 	var tw := create_tween().set_parallel(true)
@@ -200,7 +201,57 @@ func _set_fade(v: float) -> void:
 	for mat in _mats:
 		mat.set_shader_parameter("fade", v)
 
+# Form 3's sword is its own little skeleton, animated only in "idle" - the attack animation leaves
+# it hanging in the air. So the sword is held: its grip offset from the nearest hand bone is taken
+# from the idle pose, and every frame (after the animation) the sword is put back in that hand.
+var _sk: Skeleton3D
+var _sword_root := -1
+var _hand := -1
+var _grip := Transform3D()
+
+func _grip_sword(m: Node3D) -> void:
+	var sks := m.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty() or ap == null or not ap.has_animation("idle"):
+		return
+	_sk = sks[0]
+	_sword_root = _sk.find_bone("4zsssword1_trall")
+	var grip_bone := _sk.find_bone("4zsssword1_bone01")
+	if _sword_root < 0 or grip_bone < 0:
+		return
+	ap.seek(0.3, true)   # (idle: the sword is in the hand)
+	var gp := _gpose(grip_bone).origin
+	var best := INF
+	for i in _sk.get_bone_count():
+		var nm := _sk.get_bone_name(i)
+		if not nm.begins_with("4zss00t0 ") or not (" arm" in nm or "finger" in nm or "hand" in nm):
+			continue
+		var d := _gpose(i).origin.distance_to(gp)
+		if d < best:
+			best = d
+			_hand = i
+	if _hand < 0:
+		return
+	_grip = _gpose(_hand).affine_inverse() * _gpose(_sword_root)
+	ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL   # (we advance it, then fix the sword)
+
+func _gpose(b: int) -> Transform3D:
+	var t := Transform3D()
+	while b >= 0:
+		t = _sk.get_bone_pose(b) * t
+		b = _sk.get_bone_parent(b)
+	return t
+
+func _hold_sword(delta: float) -> void:
+	ap.advance(delta)
+	var want := _gpose(_hand) * _grip
+	var par := _sk.get_bone_parent(_sword_root)
+	var local := (_gpose(par).affine_inverse() * want) if par >= 0 else want
+	_sk.set_bone_pose_position(_sword_root, local.origin)
+	_sk.set_bone_pose_rotation(_sword_root, local.basis.get_rotation_quaternion())
+
 func _process(delta: float) -> void:
+	if _hand >= 0 and _sk != null and ap != null:
+		_hold_sword(delta)
 	if follow != null and is_instance_valid(follow) and not _dying:
 		rotation.y = lerp_angle(rotation.y, follow.global_rotation.y, 1.0 - exp(-10.0 * delta))
 
