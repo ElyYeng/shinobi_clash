@@ -141,9 +141,11 @@ class StatBar extends Control:
 		if _track == null:   # UI kit bar: iron frame + bevelled fill tinted with the bar's colour
 			_track = UiStyle.tex_box("bar_track", [18, 11, 24, 12])
 			_fill = load(UiStyle.UI + "bar_fill.png")
-		var frame := r.grow_individual(10, 6, 14, 6)
+		# the frame is drawn around the bar so its dark track (texture px 17..-23 x 11..-12)
+		# lines up with the bar rect; the fill goes exactly in that track
+		var frame := r.grow_individual(15, 10, 21, 10)
 		draw_style_box(_track, frame)
-		var inner := r.grow_individual(-1, -2, -1, -2)
+		var inner := Rect2(frame.position + Vector2(17, 11), frame.size - Vector2(17 + 23, 11 + 12))
 		var gw := inner
 		gw.size.x *= clampf(ghost / m, 0.0, 1.0)
 		if gw.size.x > 0.5:

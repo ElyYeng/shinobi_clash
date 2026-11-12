@@ -78,6 +78,14 @@ class Coin extends Control:
 		draw_circle(c, 11.0, color.darkened(0.45))
 		draw_circle(c, 6.0, color.lightened(0.2))
 
+## UI kit boxes for the menu (held here so the textures stay loaded).
+static var _boxes := {}
+static func kit(name: String, m: Array, tint := Color.WHITE) -> StyleBoxTexture:
+	var key := "%s|%s|%s" % [name, m, tint]
+	if not _boxes.has(key):
+		_boxes[key] = UiStyle.tex_box(name, m, [0, 0, 0, 0], tint)
+	return _boxes[key]
+
 class BrushTab extends Control:
 	signal pressed
 	var text := ""
@@ -117,14 +125,18 @@ class BrushTab extends Control:
 			pressed.emit()
 			accept_event()
 	func _draw() -> void:
-		var col := Color(0.04, 0.03, 0.03)
+		# UI kit: ink brush stroke; the selected tab is the red ribbon with the Leaf emblem
+		var r := Rect2(indent, -1.0, size.x - indent, size.y + 2.0)
+		var lead := 0.0
 		if selected:
-			col = Color(0.55, 0.05, 0.05)
+			draw_style_box(GameMenu.kit("ribbon_leaf_red_s", [52, 0, 38, 0]), r)
+			lead = 40.0
 		elif hover:
-			col = Color(0.22, 0.1, 0.08)
-		draw_colored_polygon(poly, col)
+			draw_style_box(GameMenu.kit("brush_black_s", [30, 0, 30, 0], Color(1.6, 1.0, 0.9)), r)
+		else:
+			draw_style_box(GameMenu.kit("brush_black_s", [30, 0, 30, 0]), r)
 		var f := GameMenu.font()
-		var pos := Vector2(indent + 18.0, size.y * 0.5 + 8.0)
+		var pos := Vector2(indent + 18.0 + lead, size.y * 0.5 + 8.0)
 		draw_string_outline(f, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, 6, Color.BLACK)
 		draw_string(f, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
 
@@ -155,8 +167,10 @@ class Card extends Control:
 			accept_event()
 	func _draw() -> void:
 		var f := GameMenu.font()
-		draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.18 if hover else 0.08))
-		var thumb := Rect2(4, 4, 58, 58)
+		# UI kit: parchment plate (warmer when hovered / selected)
+		var tint := Color(1.0, 0.86, 0.7) if selected else (Color(1.08, 1.04, 0.98) if hover else Color.WHITE)
+		draw_style_box(GameMenu.kit("plate_parch", [28, 0, 28, 0], tint), Rect2(-4, -2, size.x + 8, size.y + 4))
+		var thumb := Rect2(10, 6, 54, 54)
 		draw_rect(thumb, Color.BLACK)
 		var i := thumb.grow(-3.0)
 		var top := color.lightened(0.15) if not locked else Color(0.45, 0.45, 0.45)
@@ -167,6 +181,7 @@ class Card extends Control:
 		var gp := Vector2(thumb.get_center().x - gs.x / 2.0, thumb.get_center().y + 11.0)
 		draw_string_outline(f, gp, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, 6, Color.BLACK)
 		draw_string(f, gp, glyph, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
+		draw_style_box(GameMenu.kit("slot_glow" if selected else "slot", [26, 26, 26, 26]), thumb.grow(5.0))
 		draw_string(f, Vector2(72, 28), title, HORIZONTAL_ALIGNMENT_LEFT, size.x - 80.0, 20, GameMenu.INK)
 		draw_string(f, Vector2(72, 47), sub, HORIZONTAL_ALIGNMENT_LEFT, size.x - 80.0, 14, Color(0.3, 0.2, 0.1))
 		if progress >= 0.0:
@@ -176,8 +191,6 @@ class Card extends Control:
 			var fill := bar.grow(-1.0)
 			fill.size.x *= clampf(progress, 0.0, 1.0)
 			draw_rect(fill, Color(0.85, 0.65, 0.15))
-		if selected:
-			draw_rect(Rect2(Vector2.ZERO, size), Color(0.8, 0.08, 0.08), false, 3.0)
 
 ## Clickable octagon for a bloodline ability on the Bloodline page (Shindo Life style).
 class AbilityIcon extends Control:
@@ -442,27 +455,27 @@ func _panel(r: Rect2, col: Color, border := Color.BLACK, bw := 3, radius := 0) -
 	return pn
 
 func _build_scroll_frame() -> void:
-	_panel(Rect2(26, 12, 848, 556), PARCH, GOLD_DK, 3)
-	_rect(Rect2(26, 12, 848, 28), GOLD)           # top bar
-	_rect(Rect2(26, 40, 848, 3), GOLD_DK)
-	_rect(Rect2(26, 552, 848, 16), GOLD)          # bottom bar
-	_rect(Rect2(26, 550, 848, 3), GOLD_DK)
+	# UI kit: wooden frame with rope, the metal Leaf plate on top, clouds in the corners
+	var fr := Panel.new()
+	fr.add_theme_stylebox_override("panel", kit("frame_big", [150, 72, 150, 92]))
+	fr.position = Vector2(-96, -54)
+	fr.size = Vector2(1092, 690)
+	fr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scroll.add_child(fr)
+	var ban := Panel.new()   # title on a red banner under the Leaf plate
+	ban.add_theme_stylebox_override("panel", kit("banner_red", [80, 0, 80, 0]))
+	ban.position = Vector2(170, 10)
+	ban.size = Vector2(560, 40)
+	ban.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	scroll.add_child(ban)
 	title_label = Label.new()
-	title_label.position = Vector2(26, 12)
-	title_label.size = Vector2(848, 28)
+	title_label.position = Vector2(170, 10)
+	title_label.size = Vector2(560, 40)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_style_label(title_label, 19, Color.WHITE, 6)
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scroll.add_child(title_label)
-	for side in [0, 1]:       # green rollers with gold caps + wooden pegs
-		var x := 0.0 if side == 0 else 868.0
-		_panel(Rect2(x + 2, 6, 30, 568), GREEN, INK, 3, 3)
-		_rect(Rect2(x + 10, 12, 6, 556), GREEN.lightened(0.18))
-		_rect(Rect2(x - 1 if side == 0 else x + 1, 6, 34, 20), GOLD)
-		_rect(Rect2(x - 1 if side == 0 else x + 1, 554, 34, 20), GOLD)
-		_rect(Rect2(x + 10, 0, 14, 8), Color(0.45, 0.25, 0.2))
-		_rect(Rect2(x + 10, 572, 14, 8), Color(0.45, 0.25, 0.2))
 
 func _style_label(l: Label, size: int, col: Color, outline := 0) -> void:
 	l.add_theme_font_override("font", font())
