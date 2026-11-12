@@ -978,8 +978,8 @@ func _page_tools() -> Array:
 
 func _binds_text() -> String:
 	var parts: Array[String] = []
-	for k in Moves.BIND_KEYS:
-		var a := Moves.spec(str(GameData.keybinds.get(k, "")))
+	for k in Moves.active_keys():
+		var a := Moves.spec(Moves.bound(k))
 		parts.append("%s %s" % [k, "-" if a.is_empty() else a["name"]])
 	return ",  ".join(PackedStringArray(parts))
 
@@ -1230,15 +1230,17 @@ func _build_tree_info() -> void:
 	_bl_label(a["desc"], Rect2(2, 68, 192, 74), 13, BODY_TEXT, box, HORIZONTAL_ALIGNMENT_LEFT, 0, true)
 	_bl_rect(Rect2(0, 146, 196, 3), INK, box)
 	_bl_label("KEYBIND:  [%s]" % (cur_key if cur_key != "" else " - "), Rect2(0, 152, 196, 22), 16, INK, box)
-	for i in Moves.BIND_KEYS.size():
-		var k: String = Moves.BIND_KEYS[i]
+	var keys: Array = Moves.active_keys()
+	var cols := 6 if keys.size() > 9 else 3   # modern: 3 rows of 6 (element / jutsu / buff)
+	for i in keys.size():
+		var k: String = keys[i]
 		var b := Button.new()
 		b.text = k
-		b.position = Vector2((i % 3) * 66, 178 + (i / 3) * 34)
-		b.size = Vector2(62, 30)
+		b.position = Vector2((i % cols) * (196.0 / cols), 178 + (i / cols) * 34)
+		b.size = Vector2(196.0 / cols - 4.0, 30)
 		_style_green(b)
-		b.add_theme_font_size_override("font_size", 17)
-		var holder := Moves.spec(str(GameData.keybinds.get(k, "")))
+		b.add_theme_font_size_override("font_size", 17 if cols == 3 else 14)
+		var holder := Moves.spec(Moves.bound(k))
 		b.tooltip_text = "Empty" if holder.is_empty() else "Now: %s" % holder["name"]
 		if k == cur_key:
 			var sb := StyleBoxFlat.new()
@@ -1449,6 +1451,13 @@ func _bag_place(slot: int, id: String) -> void:
 	_refresh_header()
 	_reload_page()
 
+## Modern: refill the three rows from what you have equipped now.
+func _autofill_modern() -> void:
+	GameData.keybinds_modern = Moves.modern_binds()
+	GameData.save()
+	Sfx.play(self, "poof", -6.0)
+	_reload_page()
+
 ## Classic <-> modern keybinds (saved; the input map and the hotbar switch right away).
 func _switch_scheme() -> void:
 	GameData.key_scheme = "classic" if GameData.key_scheme == "modern" else "modern"
@@ -1483,9 +1492,11 @@ func _page_controls() -> Array:
 	var modern := GameData.key_scheme == "modern"
 	extras = [_act("SWITCH", _switch_scheme, "[Keybinds: %s]" % ("Modern" if modern else "Classic"))]
 	if modern:
+		extras.append(_act("AUTO", _autofill_modern, "[Auto-fill hotbar]"))
+	if modern:
 		return _settings_items() + [
 			_item("Keybinds: Modern", "1-6  /  Z X C V B N  /  Q E R F T G", Color(0.85, 0.3, 0.2), "1",
-				"1-6: element skills\nZ X C V B N: jutsu (bloodline abilities, clones, substitution)\nQ E R F T G: buffs (bloodline buffs, armor)\nThese fill in automatically from what you have equipped.\n\nCtrl: dash   H: talk   Y: hold to power up (Y + 1-4: forms)\nJ: Tailed Beast   U: power-up on/off   Right mouse + I: kunai volley\nKurama Link: Z / X / C\nK: mute voice chat   Tab: leaderboard   M: menu   F2: photo mode"),
+				"1-6: element skills\nZ X C V B N: jutsu (bloodline abilities, clones, substitution)\nQ E R F T G: buffs (bloodline buffs, armor)\nFilled from what you have equipped - change any key in the Bloodline / Element tabs, or Auto-fill again.\n\nCtrl: dash   H: talk   Y: hold to power up (Y + 1-4: forms)\nJ: Tailed Beast   U: power-up on/off   Right mouse + I: kunai volley\nKurama Link: Z / X / C\nK: mute voice chat   Tab: leaderboard   M: menu   F2: photo mode"),
 			_item("Movement", "WASD, Shift, Space, Ctrl", Color(0.4, 0.7, 0.4), "W",
 				"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nCtrl: dash"),
 		]

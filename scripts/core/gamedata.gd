@@ -82,6 +82,7 @@ static var keybinds := {}
 ## "classic" (R T Y F G H / V B N, you assign moves) or "modern" (1-6 element skills, Z X C V B N
 ## jutsu, Q E R F T G buffs - filled automatically from what you have equipped).
 static var key_scheme := "classic"
+static var keybinds_modern := {}   # the modern layout's own binds (auto-filled the first time)
 static var boss_from_world := false   # in the Uchiha arena via the main-game gate: go back to Konoha after
 static var world_return_pos := Vector3.ZERO   # where to put the player when the open world loads (0 = spawn)
 static var open_customize := false     # main menu opens the spin screen straight away (from the M menu)
@@ -164,6 +165,13 @@ static func load_data() -> void:
 				if Bloodline.DEFS.has(mk) or (mk.begins_with("el:") and ELEMENTS.has(mk.substr(3))):
 					mastery[mk] = maxi(int(m[k]), 0)
 		key_scheme = "modern" if str(d.get("key_scheme", "classic")) == "modern" else "classic"
+		var km = d.get("keybinds_modern", {})
+		keybinds_modern = {}
+		if km is Dictionary:
+			for k in km:
+				var mv := str(km[k])
+				if Moves.MODERN_EL.has(str(k)) or Moves.MODERN_JUTSU.has(str(k)) or Moves.MODERN_BUFF.has(str(k)):
+					keybinds_modern[str(k)] = mv if mv == "" or not Moves.spec(mv).is_empty() else ""
 		var kb = d.get("keybinds", {})
 		if kb is Dictionary:
 			for k in Moves.BIND_KEYS:
@@ -291,7 +299,7 @@ static func save() -> void:
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
-			"keybinds": keybinds, "key_scheme": key_scheme, "character_appearance": character_appearance}))
+			"keybinds": keybinds, "key_scheme": key_scheme, "keybinds_modern": keybinds_modern, "character_appearance": character_appearance}))
 
 # ------------------------------------------------------------------ keybinds
 ## Fills any missing hotbar key with its default move.
@@ -300,26 +308,37 @@ static func _default_binds() -> void:
 		if not keybinds.has(k):
 			keybinds[k] = Moves.DEFAULT_BINDS.get(k, "")
 
+## The binds of the current scheme (classic: keybinds, modern: keybinds_modern).
+static func active_binds() -> Dictionary:
+	if key_scheme == "modern":
+		if keybinds_modern.is_empty():   # first time: fill from what you have equipped
+			keybinds_modern = Moves.modern_binds()
+		return keybinds_modern
+	return keybinds
+
 ## Puts `move` on `key` (a move can only be on one key, so it leaves its old key).
 static func bind_move(key: String, move: String) -> void:
-	if not Moves.BIND_KEYS.has(key):
+	if not Moves.active_keys().has(key):
 		return
-	for k in keybinds:
-		if keybinds[k] == move:
-			keybinds[k] = ""
-	keybinds[key] = move
+	var b := active_binds()
+	for k in b:
+		if b[k] == move:
+			b[k] = ""
+	b[key] = move
 	save()
 
 static func unbind_move(move: String) -> void:
-	for k in keybinds:
-		if keybinds[k] == move:
-			keybinds[k] = ""
+	var b := active_binds()
+	for k in b:
+		if b[k] == move:
+			b[k] = ""
 	save()
 
 ## The key a move is on, or "".
 static func key_of(move: String) -> String:
-	for k in Moves.BIND_KEYS:
-		if keybinds.get(k, "") == move:
+	var b := active_binds()
+	for k in Moves.active_keys():
+		if b.get(k, "") == move:
 			return k
 	return ""
 

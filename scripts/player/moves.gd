@@ -32,9 +32,7 @@ static func active_keys() -> Array:
 
 ## The move on a hotbar key in the current scheme ("" = nothing).
 static func bound(key: String) -> String:
-	if GameData.key_scheme == "modern":
-		return str(modern_binds().get(key, ""))
-	return str(GameData.keybinds.get(key, ""))
+	return str(GameData.active_binds().get(key, ""))
 
 ## Modern scheme: fills the three rows from your equipped elements / bloodlines.
 static func modern_binds() -> Dictionary:
