@@ -27,10 +27,13 @@ var _model: Node3D
 var _sk: Skeleton3D
 var _paws: Array[int] = []      # toe / foot bones: the lowest one is kept on the ground
 
-static func create(rider_model: Node3D) -> KuramaLink:
+var color := Color(1.0, 0.6, 0.12)   # the rider's personal colour (Ink Mode / Susanoo colour)
+
+static func create(rider_model: Node3D, col := Color(1.0, 0.6, 0.12)) -> KuramaLink:
 	var k := KuramaLink.new()
 	k.name = "KuramaLink"
 	k.follow = rider_model
+	k.color = col
 	return k
 
 static func hit_delay(kind: String) -> float:
@@ -43,8 +46,9 @@ func _ready() -> void:
 	var m := ps.instantiate() as Node3D
 	add_child(m)
 	_model = m
+	_recolor(m)
 	process_priority = 100   # after the AnimationPlayer, so the paw grounding sees this frame's pose
-	CharToon.apply(m)
+	CharToon.apply(m)   # (after the recolour above)
 	var aps := m.find_children("*", "AnimationPlayer", true, false)
 	if not aps.is_empty():
 		ap = aps[0]
@@ -70,7 +74,7 @@ func _ready() -> void:
 			_seat = BoneAttachment3D.new()
 			_seat.bone_name = sk.get_bone_name(head)
 			sk.add_child(_seat)
-	_aura = AuraShell.make(self, m, Color(1.0, 0.6, 0.12), Color(1.0, 0.85, 0.4), 0.4, 0.12)
+	_aura = AuraShell.make(self, m, color, color.lightened(0.5), 0.4, 0.12)
 	_aura.set_strength(0.5)
 	scale = Vector3.ONE * 0.1
 	create_tween().tween_property(self, "scale", Vector3.ONE * SCALE, 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -82,6 +86,30 @@ func _process(delta: float) -> void:
 	_ground_paws(delta)
 	if follow != null and is_instance_valid(follow) and not _dying:
 		rotation.y = lerp_angle(rotation.y, follow.global_rotation.y + PI, 1.0 - exp(-10.0 * delta))
+
+## Kurama in the rider's colour: its texture in greyscale (dark markings kept) tinted with it.
+static var _grey_cache := {}
+func _recolor(m: Node3D) -> void:
+	for mi in m.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (mi as MeshInstance3D).mesh
+		for si in mesh.get_surface_count():
+			var src := mesh.surface_get_material(si) as BaseMaterial3D
+			if src == null:
+				continue
+			var nm := src.duplicate() as BaseMaterial3D
+			if src.albedo_texture != null:
+				var key := src.albedo_texture.resource_path
+				if not _grey_cache.has(key):
+					var img := src.albedo_texture.get_image()
+					if img.is_compressed():
+						img.decompress()
+					img.convert(Image.FORMAT_L8)
+					img.convert(Image.FORMAT_RGBA8)
+					img.generate_mipmaps()
+					_grey_cache[key] = ImageTexture.create_from_image(img)
+				nm.albedo_texture = _grey_cache[key]
+			nm.albedo_color = color.lerp(Color.WHITE, 0.15) * 1.25
+			(mi as MeshInstance3D).set_surface_override_material(si, nm)
 
 ## Keep the paws on the ground (the owner may be in the air or offset, e.g. a remote avatar).
 func _snap_to_ground() -> void:
@@ -117,7 +145,7 @@ func _ground_paws(delta: float) -> void:
 ## Where the rider stands (on top of the head), in world space.
 func seat_position() -> Vector3:
 	if _seat != null and is_instance_valid(_seat):
-		return _seat.global_position + Vector3.UP * 1.3   # head bone = base of the skull: stand on top
+		return _seat.global_position + Vector3.UP * 0.95   # head bone = base of the skull: stand on top
 	return global_position + Vector3.UP * 3.8
 
 ## Run cycle speed per m/s of ground speed (so the paws keep up instead of sliding).

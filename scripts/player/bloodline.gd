@@ -343,6 +343,23 @@ static func roll(guarantee_legendary: bool) -> String:
 			return id
 	return pool[pool.size() - 1]
 
+## Bloodlines whose power-up takes the player's own random colour (the Susanoo colour):
+## Uzumaki Ink Mode (and its Kurama Link).
+const PERSONAL_COLOR := ["uzumaki"]
+
+## The mode recoloured with the player's personal colour (unchanged for other bloodlines).
+static func personal_mode(id: String, m: Dictionary, col: Color) -> Dictionary:
+	if not PERSONAL_COLOR.has(id):
+		return m
+	var out := m.duplicate(true)
+	out["col"] = col
+	var look: Dictionary = out.get("look", {})
+	if look.has("glow"):
+		look["glow"] = "#" + col.lerp(Color.WHITE, 0.45).to_html(false)
+		look["hair_glow"] = "#" + col.lerp(Color.WHITE, 0.15).to_html(false)
+	out["look"] = look
+	return out
+
 ## Eye techniques (Sharingan, Byakugan ...): the power-up only changes the eyes - no body aura or
 ## coloured light, the glowing irises are the effect.
 static func eye_mode(m: Dictionary) -> bool:

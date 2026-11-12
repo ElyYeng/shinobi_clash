@@ -92,7 +92,7 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 		return
 	sitting = false
 	if state.begins_with("klink_"):   # Uzumaki form 2: Kurama Link Mode
-		_klink_event(state.trim_prefix("klink_"))
+		_klink_event(state.trim_prefix("klink_"), variant)
 		return
 	if state.begins_with("susanoo_"):   # Susanoo (Uchiha): form / release / attacks
 		_susanoo_event(state.trim_prefix("susanoo_"), variant)
@@ -106,12 +106,12 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 	animation_lock = lock
 
 var klink: KuramaLink
-func _klink_event(ev: String) -> void:
+func _klink_event(ev: String, variant := 0) -> void:
 	match ev:
 		"on":
 			if klink != null and is_instance_valid(klink):
 				klink.queue_free()
-			klink = KuramaLink.create(model)
+			klink = KuramaLink.create(model, Susanoo.palette_color(variant))
 			add_child(klink)
 		"off":
 			if klink != null and is_instance_valid(klink):
@@ -255,7 +255,7 @@ func play_projectile(origin: Vector3, shot_velocity: Vector3, shot_speed: float,
 func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 	if network_ragdoll_started:
 		return
-	var look: Dictionary = Bloodline.mode(bloodline).get("look", {}) if enabled and bloodline != "" else {}
+	var look: Dictionary = Bloodline.personal_mode(bloodline, Bloodline.mode(bloodline), color).get("look", {}) if enabled and bloodline != "" else {}
 	if model != null and is_instance_valid(model):
 		Hero.apply_mode_look(model, look, character_appearance)
 	if enabled:

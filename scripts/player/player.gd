@@ -631,7 +631,7 @@ func _klink_on() -> void:
 		_toggle_power()   # Ink Mode first (needs MD like a normal power-up)
 		if not powered:
 			return
-	klink = KuramaLink.create(model)
+	klink = KuramaLink.create(model, pmode.get("col", Color(1.0, 0.6, 0.12)))
 	add_child(klink)
 	_kl_cd.clear()
 	_kl_zoom = cam_zoom
@@ -639,7 +639,7 @@ func _klink_on() -> void:
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, Color(1.0, 0.6, 0.15), 9.0, 0.5)
 	Vfx.shake(cam, 0.35, 0.5)
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_combat_animation("klink_on", 0)
+		NetworkSession.broadcast_combat_animation("klink_on", Susanoo.my_color_index())
 	_toast("KURAMA LINK MODE!   left click: claw  -  R: Tailed Beast Bomb  -  T: slam  -  Y: roar")
 
 func _klink_off() -> void:
@@ -1612,6 +1612,7 @@ func _toggle_power() -> void:
 	if not _chakra_full():
 		_toast("Charge your chakra to full to transform  (%d / %d)" % [int(chakra), int(max_chakra)])
 		return
+	m = Bloodline.personal_mode(id, m, Susanoo.palette_color(Susanoo.my_color_index()))   # Ink Mode: your colour
 	powered = true
 	pmode = m
 	mode_tick = 0.0

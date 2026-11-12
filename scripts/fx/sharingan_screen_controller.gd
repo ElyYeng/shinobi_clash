@@ -18,6 +18,9 @@ func _process(_delta: float) -> void:
 		# Which activation cutscene: bloodline mode "cutscene" ("eyes" = Sharingan close-up,
 		# "body" = full-body transformation).
 		var mode: Dictionary = Bloodline.mode(str(GameData.equipped))
+		var pm = _tracked_player.get("pmode")
+		if pm is Dictionary and not (pm as Dictionary).is_empty():
+			mode = pm   # the player's own version (e.g. Ink Mode in their colour)
 		match str(mode.get("cutscene", "")):
 			"eyes":
 				_stop_old_procedural_power_sound()
