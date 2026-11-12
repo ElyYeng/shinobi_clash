@@ -1300,6 +1300,8 @@ func use_key(k: String) -> void:
 		return
 	_use_move(mv)
 
+const EL_SFX := {"Earth": "rock", "Lightning": "zap", "Water": "splash", "Wind": "wind", "Fire": "fire"}
+
 func _use_move(id: String) -> void:
 	if is_dead:
 		return
@@ -1336,7 +1338,7 @@ func _use_move(id: String) -> void:
 	var mult := _bl_mult() if a["src"] == "bl" else 1.0
 	var dmg := float(a["dmg"]) * _dmg() * mult
 	if kind != "custom":
-		Sfx.play(self, "power", -3.0)
+		Sfx.play(self, str(EL_SFX.get(a["owner"], "power")) if a["src"] == "el" else "power", -3.0)
 	var vfx := str(a.get("vfx", ""))
 	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target" or kind == "buff" or kind == "aura" or kind == "dash"):   # Mythic signature effect
 		var fb: Vector3 = target.global_position if kind == "target" and target != null else facing
@@ -1433,6 +1435,11 @@ func _use_move(id: String) -> void:
 	if kind != "custom":
 		Fx.puff(get_parent(), global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.7), 3.0)
 		_play_once("jutsu", 0.5)
+	if a["src"] == "el":   # element jutsu: a seal circle under you, a kick of the camera, a flash at the hands
+		LegendFx.ground(get_parent(), global_position, "circles/Circle_Glow_02.png", col, 2.4, 0.5, 1.5)
+		Vfx.shake(cam, 0.14 if kind == "fan" else 0.22, 0.25)
+		if kind == "fan" or kind == "homing":
+			Vfx.sprite_flash(get_parent(), global_position + Vector3.UP * 1.3 + facing * 1.2, "effects/Impact24.png", col, 1.6, 0.18)
 	cur_mkey = ""
 
 func _stun(e, secs: float) -> void:   # untyped: the target may already be freed
@@ -1929,12 +1936,13 @@ func _fan(count: int, spread: float, speed: float, dmg: float, aoe: float, size:
 
 func _fx_phoenix(col: Color) -> void:
 	Sfx.play(self, "fire", -2.0)
-	_fan(5, 14.0, 26.0, 18.0, 2.5, 0.35, col, false)
+	_fan(5, 14.0, 26.0, 18.0, 2.5, 0.35, col, false, "fireball")
+	Vfx.shake(cam, 0.12, 0.2)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 
 func _fx_flame_wave(col: Color) -> void:
-	Sfx.play(self, "power")
+	Sfx.play(self, "fire")
 	for e: Enemy in get_tree().get_nodes_in_group("enemies"):
 		var to := e.global_position - global_position
 		to.y = 0.0
@@ -1944,14 +1952,13 @@ func _fx_flame_wave(col: Color) -> void:
 		var to := (av.global_position - global_position) * Vector3(1, 0, 1)
 		if to.length() < 10.0:
 			_hit_foe(av, 40.0 * _dmg(), to.normalized() * 14.0)
-	var element_col := col
-	Vfx.burst(get_parent(), global_position + Vector3.UP, element_col, 60, 12.0, 0.5, 0.7, 0.0)
-	Fx.puff(get_parent(), global_position + Vector3.UP, Color(element_col.r, element_col.g, element_col.b, 0.7), 12.0)
+	_kokugan("el_flamewave", global_position, facing, 9.0, Callable())
 	_play_once("jutsu", 0.6)
 
 func _fx_dragon(col: Color) -> void:
 	Sfx.play(self, "fire")
-	_shoot(32.0, 90.0, 8.0, 1.1, col, false, true)
+	_shoot(32.0, 90.0, 8.0, 1.1, col, false, true, "fireball")
+	Vfx.shake(cam, 0.25, 0.3)
 	if not _play_once("jutsu", 0.6):
 		Fx.swing(arm)
 

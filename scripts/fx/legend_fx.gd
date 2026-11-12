@@ -271,7 +271,7 @@ static func play(kind: String, world: Node3D, a: Vector3, b: Vector3, f: float) 
 			flames(world, a, Color(1.0, 0.85, 0.35), 0.5, 2.5, 1.0, 45)
 			ground(world, a, "symbols/Sun_Circle_Middle.png", Color(1.0, 0.85, 0.4), 4.0, 0.9, 2.0)
 		_:
-			return false
+			return ElementFx.play(kind, world, a, b, f)   # element styles
 	return true
 
 ## One golden chain: links flying out along `dir`, then pulled back.
@@ -319,11 +319,21 @@ const PROJ := {
 	"blood_spear": ["spear", Color(0.7, 0.04, 0.06)],
 	"lightning_hound": ["hound", Color(0.55, 0.8, 1.0)],
 	"black_flame": ["flame", Color(0.05, 0.02, 0.06)],
+	# Element styles (built by ElementFx)
+	"mud": ["el_mud", Color(0.42, 0.3, 0.2)],
+	"earth_dragon": ["el_mud", Color(0.4, 0.34, 0.27)],
+	"lightning_bolt": ["el_bolt", Color(0.6, 0.85, 1.0)],
+	"water_shot": ["el_water", Color(0.3, 0.65, 1.0)],
+	"water_dragon": ["el_water", Color(0.25, 0.6, 1.0)],
+	"wind_blade": ["el_wind", Color(0.8, 1.0, 0.9)],
 }
 
 static func build_proj(p: Node3D, kind: String, size: float) -> void:
 	var spec: Array = PROJ[kind]
 	var col: Color = spec[1]
+	if str(spec[0]).begins_with("el_"):
+		ElementFx.build_proj(p, str(spec[0]), col, size)
+		return
 	match str(spec[0]):
 		"orb":
 			var s := MeshInstance3D.new()
@@ -397,6 +407,9 @@ static func build_proj(p: Node3D, kind: String, size: float) -> void:
 
 static func proj_impact(world: Node3D, pos: Vector3, kind: String, aoe: float) -> void:
 	var col: Color = PROJ[kind][1]
+	if str(PROJ[kind][0]).begins_with("el_"):
+		ElementFx.impact(world, pos, str(PROJ[kind][0]), col, aoe)
+		return
 	var r := maxf(aoe, 1.2)
 	match str(PROJ[kind][0]):
 		"orb", "hound":
