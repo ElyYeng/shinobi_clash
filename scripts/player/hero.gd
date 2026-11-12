@@ -39,6 +39,9 @@ const DEFAULT_APPEARANCE := {
 	"cloak_color2": "#B8161F",          # ... and the clouds
 	"vest_color1": "#848D7B",           # colourable jonin vest (Shirt 1 copy)
 	"vest_color2": "#35394F",
+	"top_color1": "#46444F", "top_color2": "#E98352",       # colourable Naruto top
+	"bpants_color1": "#34384E", "bpants_color2": "#C2B1B1", # colourable basic pants
+	"boar_color1": "#1A1A2B", "boar_color2": "#996E49",     # colourable boar pants
 	"pants_color1": "#E3804F",          # colourable Naruto pants
 	"pants_color2": "#32354C",
 }
@@ -186,7 +189,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var number := id.substr(String(cat).length())
 		if id.begins_with(String(cat)) and number.is_valid_int() and number.length() <= 2:
 			safe[key] = id
-	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "vest_color1", "vest_color2", "pants_color1", "pants_color2"]
+	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "vest_color1", "vest_color2", "pants_color1", "pants_color2",
+		"top_color1", "top_color2", "bpants_color1", "bpants_color2", "boar_color1", "boar_color2"]
 	for slot in COLOR_SLOTS:
 		color_keys.append(COLOR_SLOTS[slot]["key"])
 	for color_key in color_keys:
@@ -555,6 +559,12 @@ const COLOR_COPIES := {
 		"defaults": ["#848D7B", "#35394F"], "mask": "VestC2Mask.png", "overlays": ["VestShade.png", "VestExtra.png"]},
 	"naruto_pants": {"cat": "pants", "src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
 		"defaults": ["#E3804F", "#32354C"], "mask": "NarutoPC2Mask.png", "overlays": ["NarutoPShade.png", "NarutoPCE.png"]},
+	"naruto_top": {"cat": "shirt", "src": "shirt2", "keys": ["top_color1", "top_color2"], "labels": ["Shirt", "Panels"],
+		"defaults": ["#46444F", "#E98352"], "mask": "NarutoTopC2Mask.png", "overlays": ["NarutoTopShade.png", "NarutoTopLight.png", "NarutoTopExtra.png"]},
+	"basic_pants": {"cat": "pants", "src": "pants1", "keys": ["bpants_color1", "bpants_color2"], "labels": ["Pants", "Pouch"],
+		"defaults": ["#34384E", "#C2B1B1"], "mask": "BasicPantsC2Mask.png", "overlays": ["BasicPantsShade.png", "BasicPantsLight.png", "BasicPantsExtra.png"]},
+	"boar_pants": {"cat": "pants", "src": "pants3", "keys": ["boar_color1", "boar_color2"], "labels": ["Pants", "Fur"],
+		"defaults": ["#1A1A2B", "#996E49"], "mask": "BoarPantsC2Mask.png", "overlays": ["BoarPantsShade.png", "BoarPantsLight.png", "BoarPantsExtra.png"]},
 }
 static var _copy_cache := {}
 
