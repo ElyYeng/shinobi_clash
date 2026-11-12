@@ -293,6 +293,8 @@ static func face_choice(look: Dictionary, part: String) -> String:
 ## 25% one eye is swollen almost shut. `ratio` = health / max health. Cheap to call every frame.
 static var _dmg_mats := {}
 static func set_damage(model: Node3D, ratio: float) -> void:
+	if not is_instance_valid(model):
+		return
 	if model == null or not model.has_meta("hero_parts"):
 		return
 	var lvl := clampi(int(ceil((0.6 - ratio) / 0.2)), 0, 3)   # 0 none, 1 scratched, 2 cut, 3 bloody
@@ -388,6 +390,8 @@ static func _damage_mat(lvl: int) -> StandardMaterial3D:
 ## Talking: opens the chosen mouth (its "_scream" shape key, faded in by `v` 0..1 while the
 ## closed mouth fades out - glTF keys are relative to the basis, so they swap, not stack).
 static func set_mouth_open(model: Node3D, v: float) -> void:
+	if not is_instance_valid(model):
+		return
 	if model == null or not model.has_meta("face_choice"):
 		return
 	var last := float(model.get_meta("mouth_open", 0.0))
@@ -396,8 +400,8 @@ static func set_mouth_open(model: Node3D, v: float) -> void:
 	model.set_meta("mouth_open", v)
 	var mouth := str((model.get_meta("face_choice") as Dictionary).get("mouth", ""))
 	var open := clampf(v, 0.0, 1.0) * 0.75
-	var face := model.get_meta("face_mesh") as MeshInstance3D if model.has_meta("face_mesh") else null
-	var meshes: Array = [face] if face != null and is_instance_valid(face) else model.find_children("*", "MeshInstance3D", true, false)
+	var fm = model.get_meta("face_mesh") if model.has_meta("face_mesh") else null   # (untyped: may be freed)
+	var meshes: Array = [fm] if fm != null and is_instance_valid(fm) else model.find_children("*", "MeshInstance3D", true, false)
 	for node in meshes:
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
@@ -1143,6 +1147,8 @@ static func _set_eyes_impl(model: Node3D, eye_tex: Texture2D, side := "") -> voi
 ## Works on whatever eye material is on (normal, tinted, Sharingan...); the textures are clamped
 ## so the white of the eye fills in at the edge.
 static func set_eye_offset(model: Node3D, off: Vector2) -> void:
+	if not is_instance_valid(model):
+		return
 	if model == null or not model.has_meta("hero_extra"):
 		return
 	var face = (model.get_meta("hero_extra") as Dictionary).get("face")

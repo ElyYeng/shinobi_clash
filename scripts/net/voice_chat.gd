@@ -81,8 +81,9 @@ func _process(delta: float) -> void:
 	_hint.text = "MIC MUTED  [K]" if muted else "● TALKING"
 	_hint.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if muted else Color(0.4, 1.0, 0.45))
 	var me := get_tree().get_first_node_in_group("player")
-	if me != null and me.get("model") != null:
-		Hero.set_mouth_open(me.get("model"), _level)
+	var my_model = me.get("model") if me != null else null
+	if my_model != null and is_instance_valid(my_model):
+		Hero.set_mouth_open(my_model, _level)
 	_feed_voices(delta)
 
 func _typing() -> bool:
@@ -203,8 +204,9 @@ func _feed_voices(delta: float) -> void:
 				v["playing"] = false   # they stopped talking: prebuffer again next time
 		var av := (v["player"] as Node).get_parent()
 		v["level"] = lerpf(float(v.get("level", 0.0)), 0.0, minf(1.0, 12.0 * delta))
-		if av != null and av.get("model") != null:   # their mouth moves while they talk
-			Hero.set_mouth_open(av.get("model"), float(v["level"]))
+		var their_model = av.get("model") if av != null else null
+		if their_model != null and is_instance_valid(their_model):   # their mouth moves while they talk
+			Hero.set_mouth_open(their_model, float(v["level"]))
 		var tag = av.get("name_tag") if av != null else null
 		if tag is Label3D:
 			var on := Time.get_ticks_msec() - int(v["t"]) < 250
