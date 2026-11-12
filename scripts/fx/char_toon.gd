@@ -1,8 +1,8 @@
 class_name CharToon
 extends RefCounted
 ## Ultimate Toon Source "stylized" shader on characters and maps. Every surface gets a
-## copy of the shader with the settings below plus its own colour / texture. Eyes (unshaded) and
-## glowing power-up materials (emission) keep their own materials.
+## copy of the shader with the settings below plus its own colour / texture (and glow: power-up
+## looks like Kurama Ink Mode keep the hard cel shading under their emission). Eyes keep their own.
 ## Settings match the material set up in the editor: 1 hard step, black shadow tint at 0.4.
 
 const SHADER := "res://assets/UltimateToonSource/shader/stylized.gdshader"
@@ -11,6 +11,9 @@ const PARAMS := {
 	"shadow_tint": Color(0, 0, 0, 1), "shadow_tint_amount": 0.4,
 	"use_pattern": false,   # TODO: copy the Pattern settings once that material is pushed
 }
+## Glow under toon shading: a bit less than the standard material's, so the shadow side still
+## reads (else a glowing body is one flat colour).
+const GLOW_SCALE := 0.8
 static var _shaders := {}
 
 ## The stylized shader, adjusted in memory (the file stays as it is): colour texture read as sRGB
@@ -28,6 +31,11 @@ static func _get_shader(two_sided: bool) -> Shader:
 			"float ndotl = clamp(dot(NORMAL,LIGHT),0.0,1.0);")
 		code = code.replace("vec3 diffuse = vec3(pow(light, 1.0)) * (LIGHT_COLOR / PI);",
 			"light *= step(0.5, ATTENUATION);\n\tvec3 diffuse = vec3(pow(light, 1.0)) * (LIGHT_COLOR / PI);")
+		# glow on top of the cel shading (power-up looks, lanterns): emission colour x mask x energy
+		code = code.replace("void fragment() {",
+			"uniform vec4 emission_color : source_color = vec4(0.0);\nuniform sampler2D emission_texture : source_color, filter_linear_mipmap, repeat_enable;\nuniform float emission_energy = 0.0;\nvoid fragment() {")
+		code = code.replace("ALBEDO = albedo.rgb;",
+			"ALBEDO = albedo.rgb;\n\tEMISSION = emission_color.rgb * texture(emission_texture, UV).rgb * emission_energy;")
 		if two_sided:
 			code = code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;")
 		var sh := Shader.new()
@@ -39,7 +47,7 @@ static func material_for(src: Material) -> Material:
 	if not (src is BaseMaterial3D):
 		return src
 	var b := src as BaseMaterial3D
-	if b.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED or b.emission_enabled:
+	if b.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED:
 		return src
 	if b.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:   # see-through / cut-out: keep
 		return src
@@ -58,6 +66,13 @@ static func material_for(src: Material) -> Material:
 	sm.set_shader_parameter("albedo_texture", b.albedo_texture if b.albedo_texture != null else _white())
 	sm.set_shader_parameter("uv1_scale", b.uv1_scale)
 	sm.set_shader_parameter("uv1_offset", b.uv1_offset)
+	if b.emission_enabled:
+		sm.set_shader_parameter("emission_color", b.emission)
+		sm.set_shader_parameter("emission_texture", b.emission_texture if b.emission_texture != null else _white())
+		sm.set_shader_parameter("emission_energy", b.emission_energy_multiplier * GLOW_SCALE)
+	else:
+		sm.set_shader_parameter("emission_energy", 0.0)
+		sm.set_shader_parameter("emission_texture", _white())
 	b.set_meta("char_toon", sm)
 	return sm
 

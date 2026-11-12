@@ -85,6 +85,7 @@ var ragdoll: Ragdoll
 
 func _ready() -> void:
 	add_to_group("player")
+	mode_meter = GameData.md_max()   # you join with a full MD bar
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = 0.4

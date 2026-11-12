@@ -11,7 +11,7 @@ const ASSET_DIR := "res://assets/kurama"
 const CREDIT := 'Model: "Kurama" by Witsanu Superball (CC-BY-4.0)'
 const BOSS_NAME := "KURAMA  -  The Nine-Tailed Beast"
 const TARGET_HEIGHT := 9.0     # metres, toes to ear tips
-const MAX_HP := 2400.0
+const MAX_HP := 30000.0
 
 # move -> animation name (the part after "Armature|")
 const ANIM := {
