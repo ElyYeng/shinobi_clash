@@ -11,7 +11,7 @@ static func setup_inputs() -> void:
 	_key("pause", [KEY_ESCAPE])
 	_key("ability", [KEY_X])
 	_key("to_menu", [KEY_M]); _key("interact", [KEY_E])
-	_key("biju", [KEY_Z]); _key("volley", [KEY_E]); _key("quest_log", [KEY_L])
+	_key("biju", [KEY_Z]); _key("volley", [KEY_E]); _key("quest_log", [KEY_L]); _key("sit", [KEY_P])
 	for n in 4:   # hold C + 1..4 = bloodline forms (Uchiha: 2 = Susanoo)
 		_key("form_%d" % (n + 1), [KEY_1 + n])
 	# hotbar keys: each runs the move bound to it (Moves.BIND_KEYS, set in M > Bloodline / Element)

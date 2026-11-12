@@ -1006,6 +1006,11 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 	if not _printed:
 		print("[Hero] animation map: ", map)
 		_printed = true
+	var sks := inst.find_children("*", "Skeleton3D", true, false)
+	if not sks.is_empty():
+		var sit := ProcAnim.add_sit(ap, sks[0] as Skeleton3D)
+		if sit != "":
+			map["sit"] = [sit]
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
 
@@ -1119,7 +1124,7 @@ static func stride_speed(model: Node3D, anim: String) -> float:
 	return v
 
 
-static func play(model: Node3D, state: String, force := false, variant := 0, fit_time := 0.0) -> float:
+static func play(model: Node3D, state: String, force := false, variant := 0, fit_time := 0.0, blend := 0.15) -> float:
 	if model == null or not model.has_meta("anim_player"):
 		return 0.0
 	var ap := model.get_meta("anim_player") as AnimationPlayer
@@ -1131,7 +1136,7 @@ static func play(model: Node3D, state: String, force := false, variant := 0, fit
 	var nm: String = names[variant % names.size()]
 	if not force and ap.current_animation == nm and ap.is_playing():
 		return ap.get_animation(nm).length
-	ap.play(nm, 0.15)
+	ap.play(nm, blend)
 	var l := ap.get_animation(nm).length
 	ap.speed_scale = 1.0
 	if fit_time > 0.0 and l > fit_time:

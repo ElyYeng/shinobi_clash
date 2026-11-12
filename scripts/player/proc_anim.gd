@@ -1,0 +1,117 @@
+class_name ProcAnim
+extends RefCounted
+## Animations built in code on the character's own Mixamo skeleton (no clip file needed).
+## A pose is a set of target directions for limb bones in "body space" (F = forward, U = up,
+## S = the bone's own side, + = outward); every bone is keyed, the rest stay in their rest pose.
+
+const SIT := "proc_sit"
+
+## Sitting on the floor, knees up, forearms resting on the knees.
+const SIT_POSE := {
+	"Spine": [0.2, 1.0, 0.0], "Spine1": [0.15, 1.0, 0.0], "Spine2": [0.1, 1.0, 0.0],
+	"Neck": [0.15, 1.0, 0.0], "Head": [-0.05, 1.0, 0.0],
+	"UpLeg": [0.87, 0.45, 0.3], "Leg": [0.1, -1.0, 0.08], "Foot": [1.0, -0.35, 0.05],
+	"Arm": [0.75, -0.55, 0.35], "ForeArm": [0.9, -0.2, -0.3],
+}
+## Child bone each limb bone points at.
+const CHILD := {"Hips": "Spine", "Spine": "Spine1", "Spine1": "Spine2", "Spine2": "Neck", "Neck": "Head",
+	"Head": "HeadTop_End", "UpLeg": "Leg", "Leg": "Foot", "Foot": "ToeBase", "Arm": "ForeArm", "ForeArm": "Hand"}
+## Pelvis height when sitting, as a fraction of standing height.
+const SIT_HIP := 0.11
+
+static func add_sit(ap: AnimationPlayer, sk: Skeleton3D) -> String:
+	if ap.has_animation(SIT):
+		return SIT
+	var a := _pose_anim(ap, sk, SIT_POSE, SIT_HIP)
+	if a == null:
+		return ""
+	var lib: AnimationLibrary
+	if ap.has_animation_library(""):
+		lib = ap.get_animation_library("")
+	else:
+		lib = AnimationLibrary.new()
+		ap.add_animation_library("", lib)
+	lib.add_animation(SIT, a)
+	return SIT
+
+## mixamo name ("LeftUpLeg") -> bone index, ignoring the Ctrl_/IK copies some rigs carry.
+static func _bones(sk: Skeleton3D) -> Dictionary:
+	var out := {}
+	for i in sk.get_bone_count():
+		var n := sk.get_bone_name(i)
+		for pre in ["mixamorig_", "mixamorig:", "mixamorig1_", "mixamorig1:"]:
+			if n.begins_with(pre):
+				out[n.trim_prefix(pre)] = i
+	return out
+
+static func _track_prefix(ap: AnimationPlayer, sk: Skeleton3D) -> String:
+	var root := ap.get_node_or_null(ap.root_node)
+	return str(root.get_path_to(sk)) if root != null else ""
+
+static func _pose_anim(ap: AnimationPlayer, sk: Skeleton3D, pose: Dictionary, hip_frac: float) -> Animation:
+	var b := _bones(sk)
+	for need in ["Hips", "LeftUpLeg", "RightUpLeg", "LeftFoot", "LeftToeBase", "Head"]:
+		if not b.has(need):
+			return null
+	var g := func(n: String) -> Transform3D: return sk.get_bone_global_rest(b[n])
+	var hips: Vector3 = g.call("Hips").origin
+	var foot: Vector3 = g.call("LeftFoot").origin
+	var up := Vector3.UP
+	var fwd: Vector3 = (g.call("LeftToeBase").origin - foot)
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var left_dir: Vector3 = (g.call("LeftUpLeg").origin - hips)
+	left_dir = (left_dir - fwd * left_dir.dot(fwd) - up * left_dir.dot(up)).normalized()
+	var ground := minf(foot.y, g.call("RightUpLeg").origin.y)
+	for n in ["LeftToeBase", "RightToeBase", "LeftToe_End", "RightToe_End"]:
+		if b.has(n):
+			ground = minf(ground, g.call(n).origin.y)
+	var height: float = g.call("Head").origin.y - ground
+
+	# world-space rotation delta per bone, parents first (bone indices are parent-ordered)
+	var delta := {}
+	var anim := Animation.new()
+	anim.length = 0.6
+	var prefix := _track_prefix(ap, sk)
+	for i in sk.get_bone_count():
+		var full := sk.get_bone_name(i)
+		var name := ""
+		for k in b:
+			if b[k] == i:
+				name = k
+		if name == "":
+			continue
+		var par := sk.get_bone_parent(i)
+		var wp: Quaternion = delta.get(par, Quaternion.IDENTITY)
+		var w := wp
+		var side := 1.0 if name.begins_with("Left") else (-1.0 if name.begins_with("Right") else 0.0)
+		var key := name.trim_prefix("Left").trim_prefix("Right")
+		if pose.has(key) and CHILD.has(key):
+			var child := ("Left" if side > 0 else "Right" if side < 0 else "") + str(CHILD[key])
+			if b.has(child):
+				var rest_dir: Vector3 = (g.call(child).origin - g.call(name).origin).normalized()
+				var t: Array = pose[key]
+				var want: Vector3 = (fwd * float(t[0]) + up * float(t[1]) + left_dir * side * float(t[2])).normalized()
+				var cur := wp * rest_dir
+				if cur.cross(want).length() > 0.0001:
+					w = Quaternion(cur, want) * wp
+		delta[i] = w
+		var grp: Quaternion = sk.get_bone_global_rest(par).basis.get_rotation_quaternion() if par >= 0 else Quaternion.IDENTITY
+		var grb: Quaternion = sk.get_bone_global_rest(i).basis.get_rotation_quaternion()
+		var local := (grp.inverse() * wp.inverse() * w * grb).normalized()
+		var tr := anim.add_track(Animation.TYPE_ROTATION_3D)
+		anim.track_set_path(tr, NodePath(prefix + ":" + full))
+		anim.rotation_track_insert_key(tr, 0.0, local)
+		anim.rotation_track_insert_key(tr, anim.length, local)
+		if name == "Hips":
+			var drop := (hips.y - ground) - height * hip_frac
+			var world_pos := hips - up * drop
+			var pos := world_pos
+			if par >= 0:
+				pos = sk.get_bone_global_rest(par).affine_inverse() * world_pos
+			var pt := anim.add_track(Animation.TYPE_POSITION_3D)
+			anim.track_set_path(pt, NodePath(prefix + ":" + full))
+			anim.position_track_insert_key(pt, 0.0, pos)
+			anim.position_track_insert_key(pt, anim.length, pos)
+	anim.loop_mode = Animation.LOOP_NONE
+	return anim

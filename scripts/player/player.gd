@@ -64,6 +64,7 @@ var combo_timer := 0.0
 var attack_cd := 0.0
 var attack_lock := 0.0
 var anim_lock := 0.0
+var sitting := false   # P: sit on the floor (test pose); moving gets you up
 var kunai_cd := 0.0
 var fire_cd := 0.0
 var clone_cd := 0.0
@@ -844,10 +845,22 @@ func _end_wall_walk(launch: Vector3) -> void:
 
 func _update_anim() -> void:
 	if anim_lock > 0.0:
+		sitting = false
 		return
 	var st := "idle"
 	var ground := 0.0
 	var hv := Vector3(velocity.x, 0.0, velocity.z)
+	if Input.is_action_just_pressed("sit") and is_on_floor():
+		sitting = not sitting
+		if sitting:
+			Hero.play(model, "sit", true, 0, 0.0, 0.45)
+		else:
+			Hero.play(model, "idle", false, 0, 0.0, 0.35)
+	if sitting:
+		if hv.length() > 0.5 or not is_on_floor() or dash_time > 0.0:
+			sitting = false
+		else:
+			return
 	if not is_on_floor():
 		st = "jump" if velocity.y > 0.5 else "fall"
 	elif dash_time > 0.0:
