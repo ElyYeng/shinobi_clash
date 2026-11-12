@@ -548,6 +548,7 @@ func _physics_process(delta: float) -> void:
 	if dust_t <= 0.0 and is_on_floor() and Vector2(velocity.x, velocity.z).length() > SPRINT_SPEED * 0.55 * speed_mult:
 		dust_t = 0.11
 		Vfx.dust(get_parent(), global_position)
+	Hero.float_pose(model, velocity, delta, _floating())   # Six Paths / Kokugan hover
 	_update_anim()
 
 # ---------------------------------------------------------------- susanoo (Uchiha)
@@ -891,6 +892,10 @@ func _end_wall_walk(launch: Vector3) -> void:
 		facing = f.normalized()
 	model.basis = Basis(Vector3.UP, atan2(-facing.x, -facing.z)).scaled(model.basis.get_scale())
 
+## Six Paths / Kokugan: hovering (see Hero.float_pose) - always the idle pose.
+func _floating() -> bool:
+	return powered and bool(pmode.get("look", {}).get("float", false)) and not is_dead and not wall_walking
+
 func _update_anim() -> void:
 	if anim_lock > 0.0:
 		if sitting:
@@ -925,6 +930,9 @@ func _update_anim() -> void:
 			var side := hv.dot(facing.cross(Vector3.UP))
 			if absf(side) > absf(fwd) * 0.8:
 				st = "strafe_r" if side > 0.0 else "strafe_l"
+	if _floating():
+		st = "idle"
+		ground = 0.0
 	Hero.play_move(model, st, ground)
 
 func _play_once(state: String, max_lock: float, variant := 0) -> bool:

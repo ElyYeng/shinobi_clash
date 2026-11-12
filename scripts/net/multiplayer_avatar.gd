@@ -31,6 +31,7 @@ var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
 var power_fx: Node3D
+var _float := false   # floating power-up (Six Paths / Kokugan)
 var _power_col := Color.WHITE   # the power-up aura colour (restored when the Susanoo goes)
 var ragdoll: Ragdoll
 var network_ragdoll_started := false
@@ -242,6 +243,7 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 		power_fx = Node3D.new()
 		add_child(power_fx)
 		_power_col = color
+		_float = bool(look.get("float", false))
 		if not Bloodline.eye_mode({"look": look}):   # eye modes: just the eyes
 			var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
 			if look.has("glow"):
@@ -278,6 +280,9 @@ func _process(delta: float) -> void:
 		else:
 			model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
+		Hero.float_pose(model, (global_position - _last_position) / maxf(delta, 0.001), delta, _float and power_fx != null and is_instance_valid(power_fx))
+		if _float and power_fx != null and is_instance_valid(power_fx):
+			speed = 0.0   # floating: idle pose only
 		if sitting and speed > 1.0:
 			sitting = false
 		if animation_lock <= 0.0 and not sitting:

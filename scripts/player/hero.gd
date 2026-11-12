@@ -490,27 +490,73 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 			if flat and pmat != null:
 				pmat.albedo_texture = null
 
+## Floating power-ups (look "float": true - Six Paths, Kokugan): the model hovers a little above
+## the ground, bobs, and leans the way it's moving (forward / sideways). `vel` = world velocity.
+## Call every frame with on = false afterwards to ease back down. Moves only the inner "fixer".
+const FLOAT_HEIGHT := 0.45
+const FLOAT_LEAN := 0.045        # radians of lean per m/s
+const FLOAT_LEAN_MAX := 0.45
+static func float_pose(model: Node3D, vel: Vector3, delta: float, on: bool) -> void:
+	if model == null or model.get_child_count() == 0:
+		return
+	var fixer := model.get_child(0) as Node3D
+	if fixer == null:
+		return
+	if not fixer.has_meta("base_basis"):
+		if not on:
+			return
+		fixer.set_meta("base_basis", fixer.basis)
+		fixer.set_meta("base_pos", fixer.position)
+		fixer.set_meta("float_t", 0.0)
+		fixer.set_meta("lean", Vector2.ZERO)
+		fixer.set_meta("lift", 0.0)
+	var t: float = fixer.get_meta("float_t") + delta
+	fixer.set_meta("float_t", t)
+	var lift: float = move_toward(fixer.get_meta("lift"), 1.0 if on else 0.0, delta * 2.5)
+	fixer.set_meta("lift", lift)
+	var vl := model.global_basis.orthonormalized().inverse() * vel if model.is_inside_tree() else Vector3.ZERO
+	var want := Vector2(clampf(vl.z * FLOAT_LEAN, -FLOAT_LEAN_MAX, FLOAT_LEAN_MAX),
+		clampf(-vl.x * FLOAT_LEAN, -FLOAT_LEAN_MAX, FLOAT_LEAN_MAX)) if on else Vector2.ZERO
+	var lean: Vector2 = (fixer.get_meta("lean") as Vector2).lerp(want, 1.0 - exp(-6.0 * delta))
+	fixer.set_meta("lean", lean)
+	var sc := maxf(model.scale.x, 0.001)
+	var bob := sin(t * 2.4) * 0.07 * lift
+	fixer.position = (fixer.get_meta("base_pos") as Vector3) + Vector3.UP * (FLOAT_HEIGHT * lift + bob) / sc
+	fixer.basis = Basis(Vector3.RIGHT, lean.x) * Basis(Vector3.BACK, lean.y) * (fixer.get_meta("base_basis") as Basis)
+	if not on and lift <= 0.0 and lean.length() < 0.002:   # landed: back to exactly how it was
+		fixer.basis = fixer.get_meta("base_basis")
+		fixer.position = fixer.get_meta("base_pos")
+		fixer.remove_meta("base_basis")
+
 ## Truth-Seeking Orbs (look "orbs": n): a ring of black orbs floating behind the shoulders,
 ## bobbing gently. 0 removes them.
 static func _set_orbs(model: Node3D, n: int) -> void:
-	var old := model.get_node_or_null("TruthSeekingOrbs")
-	if old != null:
-		old.free()
+	# on the inner node that floats / leans (Hero.float_pose), so the orbs move with the body
+	var holder: Node3D = model.get_child(0) if model.get_child_count() > 0 and model.get_child(0) is Node3D else model
+	for h in [model, holder]:
+		var old := (h as Node).get_node_or_null("TruthSeekingOrbs")
+		if old != null:
+			old.free()
 	if n <= 0:
 		return
 	var ring := OrbRing.new()
 	ring.name = "TruthSeekingOrbs"
 	ring.count = n
-	model.add_child(ring)
+	holder.add_child(ring)
 
 class OrbRing extends Node3D:
 	var count := 9
 	var _orbs: Array[MeshInstance3D] = []
 	var _t := 0.0
 	func _ready() -> void:
-		var s := 1.0 / maxf(get_parent().scale.x, 0.001) if get_parent() is Node3D else 1.0
-		scale = Vector3.ONE * s   # sizes below are in metres whatever the model's scale
-		position = Vector3(0, 1.32, 0.42) * s
+		# undo the holder's own yaw (the model's facing fix) so "behind" is behind the character;
+		# sizes are in metres whatever the scale above
+		var par := get_parent() as Node3D
+		var yaw := par.rotation.y if par != null and par.get_parent() is Node3D and par.get_parent().get_child(0) == par else 0.0
+		var sc := par.global_basis.get_scale().x if par != null and par.is_inside_tree() else 1.0
+		var s := 1.0 / maxf(sc, 0.001)
+		basis = Basis(Vector3.UP, -yaw).scaled(Vector3.ONE * s)
+		position = Basis(Vector3.UP, -yaw) * Vector3(0, 1.32, 0.42) * s
 		var mesh := SphereMesh.new()
 		mesh.radius = 0.075
 		mesh.height = 0.15
