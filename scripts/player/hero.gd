@@ -141,6 +141,7 @@ static func create(appearance: Dictionary = {}) -> Node3D:
 	# New rigid hair meshes are not necessarily skinned/parented to the head in the GLB.
 	# Attach those meshes to the Head bone so every Hero.create() consumer gets the fix.
 	attach_rigid_hair_to_head(inst)
+	_rehome_ctrl_attachments(inst)
 	Fx.toonify_model(inst)
 	_setup_anims(wrapper, inst)
 	wrapper.set_meta("hero_parts", _discover_parts(inst))
@@ -656,6 +657,41 @@ static func _names_of(mi: MeshInstance3D) -> Array:
 	names.append(String(mi.name).to_lower().replace(".", "_"))
 	return names
 
+
+## Some hairs in the GLB hang off the rig's control bones (Ctrl_Head) instead of the deform
+## bone (mixamorig_Head). Clips that only move the deform bones (procedural ones like the sit)
+## would leave them floating, so move them onto the matching mixamorig bone, same offset.
+static func _rehome_ctrl_attachments(inst: Node) -> void:
+	var sks := inst.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	var sk := sks[0] as Skeleton3D
+	for ba in sk.find_children("*", "BoneAttachment3D", true, false):
+		var att := ba as BoneAttachment3D
+		var bn := att.bone_name
+		if not bn.begins_with("Ctrl_"):
+			continue
+		var target := "mixamorig_" + bn.trim_prefix("Ctrl_")
+		var ti := sk.find_bone(target)
+		var ci := sk.find_bone(bn)
+		if ti < 0 or ci < 0 or att.get_child_count() == 0:
+			continue
+		var offset := sk.get_bone_global_rest(ti).affine_inverse() * sk.get_bone_global_rest(ci)
+		var na := BoneAttachment3D.new()
+		na.name = "Deform_" + bn
+		na.bone_name = target
+		sk.add_child(na)
+		for c in att.get_children():
+			if c is Node3D:
+				var t: Transform3D = offset * (c as Node3D).transform
+				var own := c.owner
+				c.owner = null
+				att.remove_child(c)
+				na.add_child(c)
+				(c as Node3D).transform = t
+				if own != null:
+					na.owner = own
+					c.owner = own
 
 ## Fixes only truly standalone rigid hair meshes that are neither skinned nor assigned a
 ## Skeleton3D path and are not already parented to a BoneAttachment3D. Their original imported

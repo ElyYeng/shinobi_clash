@@ -6,16 +6,22 @@ extends RefCounted
 
 const SIT := "proc_sit"
 
-## Sitting on the floor, knees up, forearms resting on the knees.
+## Ninja sit: right knee up with the forearm draped over it, left leg folded flat in front,
+## leaning back on the left hand with the palm flat on the ground. Keys can be generic ("Arm",
+## both sides) or per side ("LeftArm"); for centre bones S means "towards the left".
 const SIT_POSE := {
-	"Spine": [0.2, 1.0, 0.0], "Spine1": [0.15, 1.0, 0.0], "Spine2": [0.1, 1.0, 0.0],
-	"Neck": [0.15, 1.0, 0.0], "Head": [-0.05, 1.0, 0.0],
-	"UpLeg": [0.55, 0.8, 0.3], "Leg": [-0.3, -1.0, 0.05], "Foot": [1.0, -0.35, 0.05],
-	"Arm": [0.6, -0.45, 0.35], "ForeArm": [0.7, -0.4, -0.45],
+	"Spine": [0.05, 1.0, 0.12], "Spine1": [0.08, 1.0, 0.05], "Spine2": [0.1, 1.0, 0.0],
+	"Neck": [0.12, 1.0, -0.08], "Head": [0.0, 1.0, -0.05],
+	"RightUpLeg": [0.55, 0.8, 0.25], "RightLeg": [-0.3, -1.0, 0.05], "RightFoot": [1.0, -0.35, 0.05],
+	"LeftUpLeg": [0.8, -0.05, 0.6], "LeftLeg": [0.35, -0.12, -1.0], "LeftFoot": [0.35, -0.35, -0.8],
+	"RightArm": [0.5, -0.55, 0.3], "RightForeArm": [0.7, -0.45, -0.4],
+	"LeftArm": [-0.45, -0.85, 0.4], "LeftForeArm": [-0.3, -1.0, 0.2], "LeftHand": [-0.45, -0.12, 0.55],
 }
+## Hands whose palm is turned to face the ground (rest pose has palms down, as in Mixamo's T-pose).
+const PALM_DOWN := ["LeftHand"]
 ## Child bone each limb bone points at.
 const CHILD := {"Hips": "Spine", "Spine": "Spine1", "Spine1": "Spine2", "Spine2": "Neck", "Neck": "Head",
-	"Head": "HeadTop_End", "UpLeg": "Leg", "Leg": "Foot", "Foot": "ToeBase", "Arm": "ForeArm", "ForeArm": "Hand"}
+	"Head": "HeadTop_End", "UpLeg": "Leg", "Leg": "Foot", "Foot": "ToeBase", "Arm": "ForeArm", "ForeArm": "Hand", "Hand": "HandMiddle1"}
 ## Pelvis height when sitting, as a fraction of standing height.
 const SIT_HIP := 0.11
 
@@ -88,15 +94,23 @@ static func _pose_anim(ap: AnimationPlayer, sk: Skeleton3D, pose: Dictionary, hi
 		var w := wp
 		var side := 1.0 if name.begins_with("Left") else (-1.0 if name.begins_with("Right") else 0.0)
 		var key := name.trim_prefix("Left").trim_prefix("Right")
-		if pose.has(key) and CHILD.has(key):
+		var pkey := name if pose.has(name) else key
+		if pose.has(pkey) and CHILD.has(key):
 			var child := ("Left" if side > 0 else "Right" if side < 0 else "") + str(CHILD[key])
 			if b.has(child):
 				var rest_dir: Vector3 = (g.call(child).origin - g.call(name).origin).normalized()
-				var t: Array = pose[key]
-				var want: Vector3 = (fwd * float(t[0]) + up * float(t[1]) + left_dir * side * float(t[2])).normalized()
+				var t: Array = pose[pkey]
+				var sm := side if side != 0.0 else 1.0
+				var want: Vector3 = (fwd * float(t[0]) + up * float(t[1]) + left_dir * sm * float(t[2])).normalized()
 				var cur := wp * rest_dir
 				if cur.cross(want).length() > 0.0001:
 					w = Quaternion(cur, want) * wp
+				if name in PALM_DOWN:   # twist about the hand so the palm faces the floor
+					var n := w * Vector3.DOWN
+					var target := Vector3.DOWN - want * want.dot(Vector3.DOWN)
+					n = n - want * want.dot(n)
+					if n.length() > 0.001 and target.length() > 0.001:
+						w = Quaternion(n.normalized(), target.normalized()) * w
 		delta[i] = w
 		var grp: Quaternion = sk.get_bone_global_rest(par).basis.get_rotation_quaternion() if par >= 0 else Quaternion.IDENTITY
 		var grb: Quaternion = sk.get_bone_global_rest(i).basis.get_rotation_quaternion()
