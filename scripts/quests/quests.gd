@@ -364,10 +364,12 @@ func apply_shared_quest_state(id: String, state: String, progress: int) -> void:
 
 ## Applies the shared party turn-in reward locally on each participating machine.
 func apply_party_quest_reward(id: String, xp: int, spins: int) -> void:
-	var d: Dictionary = DEFS.get(id, {})
-	if d.is_empty():
+	var d: Dictionary = def(id)   # (def, not DEFS: villager errands are generated, not in DEFS -
+	if d.is_empty():              #  they used to never finish in co-op)
 		return
 	GameData.spins += spins + int(d.get("el_spins", 0))
+	if Errands.is_errand(id):
+		GameData.errands_done += 1   # villagers get new errands
 	if player != null and xp > 0:
 		player.gain_xp(xp)
 	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(id):
