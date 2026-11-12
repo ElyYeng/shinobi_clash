@@ -24,8 +24,8 @@ var map: GameMap              # the loaded map scene (res://maps/*.tscn)
 
 func _ready() -> void:
 	rng.seed = 1234
-	Fx.setup_inputs()
 	GameData.load_data()
+	Fx.setup_inputs()   # (after loading: the saved keybind scheme decides the keys)
 	Enemy.time_scale = 1.0
 	mode = GameData.mode
 	if not MapBuilder.MAP_FILES.has(mode):
