@@ -111,6 +111,7 @@ func _load_map() -> void:
 	AnimePost.add_to(map)   # anime ink outlines (Forward+ only)
 	if map.get_node_or_null("Village") == null:   # (the Hidden Leaf map is pre-merged by its bake tool)
 		StaticBatcher.batch(map)   # merge static meshes per material -> far fewer draw calls
+	CharToon.apply(map)   # Ultimate Toon Source stylized shader on the map too
 
 # ---------------------------------------------------------------- Mode: FIGHT
 func _fight_spawner(delta: float) -> void:

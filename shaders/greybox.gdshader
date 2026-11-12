@@ -27,3 +27,13 @@ void fragment() {
 	ALBEDO = color.rgb * (1.0 - lines * grid_strength);
 	ROUGHNESS = 0.9;
 }
+
+// Same light model as the Ultimate Toon Source stylized shader used on characters and the
+// other maps (1 hard step, black shadow tint 0.4).
+void light() {
+	float l = clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION;
+	float stepped = floor(l) + step(0.5, l - floor(l));
+	vec3 diffuse = vec3(stepped) * (LIGHT_COLOR / PI);
+	diffuse = vec3(0.0) * (1.0 - stepped) * 0.4 + diffuse * stepped;
+	DIFFUSE_LIGHT += diffuse;
+}

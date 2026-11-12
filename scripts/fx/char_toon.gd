@@ -1,6 +1,6 @@
 class_name CharToon
 extends RefCounted
-## Ultimate Toon Source "stylized" shader on characters (Hero models only). Every surface gets a
+## Ultimate Toon Source "stylized" shader on characters and maps. Every surface gets a
 ## copy of the shader with the settings below plus its own colour / texture. Eyes (unshaded) and
 ## glowing power-up materials (emission) keep their own materials.
 ## Settings match the material set up in the editor: 1 hard step, black shadow tint at 0.4.
@@ -11,7 +11,23 @@ const PARAMS := {
 	"shadow_tint": Color(0, 0, 0, 1), "shadow_tint_amount": 0.4,
 	"use_pattern": false,   # TODO: copy the Pattern settings once that material is pushed
 }
-static var _shader: Shader
+static var _shaders := {}
+
+## The stylized shader, adjusted in memory (the file stays as it is): colour texture read as sRGB
+## (else colours come out pale), the source material's UV scale / offset (map models use 16x UVs),
+## and a double-sided copy for double-sided materials (leaves, cloth on the map).
+static func _get_shader(two_sided: bool) -> Shader:
+	if not _shaders.has(two_sided):
+		var code := (load(SHADER) as Shader).code
+		code = code.replace("uniform sampler2D albedo_texture;",
+			"uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;\nuniform vec3 uv1_scale = vec3(1.0);\nuniform vec3 uv1_offset = vec3(0.0);")
+		code = code.replace("void vertex() {", "void vertex() {\n\tUV = UV * uv1_scale.xy + uv1_offset.xy;")
+		if two_sided:
+			code = code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;")
+		var sh := Shader.new()
+		sh.code = code
+		_shaders[two_sided] = sh
+	return _shaders[two_sided]
 
 static func material_for(src: Material) -> Material:
 	if not (src is BaseMaterial3D):
@@ -19,28 +35,23 @@ static func material_for(src: Material) -> Material:
 	var b := src as BaseMaterial3D
 	if b.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED or b.emission_enabled:
 		return src
-	if b.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
+	if b.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:   # see-through / cut-out: keep
 		return src
 	var nm := b.resource_name.to_lower()
 	if nm.ends_with("eye") or nm.ends_with(" eye"):   # eyes keep their own material (eye colour, iris)
 		return src
-	if b.has_meta("char_toon"):
-		return b.get_meta("char_toon")
-	if _shader == null:
-		# Same shader, but the colour texture is read as a colour image (sRGB) - without that hint
-		# Godot treats it as raw data and every colour comes out pale and grey.
-		_shader = Shader.new()
-		_shader.code = (load(SHADER) as Shader).code.replace("uniform sampler2D albedo_texture;",
-			"uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;")
-	var sm := ShaderMaterial.new()
-	sm.shader = _shader
-	for k in PARAMS:
-		sm.set_shader_parameter(k, PARAMS[k])
+	var two_sided := b.cull_mode == BaseMaterial3D.CULL_DISABLED
+	var sm: ShaderMaterial = b.get_meta("char_toon") if b.has_meta("char_toon") else null
+	if sm == null:
+		sm = ShaderMaterial.new()
+		sm.shader = _get_shader(two_sided)
+		for k in PARAMS:
+			sm.set_shader_parameter(k, PARAMS[k])
+	# refreshed every time: colours set on the source later (skin colour) show up
 	sm.set_shader_parameter("albedo_color", b.albedo_color)
-	if b.albedo_texture != null:
-		sm.set_shader_parameter("albedo_texture", b.albedo_texture)
-	else:
-		sm.set_shader_parameter("albedo_texture", _white())
+	sm.set_shader_parameter("albedo_texture", b.albedo_texture if b.albedo_texture != null else _white())
+	sm.set_shader_parameter("uv1_scale", b.uv1_scale)
+	sm.set_shader_parameter("uv1_offset", b.uv1_offset)
 	b.set_meta("char_toon", sm)
 	return sm
 
@@ -52,7 +63,7 @@ static func _white() -> Texture2D:
 		_white_tex = ImageTexture.create_from_image(img)
 	return _white_tex
 
-## Converts every surface of a character model (call after any look change).
+## Converts every surface under `model` (characters after any look change; maps on load).
 static func apply(model: Node3D) -> void:
 	if model == null:
 		return
