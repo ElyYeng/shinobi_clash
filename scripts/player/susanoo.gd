@@ -57,6 +57,11 @@ static func fire_noise() -> NoiseTexture2D:
 
 ## Fixed anime colours for other Mangekyo users (sent as colour index 100 + n):
 ## 100 = Kakashi's blue, 101 = Shisui's green.
+## Shisui's Susanoo (Mangekyo) uses his second form; its one attack animation plays for every attack.
+const FORM2 := "res://assets/susanoo/ShisuiSusanooForm2.glb"
+const FORM2_ATTACK := "4ssiawatk01"
+var form2 := false
+
 const ANIME_COLORS := [Color(0.25, 0.62, 1.0), Color(0.22, 0.85, 0.42)]
 const ANIME_BASE := 100
 
@@ -102,7 +107,8 @@ static func create(col: Color, follow_model: Node3D) -> Susanoo:
 	return s
 
 func _ready() -> void:
-	var m: Node3D = load("res://assets/susanoo/susanoo.glb").instantiate()
+	form2 = color.is_equal_approx(ANIME_COLORS[1])   # Shisui's green = his second form (synced by colour)
+	var m: Node3D = load(FORM2 if form2 else "res://assets/susanoo/susanoo.glb").instantiate()
 	add_child(m)
 	m.rotation.y = PI          # the model faces +Z, characters face -Z
 	scale = Vector3.ONE * SCALE * 0.3
@@ -154,7 +160,11 @@ func _process(delta: float) -> void:
 func attack(kind: String) -> void:
 	if ap == null or _dying or not ANIMS.has(kind):
 		return
-	ap.play(ANIMS[kind], 0.12, float(SPEED[kind]))
+	var anim: String = ANIMS[kind]
+	if not ap.has_animation(anim) and ap.has_animation(FORM2_ATTACK):
+		anim = FORM2_ATTACK
+	if ap.has_animation(anim):
+		ap.play(anim, 0.12, float(SPEED[kind]))
 	var hit_at := impact_delay(kind)
 	if kind == "slam":
 		_sound("slam_windup.ogg", -2.0)
