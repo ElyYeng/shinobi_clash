@@ -820,7 +820,7 @@ func _build_items(i: int) -> Array:
 const STAT_INFO := {
 	"health": ["Health", "+%d max HP per point", Color(0.85, 0.2, 0.2), "H"],
 	"chakra": ["Chakra", "+%d max chakra per point", Color(0.2, 0.45, 1.0), "C"],
-	"md": ["MD", "+%d%% MD gain per point (MD powers bloodline modes and Kurama Mode)", Color(0.55, 0.15, 0.85), "M"],
+	"md": ["MD", "+%d%% MD gain and +2 max MD per point (MD powers bloodline modes and Kurama Mode)", Color(0.55, 0.15, 0.85), "M"],
 	"stamina": ["Stamina", "+%d max stamina per point", Color(0.95, 0.5, 0.1), "S"],
 	"bloodline": ["Bloodline", "+%d%% bloodline ability damage per point", Color(0.9, 0.1, 0.15), "B"],
 }
@@ -973,7 +973,7 @@ func _page_tools() -> Array:
 			"Hold C while standing still: charge chakra, 40 per second (x%.2f). Keep holding to power up (%s). No timer - it drains MD and ends when MD runs out; hold C again (or X) to release it.\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [p.regen_mult, pu]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
 			"Unlocks when you defeat Kurama. Press Z to turn it on (needs %d MD) and again to turn it off. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
-				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(Player.MODE_MAX)])]),
+				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(GameData.md_max())])]),
 	]
 
 func _binds_text() -> String:
@@ -1511,7 +1511,7 @@ func _refill() -> void:
 	p.health = p.max_health
 	p.chakra = p.max_chakra
 	p.stamina = p.max_stamina
-	p.mode_meter = Player.MODE_MAX
+	p.mode_meter = GameData.md_max()
 	_reload_page()
 
 func _unlock_kurama() -> void:

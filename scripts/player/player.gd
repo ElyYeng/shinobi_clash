@@ -13,7 +13,7 @@ var chakra := 100.0
 var max_chakra := 100.0
 var kills := 0
 var is_dead := false
-const MODE_MAX := 100.0
+const MODE_MAX := 100.0   # base MD; drain rates are per 100 MD, so a bigger cap (MD stat) lasts longer
 const MODE_TIME := 25.0        # seconds a full MD bar lasts in Kurama Mode (no timer: it drains MD)
 const KURAMA_MIN_MD := 50.0    # MD needed to enter Kurama Mode
 const BOTH_DRAIN_MULT := 1.25  # Kurama Mode + bloodline power-up together drain both rates, x1.25
@@ -378,8 +378,8 @@ func _physics_process(delta: float) -> void:
 			_end_mode()
 			_power_off()
 			_toast("Out of MD - %s ended" % ("both modes" if both else "power-up"))
-	elif mode_meter < MODE_MAX:
-		mode_meter = minf(MODE_MAX, mode_meter + 1.0 * delta * _md_mult())
+	elif mode_meter < GameData.md_max():
+		mode_meter = minf(GameData.md_max(), mode_meter + 1.0 * delta * _md_mult())
 	invuln = maxf(0.0, invuln - delta)
 	_update_buffs(delta)
 	var hpr := hp_regen + _badd("hp") + (6.0 if kurama else 0.0)
@@ -1477,7 +1477,7 @@ func _toast(t: String) -> void:
 
 ## MD gained from kills etc. (also while a mode is on, so kills keep it going).
 func add_mode(amount: float) -> void:
-	mode_meter = minf(MODE_MAX, mode_meter + amount * _md_mult())
+	mode_meter = minf(GameData.md_max(), mode_meter + amount * _md_mult())
 
 ## MD lost per second right now: Kurama Mode, the bloodline power-up, or both (faster).
 func md_drain() -> float:

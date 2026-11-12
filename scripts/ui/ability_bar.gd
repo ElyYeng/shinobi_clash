@@ -238,7 +238,7 @@ func update_from(p: Player) -> void:
 	ck.max_value = p.max_chakra
 	ck.value = p.chakra
 	ck.label = "CHI: %d" % int(p.chakra)
-	md.max_value = Player.MODE_MAX
+	md.max_value = GameData.md_max()
 	md.value = p.mode_meter
 	md.label = "MD: %d" % int(p.mode_meter)
 	st.max_value = p.max_stamina

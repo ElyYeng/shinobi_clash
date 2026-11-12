@@ -60,6 +60,7 @@ const POINTS_PER_LEVEL := 3
 const STAT_CAP := 200                   # max points in one stat
 const STAT_KEYS := ["health", "chakra", "md", "stamina", "bloodline"]
 ## What one point in each stat gives (used by player.gd and shown in the menu).
+const MD_MAX_PER_POINT := 2.0   # each MD stat point also raises the MD cap (base 100)
 const STAT_PER_POINT := {"health": 3.0, "chakra": 3.0, "md": 0.015, "stamina": 2.0, "bloodline": 0.01}
 const XP_KILL := 100
 const XP_BOSS := 1000
@@ -357,6 +358,10 @@ static func reset_stats() -> void:
 ## Bonus from the points in a stat (e.g. stat_bonus("health") = extra max HP).
 static func stat_bonus(key: String) -> float:
 	return float(stats.get(key, 0)) * float(STAT_PER_POINT.get(key, 0.0))
+
+## MD cap: 100 + 2 per MD stat point (a bigger bar = longer power-ups / Kurama Mode).
+static func md_max() -> float:
+	return 100.0 + float(stats.get("md", 0)) * MD_MAX_PER_POINT
 
 # ------------------------------------------------------------------ bloodline mastery
 ## Mastery XP needed to go from level `lv` to `lv + 1` (about 35k XP to reach LV 1000).
