@@ -6,9 +6,11 @@ extends Node3D
 
 const ORIGIN := Vector3(0, -900, 0)
 
-static func build(world: Node3D, caster_look: Dictionary) -> GenjutsuWorld:
+static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := Vector3.ZERO) -> GenjutsuWorld:
 	var g := GenjutsuWorld.new()
 	g.name = "GenjutsuWorld"
+	g.caster_peer = caster
+	g.anchor = body
 	world.add_child(g)
 	g.global_position = ORIGIN
 	g._make(caster_look)
@@ -20,39 +22,74 @@ func _unshaded(col: Color) -> StandardMaterial3D:
 	m.albedo_color = col
 	return m
 
+var caster_fig: Node3D       # the caster's figure in here (mirrors their real movement)
+var caster_peer := 0
+var anchor := Vector3.ZERO     # the victim's body in the real world (the caster moves around it)
+
 func _make(caster_look: Dictionary) -> void:
-	var sky := MeshInstance3D.new()   # inside of a sphere: blood-red sky
+	var sky := MeshInstance3D.new()   # inside of a huge sphere: blood-red sky, darker at the top
 	var sm := SphereMesh.new()
-	sm.radius = 60.0
-	sm.height = 120.0
+	sm.radius = 320.0
+	sm.height = 640.0
 	sky.mesh = sm
-	var skm := _unshaded(Color(0.55, 0.02, 0.03))
-	skm.cull_mode = BaseMaterial3D.CULL_FRONT
+	var sh := Shader.new()
+	sh.code = "shader_type spatial;\nrender_mode unshaded, cull_front;\nvarying float h;\nvoid vertex(){ h = VERTEX.y / 320.0; }\nvoid fragment(){ ALBEDO = mix(vec3(0.62, 0.05, 0.04), vec3(0.12, 0.0, 0.02), clamp(h * 1.6, 0.0, 1.0)); }"
+	var skm := ShaderMaterial.new()
+	skm.shader = sh
 	sky.material_override = skm
 	sky.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(sky)
+	# the blood moon: a huge red disc with a glow around it
 	var moon := MeshInstance3D.new()
 	var mm := SphereMesh.new()
-	mm.radius = 9.0
-	mm.height = 18.0
+	mm.radius = 42.0
+	mm.height = 84.0
 	moon.mesh = mm
-	moon.material_override = _unshaded(Color(0.95, 0.12, 0.1))
-	moon.position = Vector3(0, 30, -48)
+	moon.material_override = _unshaded(Color(0.85, 0.06, 0.04))
+	moon.position = Vector3(0, 120, -240)
 	add_child(moon)
+	var halo := MeshInstance3D.new()
+	halo.mesh = Vfx.quad()
+	halo.material_override = Vfx.tex_mat("effects/Glow01.png", Color(1.0, 0.15, 0.08), 1.2, true)
+	halo.scale = Vector3.ONE * 190.0
+	halo.position = moon.position + Vector3(0, 0, 10)
+	add_child(halo)
+	# dark mountains all around the horizon
+	var rock := StandardMaterial3D.new()
+	rock.albedo_color = Color(0.06, 0.02, 0.03)
+	rock.roughness = 1.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 13
+	for i in 34:
+		var a := TAU * i / 34.0 + rng.randf_range(-0.05, 0.05)
+		var dist := rng.randf_range(150.0, 250.0)
+		var h := rng.randf_range(40.0, 120.0)
+		var cm := CylinderMesh.new()
+		cm.top_radius = rng.randf_range(0.0, 6.0)
+		cm.bottom_radius = h * rng.randf_range(0.55, 0.9)
+		cm.height = h
+		cm.radial_segments = 6
+		cm.rings = 1
+		cm.material = rock
+		var m := MeshInstance3D.new()
+		m.mesh = cm
+		m.position = Vector3(cos(a) * dist, h * 0.5 - 2.0, sin(a) * dist)
+		m.rotation.y = rng.randf() * TAU
+		add_child(m)
 	var floor := StaticBody3D.new()   # (solid, so the victim stands on it)
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(80, 0.4, 80)
+	bs.size = Vector3(600, 0.4, 600)
 	cs.shape = bs
 	floor.add_child(cs)
 	var fm := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(80, 80)
+	pm.size = Vector2(600, 600)
 	fm.mesh = pm
-	var flm := StandardMaterial3D.new()
+	var flm := StandardMaterial3D.new()   # black mirror ground that catches the red light
 	flm.albedo_color = Color(0.05, 0.01, 0.02)
-	flm.metallic = 0.6
-	flm.roughness = 0.15
+	flm.metallic = 0.7
+	flm.roughness = 0.12
 	fm.material_override = flm
 	fm.position.y = 0.2
 	floor.add_child(fm)
@@ -67,20 +104,40 @@ func _make(caster_look: Dictionary) -> void:
 		b.mesh = bm
 		b.position = spec[1]
 		add_child(b)
-	var light := OmniLight3D.new()
-	light.light_color = Color(1.0, 0.25, 0.2)
-	light.light_energy = 2.0
-	light.omni_range = 30.0
-	light.position = Vector3(0, 8, -6)
-	add_child(light)
-	var caster := Hero.create(caster_look)   # the caster, watching you
+	var moonlight := DirectionalLight3D.new()   # red light from the moon
+	moonlight.light_color = Color(1.0, 0.3, 0.22)
+	moonlight.light_energy = 0.9
+	moonlight.shadow_enabled = true
+	add_child(moonlight)
+	moonlight.look_at_from_position(moon.position, Vector3.ZERO, Vector3.UP)
+	var caster := Hero.create(caster_look)   # the caster, in here with you
 	if caster != null:
 		add_child(caster)
 		caster.position = Vector3(0, 0.2, -4.5)
 		caster.rotation.y = PI   # (models face -Z: turned to face the victim at +Z)
 		Hero.apply_mode_look(caster, Bloodline.mode("uchiha").get("look", {}))
 		Hero.play(caster, "idle")
+		caster_fig = caster
 	CharToon.apply(self)
+
+## The caster moves around in here exactly as they move around your body in the real world.
+func _process(delta: float) -> void:
+	if caster_fig == null or not is_instance_valid(caster_fig):
+		return
+	var av = NetworkSession._avatars.get(caster_peer)
+	if av == null or not is_instance_valid(av):
+		return
+	var off: Vector3 = (av as Node3D).global_position - anchor
+	off.y = 0.0
+	var want := victim_spot() + off - Vector3(0, 0.1, 0)
+	var step := want - caster_fig.global_position
+	step.y = 0.0
+	var spd := step.length() / maxf(delta, 0.001)
+	caster_fig.global_position = caster_fig.global_position.lerp(want, minf(1.0, 12.0 * delta))
+	var am = av.get("model")
+	if am != null and is_instance_valid(am):
+		caster_fig.rotation.y = lerp_angle(caster_fig.rotation.y, (am as Node3D).global_rotation.y, minf(1.0, 12.0 * delta))
+	Hero.play_move(caster_fig, Hero.move_state(spd) if spd > 0.4 else "idle", spd if spd > 0.4 else 0.0)
 
 ## Where the victim stands (in front of the cross, facing the caster).
 func victim_spot() -> Vector3:

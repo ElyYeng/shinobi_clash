@@ -2181,7 +2181,7 @@ func genjutsu_enter(caster: int) -> void:
 	gen_anchor_yaw = model.rotation.y if model != null else 0.0
 	if wall_walking:
 		_end_wall_walk(Vector3.ZERO)
-	_gen_world = GenjutsuWorld.build(get_parent() as Node3D, NetworkSession._known_appearances.get(caster, {}))
+	_gen_world = GenjutsuWorld.build(get_parent() as Node3D, NetworkSession._known_appearances.get(caster, {}), caster, gen_anchor)
 	global_position = _gen_world.victim_spot()
 	if model != null:
 		model.rotation.y = 0.0   # facing the caster
