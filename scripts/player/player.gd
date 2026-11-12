@@ -298,6 +298,8 @@ func _cam_block(dist: float) -> float:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if is_dead:
+		if spectating:
+			_spectate_input(event)
 		return
 	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -336,7 +338,10 @@ func _nearest_enemy(max_dist: float) -> Enemy:
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
-		if ragdoll:  # camera follows the body
+		if spectating and is_instance_valid(spectate_target):   # camera follows who you're watching
+			var tall := 3.0 if spectate_target is Kurama else 1.6
+			pivot.global_position = pivot.global_position.lerp(spectate_target.global_position + Vector3.UP * tall, 6.0 * delta)
+		elif ragdoll:  # camera follows the body
 			pivot.global_position = pivot.global_position.lerp(ragdoll.hips() + Vector3.UP * 0.6, 4.0 * delta)
 		else:
 			velocity.x = 0.0
@@ -1261,6 +1266,74 @@ func _footsteps(delta: float) -> void:
 		var run := sp > Hero.WALK_BELOW
 		Sfx.play(self, "step_run" if run else "step_walk")
 		_step_t = clampf(2.4 / sp, 0.22, 0.55) if run else 0.5
+
+# ---------------------------------------------------------------- spectate (boss fights)
+## Dead in a boss fight: watch your teammates or the boss. A / D switch, mouse looks, wheel zooms.
+var spectating := false
+var spectate_target: Node3D
+signal spectate_changed(name: String)
+
+func spectate_targets() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	if NetworkSession.is_active():
+		for id in NetworkSession._avatars:
+			var av = NetworkSession._avatars[id]
+			if is_instance_valid(av) and not bool(av.get("network_ragdoll_started")):
+				out.append(av)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if (e as Enemy).is_boss and (e as Enemy).health > 0.0:
+			out.append(e)
+	return out
+
+func spectate_name() -> String:
+	if not is_instance_valid(spectate_target):
+		return "-"
+	var n = spectate_target.get("display_name")
+	if spectate_target is Kurama:
+		return "Kurama"
+	return str(n) if n != null and str(n) != "" else "Shinobi"
+
+func start_spectate() -> void:
+	var t := spectate_targets()
+	if t.is_empty():
+		return
+	spectating = true
+	spectate_target = t[0]
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	spectate_changed.emit(spectate_name())
+
+func stop_spectate() -> void:
+	spectating = false
+	spectate_target = null
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+func _spectate_cycle(step: int) -> void:
+	var t := spectate_targets()
+	if t.is_empty():
+		return
+	var i := t.find(spectate_target)
+	spectate_target = t[posmod(i + step, t.size())]
+	spectate_changed.emit(spectate_name())
+
+func _spectate_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		yaw -= event.relative.x * 0.0028 * sens_mult
+		pitch = clampf(pitch - event.relative.y * 0.0028 * sens_mult, -1.35, 1.0)
+	elif event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom_step(-1)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom_step(1)
+		elif event.button_index == MOUSE_BUTTON_LEFT:
+			_spectate_cycle(1)
+	elif event.is_action_pressed("right"):
+		_spectate_cycle(1)
+	elif event.is_action_pressed("left"):
+		_spectate_cycle(-1)
+	elif event.is_action_pressed("pause"):
+		stop_spectate()
+	if spectating and not is_instance_valid(spectate_target):   # they left / died: next one
+		_spectate_cycle(1)
 
 ## A combo finisher knocked you down: limp for a moment, then you get up where you landed.
 func _knockdown(knock: Vector3) -> void:

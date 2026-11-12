@@ -15,6 +15,7 @@ var bar: AbilityBar
 var quest_visible := true
 var msg_label: Label
 var end_screen: EndScreen
+var spec_label: Label   # "SPECTATING: name" while you watch after dying in a boss fight
 var _alive_time := 0.0   # time survived (shown on the defeat screen)
 var _dead_time := 0.0
 var lock_label: Label
@@ -138,6 +139,17 @@ func _ready() -> void:
 	end_screen = EndScreen.new()
 	add_child(end_screen)
 	end_screen.retry.connect(func() -> void: get_tree().reload_current_scene())
+	spec_label = Label.new()
+	add_child(spec_label)
+	spec_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	spec_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	spec_label.position.y -= 170
+	spec_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spec_label.add_theme_font_override("font", GameMenu.font())
+	spec_label.add_theme_font_size_override("font_size", 24)
+	spec_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	spec_label.add_theme_constant_override("outline_size", 8)
+	spec_label.visible = false
 	msg_label = Label.new()
 	add_child(msg_label)
 	msg_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -247,7 +259,7 @@ func _process(delta: float) -> void:
 	var red := clampf(maxf(flash, low * 0.6), 0.0, 1.0)
 	vignette_mat.set_shader_parameter("tint", Color(0.0, 0.0, 0.0).lerp(Color(0.85, 0.02, 0.04), red))
 	vignette_mat.set_shader_parameter("strength", 0.38 + red * 0.55)
-	var end_target := 0.55 if (p.is_dead or victory) else 0.0
+	var end_target := 0.55 if ((p.is_dead and not p.spectating) or victory) else 0.0
 	end_alpha = move_toward(end_alpha, end_target, delta * 0.8)
 	end_overlay.color = Color(0.0, 0.0, 0.0, end_alpha)
 	sharingan_overlay.visible = p.eye_overlay()
@@ -274,15 +286,26 @@ func _process(delta: float) -> void:
 	msg_label.text = ""
 	if p.is_dead:
 		_dead_time += delta
-		if _dead_time > 1.1:   # let the body fall first
+		if p.spectating:
+			end_screen.visible = false
+			spec_label.visible = true
+			spec_label.text = "SPECTATING:  %s\n[A] / [D] or click: switch    [Esc]: back    [Enter]: retry" % p.spectate_name()
+		elif _dead_time > 1.1:   # let the body fall first
+			spec_label.visible = false
+			if end_screen.is_shown():
+				end_screen.visible = true
 			var t := int(_alive_time)
+			var boss_fight := mode == "kurama" or mode == "uchiha"
+			if not end_screen.spectate.is_connected(p.start_spectate):
+				end_screen.spectate.connect(p.start_spectate)
 			end_screen.show_end("DEFEATED", false, "Get back up, shinobi.", [["KILLS", p.kills],
-				["LEVEL", GameData.level], ["TIME", "%d:%02d" % [t / 60, t % 60]]])
+				["LEVEL", GameData.level], ["TIME", "%d:%02d" % [t / 60, t % 60]]], boss_fight)
 	elif victory:
 		end_screen.show_end("VICTORY", true, victory_text,
 			[["KILLS", p.kills], ["LEVEL", GameData.level]])
 	else:
 		_alive_time += delta
 		_dead_time = 0.0
+		spec_label.visible = false
 		if end_screen.visible:
 			end_screen.hide_end()

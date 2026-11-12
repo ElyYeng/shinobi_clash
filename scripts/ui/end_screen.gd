@@ -4,6 +4,7 @@ extends Control
 ## RETRY / CUSTOMIZE / MAIN MENU buttons. Enter still retries (main.gd).
 
 signal retry
+signal spectate
 
 var _title: Label
 var _ribbon: Panel
@@ -11,6 +12,7 @@ var _stats: HBoxContainer
 var _sub: Label
 var _box: VBoxContainer
 var _shown := false
+var _spec_btn: Button
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -55,6 +57,11 @@ func _ready() -> void:
 	var again := UiStyle.green_button(row, "RETRY  [Enter]", 22)
 	again.custom_minimum_size = Vector2(230, 54)
 	again.pressed.connect(func() -> void: retry.emit())
+	_spec_btn = UiStyle.green_button(row, "SPECTATE", 22)
+	_spec_btn.custom_minimum_size = Vector2(190, 54)
+	_dark(_spec_btn)
+	_spec_btn.visible = false
+	_spec_btn.pressed.connect(func() -> void: spectate.emit())
 	var spin := UiStyle.green_button(row, "CUSTOMIZE", 22)
 	spin.custom_minimum_size = Vector2(200, 54)
 	_dark(spin)
@@ -73,10 +80,11 @@ func _dark(b: Button) -> void:
 	b.add_theme_stylebox_override("hover", UiStyle.tex_box("btn_red", [24, 0, 24, 0], [14, 4, 14, 4]))
 
 ## Shows the screen (once). `stats` = [[label, value], ...]
-func show_end(title: String, victory: bool, sub: String, stats: Array) -> void:
+func show_end(title: String, victory: bool, sub: String, stats: Array, can_spectate := false) -> void:
 	if _shown:
 		return
 	_shown = true
+	_spec_btn.visible = can_spectate
 	_title.text = title
 	_title.add_theme_color_override("font_color", Color(1.0, 0.86, 0.35) if victory else Color(1.0, 0.95, 0.9))
 	_ribbon.add_theme_stylebox_override("panel", UiStyle.tex_box("banner_red", [80, 0, 80, 0], [0, 0, 0, 0],
@@ -105,6 +113,9 @@ func show_end(title: String, victory: bool, sub: String, stats: Array) -> void:
 	tw.tween_property(_box, "modulate:a", 1.0, 0.35)
 	tw.tween_property(_ribbon, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sfx.play(self, "thud", 2.0)
+
+func is_shown() -> bool:
+	return _shown
 
 func hide_end() -> void:
 	_shown = false
