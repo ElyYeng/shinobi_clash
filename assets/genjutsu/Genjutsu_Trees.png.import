@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ccagmdpukvbnb"
-path="res://.godot/imported/Genjutsu_Trees.png-92b9444ed677ce03844d6e99cdc1081e.ctex"
+path.s3tc="res://.godot/imported/Genjutsu_Trees.png-92b9444ed677ce03844d6e99cdc1081e.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b4c5a9727767c5bbaa8c0e8e14a96a4a"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/genjutsu/Genjutsu_Trees.png"
-dest_files=["res://.godot/imported/Genjutsu_Trees.png-92b9444ed677ce03844d6e99cdc1081e.ctex"]
+dest_files=["res://.godot/imported/Genjutsu_Trees.png-92b9444ed677ce03844d6e99cdc1081e.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
