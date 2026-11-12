@@ -18,6 +18,7 @@ var source_player: Player
 var visual_kind := ""
 var visual_root: Node3D
 var visual_model: Node3D
+const MYTHIC := ["dust", "orb", "bone"]
 
 func _ready() -> void:
 	var col := CollisionShape3D.new()
@@ -27,6 +28,15 @@ func _ready() -> void:
 	add_child(col)
 	if visual_kind == "rasenshuriken":
 		_build_rasenshuriken_visual()
+	elif MYTHIC.has(visual_kind):   # Dust cube / Truth-Seeking Orb / Ash Killing Bone
+		match visual_kind:
+			"dust": MythicFx.build_dust_cube(self, size)
+			"orb": MythicFx.build_orb(self, size)
+			"bone": MythicFx.build_bone(self, size)
+		if visual_kind != "dust":
+			Vfx.trail(self, Color(0.15, 0.12, 0.2) if visual_kind == "orb" else Color(0.95, 0.93, 0.85), size * (0.9 if visual_kind == "orb" else 0.3), 18, 0.25)
+		if velocity.length() > 0.01:
+			look_at(global_position + velocity)
 	elif visual_kind == "fireball":
 		# imported fire projectile VFX (flames, tail, streaks, sparks and its own light)
 		var fx := VfxKit.fire_projectile(self, size / 0.6 * 2.2)
@@ -53,7 +63,7 @@ func _ready() -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
-	if aoe > 0.0 and visual_kind != "rasenshuriken" and visual_kind != "fireball":
+	if aoe > 0.0 and visual_kind != "rasenshuriken" and visual_kind != "fireball" and not MYTHIC.has(visual_kind):
 		# fireball: bright core, flame trail and a light that flickers across the scenery
 		var halo := MeshInstance3D.new()
 		var hs := SphereMesh.new()
@@ -69,7 +79,7 @@ func _ready() -> void:
 		add_child(halo)
 		Vfx.trail(self, color, size * 2.2, 40, 0.5)
 		Vfx.glow_light(self, color, 3.0, 12.0)
-	elif visual_kind != "fireball":   # (the fireball VFX brings its own flames and light)
+	elif visual_kind != "fireball" and not MYTHIC.has(visual_kind):   # (these bring their own look)
 		Vfx.trail(self, Color(0.85, 0.92, 1.0), 0.16, 22, 0.28)
 		Vfx.glow_light(self, Color(0.8, 0.9, 1.0), 0.6, 4.0)
 	body_entered.connect(_on_body)
@@ -87,7 +97,7 @@ func _physics_process(delta: float) -> void:
 		if long_shape and velocity.length() > 0.01:
 			look_at(global_position + velocity)
 	global_position += velocity * delta
-	if visual_kind == "fireball" and velocity.length() > 0.01:
+	if (visual_kind == "fireball" or MYTHIC.has(visual_kind)) and velocity.length() > 0.01:
 		look_at(global_position + velocity)
 	if visual_kind == "rasenshuriken" and visual_root != null:
 		if velocity.length() > 0.01:
@@ -183,6 +193,11 @@ func _explode() -> void:
 			ground = h["position"]
 		VfxKit.area(VfxKit.FIRE_AREA, get_parent(), ground, 1.6, null, maxf(aoe / 2.5, 1.0))
 		VfxKit.hit(get_parent(), global_position, Color(1.0, 0.55, 0.15), 1.4)
+	elif visual_kind == "dust" and get_parent() != null:
+		MythicFx.dust_impact(get_parent(), global_position, maxf(aoe, 2.0))
+	elif visual_kind == "orb" and get_parent() != null:
+		Fx.puff(get_parent(), global_position, Color(0.1, 0.08, 0.14, 0.9), maxf(aoe * 2.0, 1.0))
+		Vfx.shockwave(get_parent(), global_position, Color(0.35, 0.25, 0.5), maxf(aoe, 1.5), 0.3)
 	else:
 		Fx.puff(get_parent(), global_position, color, maxf(aoe * 2.0, 0.6))
 	if aoe > 0.0 and get_parent() != null:

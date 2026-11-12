@@ -1293,6 +1293,10 @@ func _use_move(id: String) -> void:
 	var dmg := float(a["dmg"]) * _dmg() * mult
 	if kind != "custom":
 		Sfx.play(self, "power", -3.0)
+	var vfx := str(a.get("vfx", ""))
+	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target"):   # Mythic signature effect
+		var fb: Vector3 = target.global_position if kind == "target" and target != null else facing
+		_kokugan(vfx, global_position, fb, float(a["r"]), Callable())
 	match kind:
 		"custom":   # hand-made jutsu (original Fire Style, clones, substitution, armor)
 			call(str(a["fn"]), col)
@@ -1301,7 +1305,8 @@ func _use_move(id: String) -> void:
 				var to := (e.global_position - global_position) * Vector3(1, 0, 1)
 				_stun(e, float(a["stun"]))
 				_hit_foe(e, dmg, to.normalized() * float(a["knock"]))
-			Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, float(a["r"]), 0.45)
+			if vfx == "":
+				Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, float(a["r"]), 0.45)
 		"cube":   # Daikokuten: a giant cube drops from the sky onto the nearest enemy
 			var spot := global_position + facing * 6.0
 			var tgt := _nearest_foe(25.0)
@@ -1335,18 +1340,20 @@ func _use_move(id: String) -> void:
 				if to.normalized().dot(facing) > float(a["dot"]):
 					_stun(e, float(a["stun"]))
 					_hit_foe(e, dmg, to.normalized() * float(a["knock"]))
-			Vfx.shockwave(get_parent(), global_position + facing * float(a["r"]) * 0.4 + Vector3.UP * 0.2, col, float(a["r"]) * 0.6, 0.35)
+			if vfx == "":
+				Vfx.shockwave(get_parent(), global_position + facing * float(a["r"]) * 0.4 + Vector3.UP * 0.2, col, float(a["r"]) * 0.6, 0.35)
 		"target":
 			_stun(target, float(a["stun"]))
-			Vfx.shockwave(get_parent(), target.global_position + Vector3.UP, col, 3.0, 0.4)
-			Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
+			if vfx == "":
+				Vfx.shockwave(get_parent(), target.global_position + Vector3.UP, col, 3.0, 0.4)
+				Fx.puff(get_parent(), target.global_position + Vector3.UP, Color(col.r, col.g, col.b, 0.85), 2.0)
 			_hit_foe(target, dmg, Vector3.ZERO)
 		"fan":
-			var projectile_visual := "rasenshuriken" if id == "bl:uzumaki:2" else ""
+			var projectile_visual := "rasenshuriken" if id == "bl:uzumaki:2" else vfx
 			_fan(int(a["n"]), float(a["spread"]), float(a["speed"]), float(a["dmg"]) * mult,
 				float(a["aoe"]), float(a["size"]), col, bool(a["long"]), projectile_visual)
 		"homing":
-			_homing(int(a["n"]), float(a["dmg"]) * mult, float(a["aoe"]), col, float(a["size"]))
+			_homing(int(a["n"]), float(a["dmg"]) * mult, float(a["aoe"]), col, float(a["size"]), vfx)
 		"dash":
 			var dir := facing
 			if is_instance_valid(lock_target):
@@ -1758,7 +1765,7 @@ func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
 			GameData.add_mastery(cur_mkey, GameData.MASTERY_HIT)
 
 ## Fires `count` homing projectiles, spread over the nearest enemies.
-func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> void:
+func _homing(count: int, dmg: float, aoe: float, color: Color, size: float, visual := "") -> void:
 	var targets := _foes_in(40.0)
 	targets.sort_custom(func(a: Node3D, b: Node3D): return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
 	var origin := global_position + Vector3.UP * 1.6
@@ -1774,12 +1781,13 @@ func _homing(count: int, dmg: float, aoe: float, color: Color, size: float) -> v
 		pr.color = color
 		pr.life = 4.0
 		pr.source_player = self
+		pr.visual_kind = visual
 		if not targets.is_empty():
 			pr.target = targets[i % targets.size()]
 		get_parent().add_child(pr)
 		pr.global_position = origin + Vector3(cos(ang), 0.3, sin(ang)) * 0.8
 		if NetworkSession.is_active():
-			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe, pr.damage, "", _peer_of(pr.target))
+			NetworkSession.broadcast_projectile(pr.global_position, pr.velocity, pr.speed, pr.size, pr.color, pr.long_shape, pr.aoe, pr.damage, visual, _peer_of(pr.target))
 
 ## ---- Fire Style jutsu + Kurama Mode (keys: T Y G H, V, RMB+E, Z) ----
 func _toast(t: String) -> void:

@@ -10,6 +10,8 @@ const BLACK := Color(0.13, 0.12, 0.16)
 static func play(kind: String, world: Node3D, a: Vector3, b: Vector3, f: float, on_hit := Callable()) -> void:
 	if world == null or not world.is_inside_tree():
 		return
+	if MythicFx.play(kind, world, a, b, f):   # Dust / Otsutsuki / Rinnegan signature effects
+		return
 	match kind:
 		"cube":
 			cube(world, a, f, on_hit)

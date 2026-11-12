@@ -183,9 +183,9 @@ const DEFS := {
 	"dust": {"name": "Dust Release", "rarity": "Mythic", "weight": 0.8, "color": Color(0.95, 0.95, 0.85),
 		"desc": "Fire + Wind + Earth: +30% damage.", "stats": {"dmg": 1.3},
 		"abilities": [
-			{"name": "Detachment of the Primitive World", "kind": "fan", "n": 1, "speed": 30.0, "dmg": 200.0, "aoe": 4.0, "size": 0.6, "col": Color(0.95, 0.95, 0.85), "desc": "A cube of light that erases what it hits."},
-			{"name": "Dust Sphere", "kind": "burst", "r": 12.0, "dmg": 110.0, "stun": 1.5, "col": Color(0.95, 0.95, 0.85), "desc": "A sphere of dust disintegrates everything within 12m."},
-			{"name": "Particle Cone", "kind": "cone", "r": 12.0, "dmg": 130.0, "dot": 0.45, "col": Color(0.95, 0.95, 0.85), "desc": "A cone of particles in front of you."}],
+			{"name": "Detachment of the Primitive World", "vfx": "dust", "kind": "fan", "n": 1, "speed": 30.0, "dmg": 200.0, "aoe": 4.0, "size": 0.6, "col": Color(0.95, 0.95, 0.85), "desc": "A cube of light that erases what it hits."},
+			{"name": "Dust Sphere", "vfx": "dust_sphere", "kind": "burst", "r": 12.0, "dmg": 110.0, "stun": 1.5, "col": Color(0.95, 0.95, 0.85), "desc": "A sphere of dust disintegrates everything within 12m."},
+			{"name": "Particle Cone", "vfx": "dust_cone", "kind": "cone", "r": 12.0, "dmg": 130.0, "dot": 0.45, "col": Color(0.95, 0.95, 0.85), "desc": "A cone of particles in front of you."}],
 		"mode": {"name": "Atomic Dismantling", "dmg": 1.55, "def": 0.75, "cd": 0.8, "desc": "+55% damage, take 25% less damage, cooldowns 20% faster."}},
 
 	"swift": {"name": "Swift Release", "rarity": "Epic", "weight": 2.5, "color": Color(0.55, 1.0, 0.75),
@@ -274,9 +274,9 @@ const DEFS := {
 		"desc": "Celestial: +50 max health and chakra, +25% damage, 1.5x chakra regen.",
 		"stats": {"hp": 50.0, "chakra": 50.0, "dmg": 1.25, "regen": 1.5},
 		"abilities": [
-			{"name": "Truth-Seeking Orbs", "kind": "homing", "n": 6, "dmg": 70.0, "aoe": 2.0, "size": 0.35, "col": Color(0.06, 0.04, 0.1), "desc": "6 black orbs hunt down enemies and explode."},
-			{"name": "Amenominaka", "kind": "burst", "r": 18.0, "dmg": 100.0, "knock": 25.0, "stun": 2.0, "desc": "Bends space: blasts everything within 18m."},
-			{"name": "Ash Killing Bones", "kind": "fan", "n": 5, "spread": 10.0, "speed": 45.0, "dmg": 90.0, "aoe": 2.0, "size": 0.25, "long": true, "desc": "Five bones that turn targets to ash."}],
+			{"name": "Truth-Seeking Orbs", "vfx": "orb", "kind": "homing", "n": 6, "dmg": 70.0, "aoe": 2.0, "size": 0.35, "col": Color(0.06, 0.04, 0.1), "desc": "6 black orbs hunt down enemies and explode."},
+			{"name": "Amenominaka", "vfx": "amenominaka", "kind": "burst", "r": 18.0, "dmg": 100.0, "knock": 25.0, "stun": 2.0, "desc": "Bends space: blasts everything within 18m."},
+			{"name": "Ash Killing Bones", "vfx": "bone", "kind": "fan", "n": 5, "spread": 10.0, "speed": 45.0, "dmg": 90.0, "aoe": 2.0, "size": 0.25, "long": true, "desc": "Five bones that turn targets to ash."}],
 		"mode": {"name": "Six Paths", "dmg": 1.5, "def": 0.6, "speed": 1.25, "ck": 25.0, "hp": 5.0, "slow": 0.85,
 			"cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "orbs": 9, "aura": true, "float": true},
 			"desc": "Rinnegan + Truth-Seeking Orbs: +50% damage, take 40% less damage, +25% speed, +25 chakra/s, heal 5/s, enemies 15% slower."}},
@@ -294,9 +294,9 @@ const DEFS := {
 		"desc": "The eye of the Sage: +20% damage, +40 max chakra, chakra regens 25% faster.",
 		"stats": {"dmg": 1.2, "chakra": 40.0, "regen": 1.25},
 		"abilities": [
-			{"name": "Shinra Tensei", "kind": "burst", "r": 14.0, "dmg": 70.0, "knock": 30.0, "stun": 1.0, "col": Color(0.75, 0.65, 1.0), "desc": "Almighty Push: blasts everything within 14m away."},
-			{"name": "Bansho Ten'in", "kind": "burst", "r": 18.0, "dmg": 30.0, "knock": -14.0, "stun": 2.0, "col": Color(0.55, 0.45, 0.85), "desc": "Universal Pull: drags enemies within 18m to you and holds them."},
-			{"name": "Chibaku Tensei", "kind": "target", "r": 25.0, "dmg": 170.0, "stun": 3.0, "col": Color(0.2, 0.15, 0.25), "desc": "Planetary Devastation: crushes the nearest enemy under rock."}],
+			{"name": "Shinra Tensei", "vfx": "shinra", "kind": "burst", "r": 14.0, "dmg": 70.0, "knock": 30.0, "stun": 1.0, "col": Color(0.75, 0.65, 1.0), "desc": "Almighty Push: blasts everything within 14m away."},
+			{"name": "Bansho Ten'in", "vfx": "bansho", "kind": "burst", "r": 18.0, "dmg": 30.0, "knock": -14.0, "stun": 2.0, "col": Color(0.55, 0.45, 0.85), "desc": "Universal Pull: drags enemies within 18m to you and holds them."},
+			{"name": "Chibaku Tensei", "vfx": "chibaku", "kind": "target", "r": 25.0, "dmg": 170.0, "stun": 3.0, "col": Color(0.2, 0.15, 0.25), "desc": "Planetary Devastation: crushes the nearest enemy under rock."}],
 		"mode": {"name": "Rinnegan", "dmg": 1.4, "def": 0.75, "ck": 20.0, "cd": 0.75, "cutscene": "eyes",
 			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "aura": true},
 			"desc": "+40% damage, take 25% less damage, +20 chakra/s, cooldowns 25% faster."}},
