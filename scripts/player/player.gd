@@ -465,6 +465,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, dir.x * speed, 70.0 * delta)
 		velocity.z = move_toward(velocity.z, dir.z * speed, 70.0 * delta)
 
+	_footsteps(delta)
 	var regen := (40.0 if charging else 5.0) * regen_mult
 	regen += _badd("ck")
 	chakra = clampf(chakra + regen * delta, 0.0, max_chakra)
@@ -1248,6 +1249,19 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
 
+## Footstep sounds: walk / run steps paced by your ground speed.
+var _step_t := 0.0
+func _footsteps(delta: float) -> void:
+	var sp := Vector2(velocity.x, velocity.z).length()
+	if not is_on_floor() or sp < 1.0 or wall_walking:
+		_step_t = 0.0
+		return
+	_step_t -= delta
+	if _step_t <= 0.0:
+		var run := sp > Hero.WALK_BELOW
+		Sfx.play(self, "step_run" if run else "step_walk")
+		_step_t = clampf(2.4 / sp, 0.22, 0.55) if run else 0.5
+
 ## A combo finisher knocked you down: limp for a moment, then you get up where you landed.
 func _knockdown(knock: Vector3) -> void:
 	if downed > 0.0 or is_dead or susanoo != null or model == null:
@@ -1632,7 +1646,7 @@ func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest
 	dest.x = clampf(dest.x, -half, half)
 	dest.z = clampf(dest.z, -half, half)
 	dest.y = from.y
-	Sfx.play(self, "poof")
+	Sfx.play(self, "teleport")
 	Fx.puff(get_parent(), from + Vector3.UP, Color(0.8, 0.75, 0.65, 0.9), 2.2)
 	global_position = dest
 	velocity = Vector3.ZERO

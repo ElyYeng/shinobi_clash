@@ -1,7 +1,8 @@
 class_name Sfx
 extends RefCounted
-## Tiny procedural sound bank: every sound is synthesised once at first use
-## (no audio files, a few KB of RAM each). Sfx.play(node, "hit")
+## Sound bank. Sfx.play(node, "hit"). Ids with recorded sounds (assets/sfx/<file>_1.ogg, _2 ...)
+## play a random variant; the rest are synthesised once at first use (a few KB each).
+## Looping ambience: Sfx.ambient(node, "village").
 
 const RATE := 22050
 # id: [seconds, tone_start_hz, tone_end_hz, tone_amp, noise_amp, noise_brightness(0-1), attack(0-1)]
@@ -21,18 +22,65 @@ const SPEC := {
 }
 static var _cache := {}
 
+const DIR := "res://assets/sfx/"
+## id -> [file prefix, volume offset dB]
+const FILES := {
+	"swing": ["swing", -2.0], "hit": ["hit", 0.0], "dash": ["dash", -3.0], "jump": ["dash", -6.0],
+	"fire": ["fire", -2.0], "power": ["power", -4.0], "teleport": ["teleport", -3.0],
+	"step_walk": ["step_walk", -10.0], "step_run": ["step_run", -8.0],
+}
+static var _variants := {}   # id -> Array[AudioStream]
+
+static func _streams(id: String) -> Array:
+	if not _variants.has(id):
+		var out: Array = []
+		if FILES.has(id):
+			for i in range(1, 16):
+				var path := "%s%s_%d.ogg" % [DIR, FILES[id][0], i]
+				if not ResourceLoader.exists(path):
+					break
+				out.append(load(path))
+		_variants[id] = out
+	return _variants[id]
+
 static func play(from: Node, id: String, vol_db := 0.0) -> void:
-	if from == null or not from.is_inside_tree() or not SPEC.has(id):
+	if from == null or not from.is_inside_tree():
 		return
-	if not _cache.has(id):
-		_cache[id] = _make(SPEC[id])
 	var p := AudioStreamPlayer.new()
-	p.stream = _cache[id]
-	p.volume_db = vol_db - 4.0
-	p.pitch_scale = randf_range(0.9, 1.1)
+	var rec := _streams(id)
+	if not rec.is_empty():
+		p.stream = rec[randi() % rec.size()]
+		p.volume_db = vol_db + float(FILES[id][1])
+		p.pitch_scale = randf_range(0.95, 1.05)
+	elif SPEC.has(id):
+		if not _cache.has(id):
+			_cache[id] = _make(SPEC[id])
+		p.stream = _cache[id]
+		p.volume_db = vol_db - 4.0
+		p.pitch_scale = randf_range(0.9, 1.1)
+	else:
+		p.free()
+		return
 	from.get_tree().root.add_child(p)
 	p.finished.connect(p.queue_free)
 	p.play()
+
+## Starts a looping ambience (assets/sfx/ambient/<name>.ogg) as a child of `parent`.
+static func ambient(parent: Node, name: String, vol_db := -14.0) -> AudioStreamPlayer:
+	var path := DIR + "ambient/" + name + ".ogg"
+	if parent == null or not ResourceLoader.exists(path):
+		return null
+	var st := load(path) as AudioStreamOggVorbis
+	if st == null:
+		return null
+	st = st.duplicate()
+	st.loop = true
+	var p := AudioStreamPlayer.new()
+	p.stream = st
+	p.volume_db = vol_db
+	p.autoplay = true
+	parent.add_child(p)
+	return p
 
 static func _make(s: Array) -> AudioStreamWAV:
 	var n := int(s[0] * RATE)

@@ -261,6 +261,7 @@ func _rise(on_rise: Callable) -> void:
 			node.transform = h[2]
 			(node as MeshInstance3D).skeleton = h[3]
 	_hair.clear()
+	_reset_offsets()
 	if model_ref.has_meta("anim_player"):
 		var ap := model_ref.get_meta("anim_player") as AnimationPlayer
 		if is_instance_valid(ap):
@@ -273,11 +274,25 @@ func _rise(on_rise: Callable) -> void:
 	_blend = 0.0
 	set_process(true)
 
+## Bone positions and scales back to rest (all but the hips, whose position the clips animate).
+func _reset_offsets() -> void:
+	if not is_instance_valid(sk):
+		return
+	for i in _bones.size():
+		var bi := _bones[i]
+		var rest := sk.get_bone_rest(bi)
+		if i > 0:
+			sk.set_bone_pose_position(bi, rest.origin)
+		sk.set_bone_pose_scale(bi, rest.basis.get_scale())
+
 ## Blends the skeleton from the pose it landed in to whatever the animation plays now.
 func _blend_step(delta: float) -> void:
 	_blend += delta
 	var t := clampf(_blend / _blend_t, 0.0, 1.0)
 	t = t * t * (3.0 - 2.0 * t)
+	# The clips only key rotations (plus the hips position), so the bone positions/scales the
+	# ragdoll wrote would stick and stretch the limbs: put them back to rest every frame.
+	_reset_offsets()
 	if t >= 1.0:
 		queue_free()
 		return
@@ -287,4 +302,8 @@ func _blend_step(delta: float) -> void:
 		anim.append(sk.get_bone_global_pose(bi))
 	for i in _bones.size():   # parents first (PARTS order)
 		var from: Transform3D = inv * (_from[i] as Transform3D)
-		sk.set_bone_global_pose(_bones[i], from.interpolate_with(anim[i], t))
+		var g := from.interpolate_with(anim[i], t)
+		sk.set_bone_global_pose(_bones[i], g)
+		if i > 0:   # keep the bone lengths: only the hips may move
+			sk.set_bone_pose_position(_bones[i], sk.get_bone_rest(_bones[i]).origin)
+		sk.set_bone_pose_scale(_bones[i], sk.get_bone_rest(_bones[i]).basis.get_scale())

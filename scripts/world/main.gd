@@ -31,6 +31,10 @@ func _ready() -> void:
 	if not MapBuilder.MAP_FILES.has(mode):
 		mode = "fight"
 	_load_map()
+	# looping ambience: village life in Konoha, forest everywhere else
+	Sfx.ambient(self, "village" if mode == "world" else "forest_1")
+	if mode == "world":
+		Sfx.ambient(self, "slight_breeze", -22.0)
 	play_half = map.play_half
 	player = Player.new()
 	player.position = map.spawn("PlayerSpawn", Vector3(0, 1, 30) if mode == "kurama" else Vector3(0, 1, 0))
