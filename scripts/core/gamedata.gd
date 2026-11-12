@@ -79,6 +79,8 @@ static var mastery := {}               # bloodline id (or "el:<Element>" for ele
 
 # ---- Hotbar keybinds: key -> move id (see moves.gd). Set in M > Bloodline / M > Element.
 static var keybinds := {}
+static var boss_from_world := false   # in the Uchiha arena via the main-game gate: go back to Konoha after
+static var world_return_pos := Vector3.ZERO   # where to put the player when the open world loads (0 = spawn)
 static var open_customize := false     # main menu opens the spin screen straight away (from the M menu)
 
 ## Cosmetic-only character creator selections (see Hero.CATEGORIES). Style ids are the mesh

@@ -191,6 +191,16 @@ func _start_kurama() -> void:
 	player.cam_zoom = 12.0      # pull the camera back for the giant
 	hud.toast("KURAMA, THE NINE-TAILED BEAST")
 
+## After Claudiu (main game): everyone back to Konoha, next to the gate.
+func _back_to_world() -> void:
+	GameData.boss_from_world = false
+	GameData.world_return_pos = UCHIHA_GATE + Vector3(0, 1, 5)
+	if NetworkSession.is_active():
+		NetworkSession.return_party_to_world()   # host moves the party; clients wait for it
+		return
+	GameData.mode = "world"
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
 func _boss_mode() -> bool:
 	return mode == "kurama" or mode == "uchiha"
 
@@ -206,10 +216,13 @@ func _start_uchiha() -> void:
 	uchiha.defeated.connect(func() -> void:
 		GameData.spins += 5
 		GameData.save()
-		hud.victory_text = "The rogue Uchiha has fallen   -   +5 spins"
+		hud.victory_text = "Claudiu Uchiha has fallen   -   +5 spins"
 		hud.victory = true
-		hud.toast("Akatsuki Uchiha defeated!  +5 spins"))
-	hud.toast("AN AKATSUKI UCHIHA BLOCKS YOUR PATH")
+		hud.toast("Claudiu Uchiha defeated!  +5 spins")
+		if GameData.boss_from_world:   # came through the gate: back to Konoha
+			hud.victory_text = "Claudiu Uchiha has fallen   -   +5 spins   -   back to Konoha..."
+			get_tree().create_timer(6.0).timeout.connect(_back_to_world))
+	hud.toast("CLAUDIU UCHIHA BLOCKS YOUR PATH")
 
 func _on_kurama_enraged(phase: int) -> void:
 	hud.toast("KURAMA IS ENRAGED!" if phase == 3 else "Kurama is getting serious...")
@@ -270,8 +283,48 @@ func _start_world() -> void:
 		map.add_child(crowd)
 		Villager.populate(crowd, 28)
 	_refresh_markers()
+	_build_uchiha_gate()
+	if GameData.world_return_pos != Vector3.ZERO:   # back from the boss arena
+		player.global_position = GameData.world_return_pos
+		GameData.world_return_pos = Vector3.ZERO
 	if TEST_NINJA:
 		_spawn_test_ninja()
+
+## Main-game boss: at the Uchiha District gate, [E] takes you (and your co-op party) to the
+## arena to fight Claudiu Uchiha.
+const UCHIHA_GATE := Vector3(112, 0, 106)
+var _gate: Node3D
+func _build_uchiha_gate() -> void:
+	_gate = Node3D.new()
+	_gate.name = "UchihaBossGate"
+	add_child(_gate)
+	var pos := UCHIHA_GATE
+	var terrain := map.get_node_or_null("WorldTerrain")
+	if terrain != null:
+		pos.y = terrain.height_at(pos.x, pos.z)
+	_gate.global_position = pos
+	Vfx.aura_flames(_gate, Vector3(0, 0.2, 0), 1.1, Color(0.7, 0.05, 0.08, 0.8), 30, true)
+	Vfx.glow_light(_gate, Color(0.9, 0.1, 0.1), 2.5, 9.0, Vector3(0, 1.5, 0))
+	var l := Label3D.new()
+	l.text = "CLAUDIU UCHIHA\nBoss  -  [E] Challenge"
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.font_size = 64
+	l.pixel_size = 0.006
+	l.outline_size = 14
+	l.modulate = Color(1.0, 0.35, 0.3)
+	l.position = Vector3(0, 3.0, 0)
+	_gate.add_child(l)
+
+func _near_gate() -> bool:
+	return _gate != null and player.global_position.distance_to(_gate.global_position) < 4.0
+
+func _enter_uchiha_arena() -> void:
+	if NetworkSession.is_active():
+		NetworkSession.request_uchiha_arena()
+		return
+	GameData.boss_from_world = true
+	GameData.mode = "uchiha"
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 ## TEST: a 1000 HP ninja near the spawn to try combos / knockdowns on. It only fights back once
 ## you hit it, and comes back 5 s after it's beaten.
@@ -318,6 +371,12 @@ func _world_interact() -> void:
 		if is_instance_valid(_held_villager):
 			_held_villager.held = false
 		_held_villager = null
+	if _near_gate():
+		hud.prompt_text = "[E]  Challenge Claudiu Uchiha  (boss)"
+		if Input.is_action_just_pressed("interact") and not Input.is_action_pressed("kunai"):
+			hud.prompt_text = ""
+			_enter_uchiha_arena()
+		return
 	var near: Npc = null
 	var best := 4.5
 	for id in npcs:

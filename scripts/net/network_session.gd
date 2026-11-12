@@ -35,6 +35,8 @@ const ABILITY_MAX_DAMAGE := 200.0
 var _remote_clones: Dictionary = {}
 var _next_clone_summon_id := 1
 var _raid_boss: Kurama
+var _uchiha: Node          # UchihaBoss in this scene (host simulates, clients mirror)
+var _uchiha_sync := 0.0
 var _raid_sync_timer := 0.0
 var _quest_manager: Quests
 var _party_quest_states: Dictionary = {}
@@ -196,6 +198,12 @@ func _process(delta: float) -> void:
 	_sync_shadow_clone_transforms()
 	if multiplayer.is_server() and (session_mode == "coop" or session_mode == "pvp"):
 		_sync_quest_enemy_states()   # co-op quest enemies and PvP arena ninjas
+	if multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+		_uchiha_sync += delta
+		if _uchiha_sync >= 0.1:
+			_uchiha_sync = 0.0
+			var ub = _uchiha
+			_uchiha_snapshot.rpc(ub.global_position, ub.model.rotation.y, ub.health, ub.phase)
 	if multiplayer.is_server() and session_mode == "raid" and _raid_boss != null and is_instance_valid(_raid_boss):
 		_raid_sync_timer += delta
 		if _raid_sync_timer >= 0.1:
@@ -930,6 +938,60 @@ func _remove_quest_enemy(enemy_id: String, killed: bool) -> void:
 				(node as Enemy).queue_free()
 			return
 
+# ---------------------------------------------------------------- Claudiu Uchiha (boss)
+func register_uchiha(boss: Node) -> void:
+	_uchiha = boss
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _uchiha_snapshot(pos: Vector3, yaw: float, hp: float, ph: int) -> void:
+	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+		_uchiha.apply_snapshot(pos, yaw, hp, ph)
+
+## Host: an attack / phase change / death - every client plays it on its copy.
+func uchiha_event(kind: String, pos: Vector3, fwd: Vector3, aim: Vector3, extra := 0) -> void:
+	if is_active() and multiplayer.is_server():
+		_uchiha_event.rpc(kind, pos, fwd, aim, extra)
+
+@rpc("authority", "call_remote", "reliable")
+func _uchiha_event(kind: String, pos: Vector3, fwd: Vector3, aim: Vector3, extra: int) -> void:
+	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+		_uchiha.mirror_event(kind, pos, fwd, aim, extra)
+
+func request_uchiha_damage(amount: float) -> void:
+	if is_active() and not multiplayer.is_server():
+		_request_uchiha_damage.rpc_id(1, amount)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_uchiha_damage(amount: float) -> void:
+	if multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+		_uchiha.take_damage(clampf(amount, 1.0, 120.0))
+
+## Main game: the boss gate takes the whole session into Claudiu's arena (anyone can start it).
+func request_uchiha_arena() -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_go_uchiha_arena.rpc()
+	else:
+		_request_uchiha_arena.rpc_id(1)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_uchiha_arena() -> void:
+	if multiplayer.is_server():
+		_go_uchiha_arena.rpc()
+
+@rpc("authority", "call_local", "reliable")
+func _go_uchiha_arena() -> void:
+	_uchiha = null
+	GameData.boss_from_world = true
+	GameData.mode = "uchiha"
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+## Host after the win: everyone back to the open world (by the gate).
+func return_party_to_world() -> void:
+	if is_active() and multiplayer.is_server():
+		_return_raid_party_to_world.rpc()
+
 ## Shared Kurama raid. Host simulates the boss; clients receive authoritative snapshots.
 func register_raid_boss(boss: Kurama) -> void:
 	_raid_boss = boss
@@ -948,6 +1010,7 @@ func _return_raid_party_to_world() -> void:
 		return
 	_raid_boss = null
 	_raid_sync_timer = 0.0
+	_uchiha = null
 	session_mode = "coop"
 	GameData.mode = "world"
 	get_tree().change_scene_to_file("res://scenes/main.tscn")

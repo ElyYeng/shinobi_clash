@@ -6,14 +6,16 @@ extends Enemy
 ##   Phase 2 (66-33%):  forms the Susanoo (Aura 3D) - telegraphed giant punches and a slam that
 ##                      knocks you down; takes 35% less damage while it's out.
 ##   Phase 3 (<33%):    enraged - faster, fireball fans, dark aura.
-## Single player (the co-op raid is Kurama's).
+## Multiplayer: the host runs the AI (targets the nearest player) and sends snapshots + attack
+## events; every machine plays the attacks and resolves hits against its own player. Hits on a
+## client's copy go to the host. Main game: the gate at the Uchiha District brings you here.
 
 signal defeated
 signal phase_changed(phase: int)
 
-const BOSS_TITLE := "AKATSUKI UCHIHA  -  Rogue of the Leaf"
+const BOSS_TITLE := "CLAUDIU UCHIHA  -  Akatsuki"
 const MAX_HP := 3000.0
-const LOOK := {"hair_style": "hair2", "hair_color": "#15151A", "shirt_style": "shirt3", "pants_style": "pants1",
+const LOOK := {"hair_style": "hair1", "hair_color": "#15151A", "shirt_style": "shirt3", "pants_style": "pants1",
 	"skin_color": "#F4CDAE", "headband_color": "#2B3A67", "shirt_color": "#FFFFFF", "pants_color": "#FFFFFF"}
 const SUSANOO_COLOR := Color(0.55, 0.25, 1.0)
 const ENRAGE_COLOR := Color(0.75, 0.05, 0.08)
@@ -42,6 +44,11 @@ var _intro := 0.0
 var susanoo: Susanoo
 var _rage: AuraShell
 var _fwd := Vector3.FORWARD
+var mirror := false            # a client's copy: no AI, follows the host
+var _net_pos := Vector3.ZERO
+var _net_yaw := 0.0
+var _has_net := false
+var _target_pos := Vector3.INF # host: who the boss is after (any player)
 
 func _setup() -> void:
 	add_to_group("enemies")
@@ -74,7 +81,10 @@ func _setup() -> void:
 	label.pixel_size = 0.005
 	label.position.y = 2.5
 	add_child(label)
-	display_name = "Akatsuki Uchiha"
+	display_name = "Claudiu Uchiha"
+	mirror = NetworkSession.is_active() and not multiplayer.is_server()
+	if NetworkSession.is_active():
+		NetworkSession.register_uchiha(self)
 	_update_label()
 
 func _update_label() -> void:
@@ -87,12 +97,16 @@ func _player() -> Player:
 
 # ------------------------------------------------------------------ AI
 func _ai(delta: float) -> void:
+	if mirror:
+		_mirror_step(delta)
+		return
 	if not is_on_floor():
 		velocity.y -= 26.0 * delta
 	var ts := Enemy.time_scale
 	var p := _player()
-	var alive := p != null and not p.is_dead
-	var to := (p.global_position - global_position) if alive else Vector3.ZERO
+	_target_pos = _nearest_target()
+	var alive := _target_pos != Vector3.INF
+	var to := (_target_pos - global_position) if alive else Vector3.ZERO
 	to.y = 0.0
 	var dist := to.length()
 	var dir := to / dist if dist > 0.01 else _fwd
@@ -126,6 +140,84 @@ func _ai(delta: float) -> void:
 			velocity.z = move_toward(velocity.z, 0.0, 30.0 * delta)
 			_attack_step(delta * ts, dir, p)
 	move_and_slide()
+
+## Host: the closest living player (you or anyone in the session).
+func _nearest_target() -> Vector3:
+	var best := Vector3.INF
+	var bd := INF
+	var p := _player()
+	if p != null and not p.is_dead:
+		best = p.global_position
+		bd = global_position.distance_to(best)
+	if NetworkSession.is_active():
+		for id in NetworkSession._avatars:
+			var av = NetworkSession._avatars[id]
+			if not is_instance_valid(av) or bool(av.get("network_ragdoll_started")):
+				continue
+			var d := global_position.distance_to((av as Node3D).global_position)
+			if d < bd:
+				bd = d
+				best = (av as Node3D).global_position
+	return best
+
+## Client copy: glide to the host's position, play the attacks it announced.
+func _mirror_step(delta: float) -> void:
+	if _has_net and st != S.DEAD:
+		var old := global_position
+		global_position = global_position.lerp(_net_pos, 1.0 - exp(-12.0 * delta))
+		var v := (global_position - old) / maxf(delta, 0.001)
+		if st != S.ATTACK:
+			_fwd = Vector3(-sin(_net_yaw), 0.0, -cos(_net_yaw))
+			model.rotation.y = lerp_angle(model.rotation.y, _net_yaw, 1.0 - exp(-12.0 * delta))
+			var sp := Vector2(v.x, v.z).length()
+			Hero.play_move(model, Hero.move_state(sp), sp)
+	if st == S.ATTACK:
+		_attack_step(delta * Enemy.time_scale, _fwd, _player())
+	elif st == S.FORMING:
+		atk_t += delta
+		if atk_t >= 1.6:
+			st = S.FIGHT
+
+func apply_snapshot(pos: Vector3, yaw: float, hp: float, ph: int) -> void:
+	_net_pos = pos
+	_net_yaw = yaw
+	if not _has_net:
+		global_position = pos
+		_has_net = true
+	health = hp
+	if st == S.INTRO and hp < MAX_HP:
+		st = S.FIGHT
+	if ph > phase:   # missed the phase event: catch up
+		mirror_event("phase", pos, _fwd, Vector3.ZERO, ph)
+
+## Host -> clients: an attack / phase / death happened (see NetworkSession.uchiha_event).
+func mirror_event(kind: String, pos: Vector3, fwd: Vector3, aim: Vector3, extra: int) -> void:
+	match kind:
+		"phase":
+			if extra > phase:
+				phase = extra
+				phase_changed.emit(phase)
+				if phase >= 2 and susanoo == null:
+					_form_susanoo()
+				if phase == 3:
+					_enrage()
+		"die":
+			if st != S.DEAD:
+				_die()
+		"poof":   # body flicker
+			Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.15, 0.12, 0.15, 0.9), 2.0)
+			Sfx.play(self, "teleport")
+			global_position = pos
+			_net_pos = pos
+			Fx.puff(get_parent(), pos + Vector3.UP, Color(0.15, 0.12, 0.15, 0.9), 2.0)
+		_:
+			if st == S.DEAD:
+				return
+			global_position = pos
+			_net_pos = pos
+			_fwd = fwd
+			model.rotation.y = atan2(-fwd.x, -fwd.z)
+			_start(kind, _player(), aim)
 
 func _animate_body(_delta: float) -> void:
 	pass   # the boss drives its own animations
@@ -173,7 +265,9 @@ func _fight(delta: float, dir: Vector3, dist: float, p: Player) -> void:
 		_start("fireball", p)
 		cd = 2.2 * rage
 
-func _start(kind: String, p: Player) -> void:
+func _start(kind: String, p: Player, net_aim := Vector3.INF) -> void:
+	if (kind == "lpunch" or kind == "rpunch" or kind == "slam") and susanoo == null:
+		return
 	st = S.ATTACK
 	atk = kind
 	atk_t = 0.0
@@ -187,14 +281,19 @@ func _start(kind: String, p: Player) -> void:
 			VfxKit.cast(get_parent(), global_position + Vector3.UP * 1.3 + _fwd, _fwd, Color(1.0, 0.45, 0.1), 0.7)
 		"flicker":
 			atk_len = 0.35
-			_flicker(p)
+			if not mirror:
+				_flicker()
 		"lpunch", "rpunch", "slam":
 			susanoo.attack(kind)
 			atk_len = susanoo.impact_delay(kind) + 0.35
 			var r := SLAM_R if kind == "slam" else PUNCH_R
 			_aim = global_position + _fwd * (1.5 if kind == "slam" else PUNCH_AHEAD)
 			_aim.y = global_position.y
+			if net_aim != Vector3.INF:
+				_aim = net_aim
 			_telegraph(_aim, r, susanoo.impact_delay(kind))
+	if not mirror and kind != "flicker":
+		NetworkSession.uchiha_event(kind, global_position, _fwd, _aim)
 
 func _attack_step(delta: float, dir: Vector3, p: Player) -> void:
 	atk_t += delta
@@ -215,7 +314,7 @@ func _attack_step(delta: float, dir: Vector3, p: Player) -> void:
 				for i in n:
 					var a := (float(i) - float(n - 1) / 2.0) * 0.28
 					var d := _fwd.rotated(Vector3.UP, a)
-					if p != null and n == 1:   # aim where they're heading
+					if p != null and n == 1 and not mirror and p.global_position.distance_to(_target_pos) < 0.5:   # aim where they're heading
 						var lead := p.global_position + Vector3(p.velocity.x, 0.0, p.velocity.z) * 0.35 - global_position
 						lead.y = 0.0
 						if lead.length() > 0.1:
@@ -266,15 +365,18 @@ func _susanoo_hit(p: Player, kind: String) -> void:
 		p.take_damage(PUNCH_DMG * _dmg(), push * 10.0)
 
 ## Body flicker: vanish in smoke and reappear behind the player, already swinging.
-func _flicker(p: Player) -> void:
-	if p == null:
+func _flicker() -> void:
+	if _target_pos == Vector3.INF:
 		return
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.15, 0.12, 0.15, 0.9), 2.0)
 	Sfx.play(self, "teleport")
-	var behind := p.global_position - p.facing * 1.6
+	var across := _target_pos - global_position
+	across.y = 0.0
+	var behind := _target_pos + (across.normalized() if across.length() > 0.01 else _fwd) * 1.6
 	behind.y = global_position.y
 	global_position = behind
-	var d := p.global_position - global_position
+	NetworkSession.uchiha_event("poof", behind, _fwd, Vector3.ZERO)
+	var d := _target_pos - global_position
 	d.y = 0.0
 	if d.length() > 0.01:
 		_fwd = d.normalized()
@@ -306,7 +408,14 @@ func _telegraph(pos: Vector3, r: float, t: float) -> void:
 
 # ------------------------------------------------------------------ damage / phases
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
-	if st == S.DEAD or st == S.INTRO or st == S.FORMING:
+	if st == S.DEAD or st == S.FORMING:
+		return
+	if mirror:   # the host owns his health
+		Fx.puff(get_parent(), global_position + Vector3.UP * 1.2, Color(1, 1, 0.7, 0.9), 0.8)
+		Vfx.damage_number(get_parent(), global_position + Vector3.UP * 2.3, amount, Color(1.0, 0.85, 0.3))
+		NetworkSession.request_uchiha_damage(amount)
+		return
+	if st == S.INTRO:
 		return
 	if susanoo != null:
 		amount *= 0.65
@@ -322,6 +431,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 	elif np > phase:
 		phase = np
 		phase_changed.emit(phase)
+		NetworkSession.uchiha_event("phase", global_position, _fwd, Vector3.ZERO, phase)
 		if phase == 2:
 			_form_susanoo()
 		elif phase == 3:
@@ -351,6 +461,8 @@ func _enrage() -> void:
 	cd = minf(cd, 0.4)
 
 func _die() -> void:
+	if not mirror:
+		NetworkSession.uchiha_event("die", global_position, _fwd, Vector3.ZERO)
 	st = S.DEAD
 	health = 0.0
 	remove_from_group("enemies")

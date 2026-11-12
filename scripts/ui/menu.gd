@@ -124,6 +124,7 @@ func _open_customize() -> void:
 		spin.open("bloodline")
 
 func _play(mode: String) -> void:
+	GameData.boss_from_world = false
 	GameData.mode = mode
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
