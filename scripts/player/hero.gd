@@ -243,9 +243,20 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 		if ex.has(CLOAK_SOURCE) and cloak_id(model) != "":
 			ex.append(cloak_id(model))   # the colourable copy of an excluded outfit is excluded too
 		var ids: Array = (options.get(cat, []) as Array).filter(func(id) -> bool: return not ex.has(str(id)))
+		# an outfit that has a colourable copy is always worn as the copy (random colours below)
+		var copies := {}
+		for n in COLOR_COPIES:
+			var cid := color_copy_id(model, n)
+			if cid != "" and str(COLOR_COPIES[n]["cat"]) == cat:
+				copies[str(COLOR_COPIES[n]["src"])] = cid
+		ids = ids.filter(func(id) -> bool: return not copies.has(str(id)))   # originals -> their copy
 		if not ids.is_empty():
 			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
 	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)
+	for n in COLOR_COPIES:   # colourable outfits: two random colours (main one a bit calmer)
+		var k: Array = COLOR_COPIES[n]["keys"]
+		look[k[0]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.75), rng.randf_range(0.15, 0.85)).to_html(false)
+		look[k[1]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.2, 0.9), rng.randf_range(0.25, 0.95)).to_html(false)
 	look["skin_color"] = SKIN_TONES[rng.rand_weighted(PackedFloat32Array(SKIN_WEIGHTS))]
 	look["eye_color"] = EYE_TONES[rng.randi() % 6]
 	for slot in COLOR_SLOTS:
