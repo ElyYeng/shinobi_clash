@@ -4,7 +4,12 @@ extends Node
 ## eyes follow the camera (your character, other players, the Customize preview) - only when the
 ## camera is in front of the face; "aim": toward where the camera points. Added to a Hero model.
 
-const MAX_OFFSET := 0.11    # how far the iris can slide (UV units)
+const MAX_OFFSET := 0.17    # how far the iris can slide (UV units)
+const GAIN := 1.8           # how strongly the eyes react to the camera's angle
+
+var _glance := Vector2.ZERO   # a look-around: eyes dart somewhere for a moment
+var _glance_t := 0.0          # > 0 = glancing
+var _next_glance := randf_range(2.0, 5.0)
 
 var mode := "aim"
 var _off := Vector2.ZERO
@@ -33,6 +38,17 @@ func _process(delta: float) -> void:
 	var d := head.inverse() * (target - eye).normalized()   # in the head's space: +Z = forward
 	var want := Vector2.ZERO
 	if d.z > 0.05:   # in front of the face (behind: look straight ahead)
-		want = Vector2(clampf(d.x / d.z, -1.0, 1.0), clampf(-d.y / d.z, -1.0, 1.0)) * MAX_OFFSET
-	_off = _off.lerp(want, 1.0 - exp(-10.0 * delta))
+		want = Vector2(clampf(d.x / d.z * GAIN, -1.0, 1.0), clampf(-d.y / d.z * GAIN, -1.0, 1.0)) * MAX_OFFSET
+	# every few seconds the character looks around: a quick glance left / right / down, then back
+	_next_glance -= delta
+	if _next_glance <= 0.0:
+		_next_glance = randf_range(2.5, 6.0)
+		_glance_t = randf_range(0.5, 1.3)
+		var a := randf() * TAU
+		_glance = Vector2(cos(a), sin(a) * 0.5) * MAX_OFFSET * randf_range(0.7, 1.0)
+	if _glance_t > 0.0:
+		_glance_t -= delta
+		want = _glance
+	# eyes move in quick darts (saccades), not slow drifts
+	_off = _off.lerp(want, 1.0 - exp(-22.0 * delta))
 	Hero.set_eye_offset(model, _off)
