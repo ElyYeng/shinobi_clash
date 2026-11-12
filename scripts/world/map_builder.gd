@@ -375,9 +375,9 @@ func _build_world() -> void:
 		var r := tr.randf_range(56, 72)
 		_big_tree(Vector3(cos(a) * r, 0, sin(a) * r), tr.randf_range(14, 24), tr, false)
 	var placed := 0
-	var tries := 0
-	while placed < 14 and tries < 2000:   # (bounded: a crowded map must not hang the load)
-		tries += 1
+	var tree_tries := 0
+	while placed < 14 and tree_tries < 2000:   # (bounded: a crowded map must not hang the load)
+		tree_tries += 1
 		var p := Vector3(tr.randf_range(-45, 45), 0, tr.randf_range(-34, 45))
 		if p.length() < 16.0 or absf(p.z - 4.0) < 5.0 or (p.z > 0 and absf(p.x) < 6.0) or _blocked(p, 3.0):
 			continue
