@@ -1412,9 +1412,6 @@ func _page_customs() -> Array:
 			"A wider angle shows more of the world.",
 			{"slider": {"min": 55.0, "max": 100.0, "step": 1.0, "value": p.fov_base, "fmt": "%d deg",
 				"cb": func(v: float) -> void: p.fov_base = v}}),
-		_item("Cel Shading", "ON" if GameData.toon_shading else "OFF", Color(0.95, 0.55, 0.3), "T",
-			"Anime cel shading on the maps: crisp light / shadow tones, cool shadows, rim light.\nApplies to the next map you load.",
-			{"actions": [_act("TURN OFF" if GameData.toon_shading else "TURN ON", _toggle_toon)]}),
 		_item("Master Volume", "Sound effects", Color(0.8, 0.5, 0.8), "V",
 			"Overall volume.",
 			{"slider": {"min": 0.0, "max": 100.0, "step": 1.0, "value": vol, "fmt": "%d%%",
@@ -1436,11 +1433,6 @@ func _page_controls() -> Array:
 	]
 
 # ------------------------------------------------------------------ actions
-func _toggle_toon() -> void:
-	GameData.toon_shading = not GameData.toon_shading
-	GameData.save()
-	_reload_page()
-
 func _equip_slot(i: int) -> void:
 	if not GameData.set_active_slot(i):
 		return
