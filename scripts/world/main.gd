@@ -241,7 +241,7 @@ func _start_world() -> void:
 		var crowd := Node3D.new()
 		crowd.name = "Villagers"
 		map.add_child(crowd)
-		Villager.populate(crowd, 16)
+		Villager.populate(crowd, 28)
 	_refresh_markers()
 
 func _refresh_markers() -> void:

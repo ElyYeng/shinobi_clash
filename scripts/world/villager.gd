@@ -1,8 +1,10 @@
 class_name Villager
 extends Node3D
-## Ambient villagers that stroll the Konoha greybox streets (cosmetic, local only - no collision).
-## They follow a small street graph, keep to their side of the road, pause now and then, glance at
-## the player when they pass and stop if the player stands right in front of them.
+## Ambient villagers that stroll the Konoha greybox streets (cosmetic - no collision).
+## They follow a small street graph, keep to their side of the road, pause now and then and glance
+## at nearby players. Multiplayer: every villager's walk is a fixed function of its seed and a
+## shared clock (Villager.now(); the host sends its clock through NetworkSession), so everyone
+## sees the same people in the same places without streaming their positions.
 ## Villager.populate(map, count) is called by main.gd for the greybox map.
 
 ## Street graph (x, z) for maps/konoha_greybox.tscn - edit along with the roads in konoha_greybox.gd.
@@ -25,11 +27,26 @@ var goal := Vector3.ZERO
 var pause := 0.0
 var rng := RandomNumberGenerator.new()
 var _far := false
+var _leg_start := Vector3.ZERO    # current leg: walk from _leg_start (at _t0) to goal (at _t1),
+var _t0 := 0.0                    # then stand still until _t2
+var _t1 := 0.0
+var _t2 := 0.0
 
 static var _adj: Dictionary = {}
+## Shared villager clock: seconds since the host's villagers started (clients get the host's value).
+static var _clock_base := 0.0
+
+static func now() -> float:
+	return Time.get_ticks_msec() / 1000.0 - _clock_base
+
+## Clients: adopt the host's villager time (small differences are eased to avoid popping).
+static func sync_clock(host_time: float) -> void:
+	var want := Time.get_ticks_msec() / 1000.0 - host_time
+	_clock_base = want if absf(want - _clock_base) > 1.5 else lerpf(_clock_base, want, 0.3)
 
 static func populate(parent: Node, count: int, seed_base := 77) -> void:
 	_build_adj()
+	_clock_base = Time.get_ticks_msec() / 1000.0   # host / single player: start the clock now
 	var edges := EDGES.duplicate()
 	for i in count:
 		var v := Villager.new()
@@ -65,6 +82,10 @@ func _ready() -> void:
 	add_child(model)
 	_set_goal()
 	position += _lane_offset(from_id, to_id)   # start on our side of the road
+	_leg_start = position
+	_t0 = 0.0
+	_t1 = position.distance_to(goal) / speed
+	_t2 = _t1
 
 func _lane_offset(a_id: String, b_id: String) -> Vector3:
 	var a: Vector2 = NODES[a_id]
@@ -84,8 +105,7 @@ func _next_segment() -> void:
 	from_id = to_id
 	to_id = options[rng.randi() % options.size()]
 	_set_goal()
-	if rng.randf() < 0.3:
-		pause = rng.randf_range(1.5, 5.0)
+	pause = rng.randf_range(1.5, 5.0) if rng.randf() < 0.3 else 0.0
 
 func _process(delta: float) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
@@ -98,25 +118,26 @@ func _process(delta: float) -> void:
 		model.visible = not far
 		model.process_mode = Node.PROCESS_MODE_DISABLED if far else Node.PROCESS_MODE_INHERIT
 
-	var to_goal := goal - global_position
-	to_goal.y = 0.0
-	var dir := to_goal.normalized() if to_goal.length() > 0.01 else Vector3.ZERO
-	# stop if the player stands right in front of us
-	var blocked := pd < 1.6 and dir != Vector3.ZERO and dir.dot(to_p / maxf(pd, 0.01)) > 0.3
-	var moving := pause <= 0.0 and not blocked
-	if pause > 0.0:
-		pause -= delta
-	if moving:
-		var step := minf(speed * delta, to_goal.length())
-		global_position += dir * step
-		if to_goal.length() < 0.3:
-			_next_segment()
+	# walk along the timeline to the shared clock (same result on every machine)
+	var t := now()
+	var guard := 0
+	while t >= _t2 and guard < 200:
+		guard += 1
+		_leg_start = goal
+		_next_segment()
+		_t0 = _t2 + pause
+		_t1 = _t0 + _leg_start.distance_to(goal) / speed
+		_t2 = _t1
+	var dir := goal - _leg_start
+	dir.y = 0.0
+	dir = dir.normalized() if dir.length() > 0.01 else Vector3.ZERO
+	var moving := t >= _t0 and t < _t1
+	var k := clampf(inverse_lerp(_t0, _t1, t), 0.0, 1.0) if _t1 > _t0 else 1.0
+	global_position = _leg_start.lerp(goal, k)
 	if far:
 		return
 	if moving and dir != Vector3.ZERO:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-dir.x, -dir.z), 1.0 - exp(-6.0 * delta))
-	elif blocked and pd > 0.1:
-		model.rotation.y = lerp_angle(model.rotation.y, atan2(-to_p.x, -to_p.z), 1.0 - exp(-4.0 * delta))
 	Hero.play_move(model, Hero.move_state(speed) if moving else "idle", speed if moving else 0.0)
 	# glance at the player when they're close
 	if pd < 7.0 and pd > 0.1:

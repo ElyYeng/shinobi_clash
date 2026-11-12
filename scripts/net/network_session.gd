@@ -175,9 +175,20 @@ func name_with_clan(peer_id: int) -> String:
 	var clan := str(_known_clans.get(peer_id, "none"))
 	return nm if clan == "none" else "%s  [%s]" % [nm, Bloodline.get_def(clan)["name"]]
 
+var _villager_timer := 0.0
+
+@rpc("authority", "call_remote", "unreliable")
+func _villager_clock(host_time: float) -> void:
+	Villager.sync_clock(host_time)
+
 func _process(delta: float) -> void:
 	if not is_active() or _local_player == null:
 		return
+	if multiplayer.is_server():   # villagers' shared clock (Konoha)
+		_villager_timer += delta
+		if _villager_timer >= 2.0:
+			_villager_timer = 0.0
+			_villager_clock.rpc(Villager.now())
 	_sync_timer += delta
 	if _sync_timer < SYNC_INTERVAL:
 		return
