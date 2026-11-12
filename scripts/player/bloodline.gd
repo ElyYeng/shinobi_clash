@@ -165,6 +165,31 @@ const DEFS := {
 			{"name": "Ketsuryugan", "kind": "burst", "r": 14.0, "dmg": 40.0, "stun": 3.5, "desc": "A blood-red glare paralyses everything within 14m."}],
 		"mode": {"name": "Ketsuryugan Awakening", "cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Ketsuryugan.png"}, "dmg": 1.35, "hp": 3.0, "r": 6.0, "dps": 10.0, "desc": "+35% damage, heal 3/s, enemies within 6m bleed."}},
 
+	"mangekyo": {"name": "Mangekyo", "rarity": "Legendary", "weight": 1.2, "color": Color(0.85, 0.05, 0.1),
+		"desc": "Awakened Sharingan: +25% damage, +30 max chakra.", "stats": {"dmg": 1.25, "chakra": 30.0},
+		"abilities": [
+			{"name": "Tsukuyomi", "kind": "burst", "r": 10.0, "dmg": 45.0, "stun": 4.5, "col": Color(0.85, 0.05, 0.1), "desc": "A genjutsu glare: everything within 10m is frozen in place."},
+			{"name": "Kagutsuchi", "kind": "fan", "n": 3, "spread": 16.0, "speed": 30.0, "dmg": 70.0, "aoe": 3.0, "size": 0.5, "col": Color(0.05, 0.02, 0.05), "desc": "Three blades of black flame."},
+			{"name": "Kamui Warp", "kind": "target", "r": 22.0, "dmg": 160.0, "stun": 1.5, "col": Color(0.25, 0.08, 0.3), "desc": "Warps away a chunk of the nearest enemy."}],
+		"mode": {"name": "Eternal Mangekyo", "dmg": 1.4, "slow": 0.7, "speed": 1.15, "cd": 0.8, "cutscene": "eyes",
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Mangekyo.png"}, "desc": "+40% damage, enemies 30% slower, +15% speed, cooldowns 20% faster."}},
+	"jogan": {"name": "Jogan", "rarity": "Legendary", "weight": 1.5, "color": Color(0.45, 0.8, 1.0),
+		"desc": "The Pure Eye: +15% damage, chakra regens 40% faster.", "stats": {"dmg": 1.15, "regen": 1.4},
+		"abilities": [
+			{"name": "Pure Sight", "kind": "buff", "t": 7.0, "slow": 0.6, "dmg": 1.25, "desc": "7s: you see every move - enemies 40% slower, +25% damage."},
+			{"name": "Rift Palm", "kind": "cone", "r": 8.0, "dmg": 60.0, "knock": 22.0, "dot": 0.3, "desc": "A palm strike through the chakra rift - smashes enemies in front of you away."},
+			{"name": "Space Tear", "kind": "target", "r": 22.0, "dmg": 130.0, "stun": 2.0, "col": Color(0.45, 0.8, 1.0), "desc": "Tears space open around the nearest enemy."}],
+		"mode": {"name": "Jogan Awakening", "dmg": 1.3, "slow": 0.8, "cd": 0.75, "ck": 15.0, "cutscene": "eyes",
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Jogan.png", "aura": true}, "desc": "+30% damage, enemies 20% slower, cooldowns 25% faster, +15 chakra/s."}},
+	"tenseigan": {"name": "Tenseigan", "rarity": "Legendary", "weight": 1.0, "color": Color(0.35, 0.65, 1.0),
+		"desc": "Reincarnation Eye: +20% damage, +40 max health.", "stats": {"dmg": 1.2, "hp": 40.0},
+		"abilities": [
+			{"name": "Golden Wheel", "kind": "burst", "r": 16.0, "dmg": 95.0, "knock": 22.0, "stun": 1.0, "col": Color(0.55, 0.8, 1.0), "desc": "Golden Wheel Reincarnation Explosion: blasts everything within 16m."},
+			{"name": "Seeking Spheres", "kind": "homing", "n": 4, "dmg": 60.0, "aoe": 2.0, "size": 0.35, "col": Color(0.35, 0.65, 1.0), "desc": "4 chakra spheres hunt down enemies."},
+			{"name": "Chakra Cloak", "kind": "buff", "t": 8.0, "dmg": 1.4, "speed": 1.2, "ck": 20.0, "desc": "8s: +40% damage, +20% speed, +20 chakra/s."}],
+		"mode": {"name": "Tenseigan Chakra Mode", "dmg": 1.45, "def": 0.7, "speed": 1.15, "ck": 20.0, "hp": 3.0, "cutscene": "eyes",
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Tenseigan.png", "aura": true}, "desc": "+45% damage, take 30% less damage, +15% speed, +20 chakra/s, heal 3/s."}},
+
 	# ================================================================ Mythic (1.5%)
 	"otsutsuki": {"name": "Otsutsuki", "rarity": "Mythic", "weight": 1.5, "color": Color(0.85, 0.8, 1.0),
 		"desc": "Celestial: +50 max health and chakra, +25% damage, 1.5x chakra regen.",
@@ -176,6 +201,16 @@ const DEFS := {
 		"mode": {"name": "Six Paths", "dmg": 1.5, "def": 0.6, "speed": 1.25, "ck": 25.0, "hp": 5.0, "slow": 0.85,
 			"cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "orbs": 9, "aura": true},
 			"desc": "Rinnegan + Truth-Seeking Orbs: +50% damage, take 40% less damage, +25% speed, +25 chakra/s, heal 5/s, enemies 15% slower."}},
+	"kokugan": {"name": "Kokugan", "rarity": "Mythic", "weight": 0.8, "color": Color(0.82, 0.82, 0.9),
+		"desc": "The dark eye of the Otsutsuki: +25% damage, +40 max health, +30 max chakra.",
+		"stats": {"dmg": 1.25, "hp": 40.0, "chakra": 30.0},
+		"abilities": [
+			{"name": "Daikokuten", "kind": "burst", "r": 9.0, "dmg": 150.0, "stun": 2.0, "col": Color(0.15, 0.13, 0.18), "desc": "Drops a giant cube on everything within 9m."},
+			{"name": "Sukunahikona", "kind": "target", "r": 22.0, "dmg": 140.0, "stun": 2.5, "col": Color(0.82, 0.82, 0.9), "desc": "Shrinks the nearest enemy - and crushes it."},
+			{"name": "Karma Seal Barrage", "kind": "fan", "n": 5, "spread": 12.0, "speed": 48.0, "dmg": 80.0, "aoe": 2.0, "size": 0.25, "long": true, "col": Color(0.2, 0.18, 0.25), "desc": "Five black stakes fired from the Karma seal."}],
+		"mode": {"name": "Kokugan", "dmg": 1.5, "def": 0.65, "speed": 1.15, "cd": 0.7, "ck": 20.0, "cutscene": "eyes",
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Kokugan.png", "aura": true},
+			"desc": "+50% damage, take 35% less damage, +15% speed, cooldowns 30% faster, +20 chakra/s."}},
 	"rinnegan": {"name": "Rinnegan", "rarity": "Mythic", "weight": 1.0, "color": Color(0.62, 0.5, 0.85),
 		"desc": "The eye of the Sage: +20% damage, +40 max chakra, chakra regens 25% faster.",
 		"stats": {"dmg": 1.2, "chakra": 40.0, "regen": 1.25},
