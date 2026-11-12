@@ -306,13 +306,14 @@ func _process(delta: float) -> void:
 			speed = 0.0   # floating: idle pose only
 		if sitting and speed > 1.0:
 			sitting = false
-		if animation_lock <= 0.0 and not sitting:
+		if animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink)):
 			Hero.play_move(model, Hero.move_state(speed), speed)
 		if _kd_rag == null or not is_instance_valid(_kd_rag):
 			HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
-		if klink != null and is_instance_valid(klink):   # riding Kurama
+		if klink != null and is_instance_valid(klink):   # riding Kurama: stand still on its head
 			model.global_position = klink.seat_position()
-			klink.set_moving(speed > 1.0)
+			klink.set_moving(speed > 1.0, speed)
+			Hero.play(model, "idle")
 	_last_position = global_position
 
 

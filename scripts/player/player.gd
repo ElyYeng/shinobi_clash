@@ -665,7 +665,7 @@ func _klink_update(delta: float, moving: bool) -> void:
 		_toast("Kurama Link faded - out of chakra" if chakra <= 0.0 else "Kurama Link released")
 		_klink_off()
 		return
-	klink.set_moving(moving)
+	klink.set_moving(moving, Vector2(velocity.x, velocity.z).length())
 	if Input.is_action_pressed("attack"):
 		_klink_move("claw")
 	for key in KL_KEYS:
@@ -1024,6 +1024,9 @@ func _floating() -> bool:
 	return powered and bool(pmode.get("look", {}).get("float", false)) and not is_dead and not wall_walking
 
 func _update_anim() -> void:
+	if klink != null:   # riding Kurama: just stand on its head
+		Hero.play_move(model, "idle", 0.0)
+		return
 	if anim_lock > 0.0:
 		if sitting:
 			sitting = false
@@ -1973,6 +1976,13 @@ func _end_mode() -> void:
 func slot_info(key: String) -> Dictionary:
 	var d := {"name": "", "cd": 0.0, "max": 1.0, "cost": 0.0, "locked": false, "active": false, "timer": 0.0,
 		"not_ready": false, "icon": null, "empty": false}
+	if klink != null and KL_KEYS.has(key):   # riding Kurama: its skills are on R / T / Y
+		var kind: String = KL_KEYS[key]
+		var kd: Dictionary = KL_MOVES[kind]
+		d.merge({"name": {"bomb": "Tailed Beast Bomb", "slam": "Kurama Slam", "roar": "Kurama Roar"}[kind],
+			"cd": float(_kl_cd.get(kind, 0.0)), "max": float(kd["cd"]), "cost": float(kd["ck"]),
+			"icon": Moves.tex("res://assets/icons/kl_%s.png" % kind)}, true)
+		return d
 	if Moves.BIND_KEYS.has(key):   # assignable key: shows the move bound to it
 		var mv := str(GameData.keybinds.get(key, ""))
 		var a := Moves.spec(mv)

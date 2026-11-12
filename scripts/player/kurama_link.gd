@@ -68,8 +68,24 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_busy = maxf(0.0, _busy - delta)
+	_snap_to_ground()
 	if follow != null and is_instance_valid(follow) and not _dying:
 		rotation.y = lerp_angle(rotation.y, follow.global_rotation.y + PI, 1.0 - exp(-10.0 * delta))
+
+## Keep the paws on the ground (the owner may be in the air or offset, e.g. a remote avatar).
+func _snap_to_ground() -> void:
+	if not is_inside_tree():
+		return
+	var from: Vector3 = (get_parent() as Node3D).global_position if get_parent() is Node3D else global_position
+	var q := PhysicsRayQueryParameters3D.create(from + Vector3.UP * 3.0, from + Vector3.DOWN * 30.0)
+	q.collision_mask = 1
+	var ex: Array[RID] = []
+	if get_parent() is CollisionObject3D:
+		ex.append((get_parent() as CollisionObject3D).get_rid())
+	q.exclude = ex
+	var h := get_world_3d().direct_space_state.intersect_ray(q)
+	if not h.is_empty():
+		global_position.y = (h["position"] as Vector3).y
 
 ## Where the rider stands (on top of the head), in world space.
 func seat_position() -> Vector3:
@@ -77,12 +93,18 @@ func seat_position() -> Vector3:
 		return _seat.global_position + Vector3.UP * 1.3   # head bone = base of the skull: stand on top
 	return global_position + Vector3.UP * 3.8
 
-func set_moving(on: bool) -> void:
-	if ap == null or _busy > 0.0 or _dying:
+## Run cycle speed per m/s of ground speed (so the paws keep up instead of sliding).
+const RUN_RATE := 0.22
+func set_moving(on: bool, speed := 8.0) -> void:
+	if ap == null or _dying:
+		return
+	if _busy > 0.0:
+		ap.speed_scale = 1.0
 		return
 	var want := RUN if on else IDLE
 	if ap.current_animation != want:
 		ap.play(want, 0.2)
+	ap.speed_scale = clampf(speed * RUN_RATE, 1.0, 3.0) if on else 1.0
 
 func attack(kind: String) -> void:
 	if ap == null or _dying or not MOVES.has(kind):
