@@ -83,7 +83,7 @@ func _host(mode: String) -> void:
 		status_label.text = "Could not host: %s" % error_string(error)
 		return
 	GameData.mode = "world" if mode == "coop" else ("kurama" if mode == "raid" else "fight")
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 func _join() -> void:
 	_save_fields()
@@ -107,7 +107,7 @@ func _read_port() -> int:
 	return port
 
 func _on_joined() -> void:
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 func _on_failed(message: String) -> void:
 	status_label.text = message

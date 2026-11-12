@@ -206,7 +206,7 @@ func _back_to_world() -> void:
 		NetworkSession.return_party_to_world()   # host moves the party; clients wait for it
 		return
 	GameData.mode = "world"
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 func _boss_mode() -> bool:
 	return mode == "kurama" or mode == "uchiha"
@@ -357,7 +357,7 @@ func _enter_uchiha_arena() -> void:
 		return
 	GameData.boss_from_world = true
 	GameData.mode = "uchiha"
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 ## TEST: a 1000 HP ninja near the spawn to try combos / knockdowns on. It only fights back once
 ## you hit it, and comes back 5 s after it's beaten.

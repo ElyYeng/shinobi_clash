@@ -1033,7 +1033,7 @@ func _go_uchiha_arena() -> void:
 	_uchiha = null
 	GameData.boss_from_world = true
 	GameData.mode = "uchiha"
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 ## Host after the win: everyone back to the open world (by the gate).
 func return_party_to_world() -> void:
@@ -1061,7 +1061,7 @@ func _return_raid_party_to_world() -> void:
 	_uchiha = null
 	session_mode = "coop"
 	GameData.mode = "world"
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _raid_snapshot(pos: Vector3, yaw: float, hp: float, boss_phase: int, boss_state: int, attack: String, attack_time: float, attack_length: float, target_pos: Vector3) -> void:

@@ -411,7 +411,10 @@ func _physics_process(delta: float) -> void:
 		mode_meter = minf(GameData.md_max(), mode_meter + 1.0 * delta * _md_mult())
 	invuln = maxf(0.0, invuln - delta)
 	_update_buffs(delta)
-	var hpr := hp_regen + _badd("hp") + (6.0 if kurama else 0.0)
+	# slow natural healing: 0.5% of max HP a second, 2% once you've gone 5 s without being hit
+	_since_hurt += delta
+	var natural := max_health * (0.02 if _since_hurt > 5.0 else 0.005) if not is_dead else 0.0
+	var hpr := hp_regen + _badd("hp") + (6.0 if kurama else 0.0) + natural
 	if hpr > 0.0:
 		health = minf(max_health, health + hpr * delta)
 
@@ -1977,7 +1980,9 @@ func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest
 	dest.z = clampf(dest.z, -half, half)
 	dest.y = from.y
 	Sfx.play(self, "teleport")
-	Fx.puff(get_parent(), from + Vector3.UP, Color(0.8, 0.75, 0.65, 0.9), 2.2)
+	SubLog.spawn(get_parent() as Node3D, from, model.global_rotation.y if model != null else 0.0)   # the log left behind
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_world_fx("sublog", from, Vector3(0, model.global_rotation.y if model != null else 0.0, 0), 0.0)
 	global_position = dest
 	velocity = Vector3.ZERO
 	invuln = maxf(invuln, 0.6)
@@ -2078,9 +2083,12 @@ func slot_info(key: String) -> Dictionary:
 				d["name"] = "Charge"
 	return d
 
+var _since_hurt := 99.0   # seconds since you last took damage (natural healing speeds up)
+
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := false) -> void:
 	if invuln > 0.0 or is_dead or god_mode or downed > 0.0:
 		return
+	_since_hurt = 0.0
 	if _immune():   # e.g. Hozuki Hydrification
 		Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.4, 0.75, 0.95, 0.7), 1.2)
 		return

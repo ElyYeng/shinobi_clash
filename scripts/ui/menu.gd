@@ -126,7 +126,7 @@ func _open_customize() -> void:
 func _play(mode: String) -> void:
 	GameData.boss_from_world = false
 	GameData.mode = mode
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if spin != null and spin.root.visible:

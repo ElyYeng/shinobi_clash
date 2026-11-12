@@ -78,6 +78,7 @@ static func play(kind: String, world: Node3D, a: Vector3, b: Vector3, f: float) 
 		"bansho": bansho_tenin(world, a, f)
 		"chibaku": chibaku_tensei(world, b)
 		"glare": SharinganFx.glare(world, a, f)
+		"sublog": SubLog.spawn(world, a, b.y)   # Substitution: the log left behind
 		"amaterasu":   # (remote view) the flames on whoever stands at `b`
 			var body := nearest_body(world, b, 3.0)
 			if body != null:
