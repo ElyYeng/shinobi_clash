@@ -13,6 +13,9 @@ var boss_label: Label
 var bar: AbilityBar
 var quest_visible := true
 var msg_label: Label
+var end_screen: EndScreen
+var _alive_time := 0.0   # time survived (shown on the defeat screen)
+var _dead_time := 0.0
 var lock_label: Label
 var toast_label: Label
 var quest_label: Label
@@ -131,6 +134,9 @@ func _ready() -> void:
 	toast_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	toast_label.add_theme_constant_override("outline_size", 8)
 	toast_label.modulate.a = 0.0
+	end_screen = EndScreen.new()
+	add_child(end_screen)
+	end_screen.retry.connect(func() -> void: get_tree().reload_current_scene())
 	msg_label = Label.new()
 	add_child(msg_label)
 	msg_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -262,9 +268,18 @@ func _process(delta: float) -> void:
 		lock_label.position = p.cam.unproject_position(p.lock_target.global_position + Vector3.UP * 1.2) - Vector2(14, 22)
 	else:
 		lock_label.visible = false
+	msg_label.text = ""
 	if p.is_dead:
-		msg_label.text = "DEFEATED\nKills %d\nEnter = retry   M = menu   B = bloodline spin" % p.kills
+		_dead_time += delta
+		if _dead_time > 1.1:   # let the body fall first
+			var t := int(_alive_time)
+			end_screen.show_end("DEFEATED", false, "Get back up, shinobi.", [["KILLS", p.kills],
+				["LEVEL", GameData.level], ["TIME", "%d:%02d" % [t / 60, t % 60]]])
 	elif victory:
-		msg_label.text = "VICTORY!\nThe Nine-Tailed Beast has fallen\n+5 spins   (spin at the main menu)\nEnter = fight again   M = menu"
+		end_screen.show_end("VICTORY", true, "The Nine-Tailed Beast has fallen   -   +5 spins",
+			[["KILLS", p.kills], ["LEVEL", GameData.level]])
 	else:
-		msg_label.text = ""
+		_alive_time += delta
+		_dead_time = 0.0
+		if end_screen.visible:
+			end_screen.hide_end()
