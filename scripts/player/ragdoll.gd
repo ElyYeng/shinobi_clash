@@ -32,6 +32,12 @@ var sk: Skeleton3D
 var parts: Array = []  # [bone_idx, body, offset]
 var life := 0.0
 var network_driven := false
+var model_ref: Node3D
+var _hair: Array = []      # rigid hair moved onto the head body: [node, old parent, local transform, skeleton path]
+var _bones: Array[int] = []
+var _from: Array = []      # world pose of each part's bone when getting up
+var _blend := -1.0
+var _blend_t := 0.45
 
 ## Turns `model` limp. Returns null if it has no compatible skeleton.
 static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
@@ -61,6 +67,8 @@ static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
 			ap.active = false
 	var r := Ragdoll.new()
 	r.sk = sk
+	r.model_ref = model
+	r.process_priority = 100   # after the AnimationPlayer, so the get-up blend sits on top of it
 	parent.add_child(r)
 	var g := sk.global_transform
 	var bodies := {}
@@ -122,6 +130,7 @@ static func start(model: Node3D, parent: Node, vel: Vector3) -> Ragdoll:
 			# leave those meshes alone because the ragdoll updates the Head bone.
 			if hair.skin != null:
 				continue
+			r._hair.append([hair, hair.get_parent(), hair.transform, hair.skeleton])
 			# With no Skin, MeshInstance3D.skeleton is only a stale/imported path.
 			# Clear it before changing parents so it cannot point outside the model.
 			hair.skeleton = NodePath("")
@@ -190,6 +199,10 @@ func apply_network_state(state: PackedFloat32Array) -> void:
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(sk):
+		queue_free()
+		return
+	if _blend >= 0.0:
+		_blend_step(delta)
 		return
 	life += delta
 	var inv := sk.global_transform.affine_inverse()
@@ -203,3 +216,75 @@ func _process(delta: float) -> void:
 
 func hips() -> Vector3:
 	return (parts[0][1] as RigidBody3D).global_position if not parts.is_empty() else global_position
+
+# ---------------------------------------------------------------- knockdown / getting up
+## Knock `model` down: limp for `down` seconds, then it gets up - its body blends from where it
+## landed into the sit pose (palm on the ground) and then stands back up to idle.
+## `on_rise(hips: Vector3, yaw: float)` is called right before, so the owner can move its root
+## under the body (yaw is NAN if unknown). Returns null if the model can't ragdoll.
+static func knockdown(model: Node3D, parent: Node, vel: Vector3, down := 2.0, on_rise := Callable(), owner_body: PhysicsBody3D = null) -> Ragdoll:
+	var r := start(model, parent, vel)
+	if r == null:
+		return null
+	if owner_body != null:   # the limbs start inside the owner's capsule: don't get shoved out of it
+		for p in r.parts:
+			(p[1] as RigidBody3D).add_collision_exception_with(owner_body)
+	r.get_tree().create_timer(down).timeout.connect(r._rise.bind(on_rise))
+	return r
+
+const RISE_SIT := 0.75   # seconds in the sit pose before standing up
+
+func _rise(on_rise: Callable) -> void:
+	if not is_instance_valid(sk) or parts.is_empty() or not is_instance_valid(model_ref):
+		queue_free()
+		return
+	var hp := hips()
+	var head := (parts[2][1] as RigidBody3D).global_position
+	var feet := hp - head   # sitting up: legs point away from the head
+	feet.y = 0.0
+	var yaw := atan2(-feet.x, -feet.z) if feet.length() > 0.05 else NAN
+	_from.clear()
+	_bones.clear()
+	for p in parts:
+		_bones.append(p[0])
+		_from.append((p[1] as RigidBody3D).global_transform * p[2])
+	if on_rise.is_valid():
+		on_rise.call(hp, yaw)
+	# physics off, hair back on the head, animation back on
+	for c in get_children():
+		c.queue_free()
+	parts.clear()
+	for h in _hair:
+		var node := h[0] as Node3D
+		if is_instance_valid(node) and is_instance_valid(h[1]):
+			node.reparent(h[1], false)
+			node.transform = h[2]
+			(node as MeshInstance3D).skeleton = h[3]
+	_hair.clear()
+	if model_ref.has_meta("anim_player"):
+		var ap := model_ref.get_meta("anim_player") as AnimationPlayer
+		if is_instance_valid(ap):
+			ap.active = true
+	Hero.play(model_ref, "sit", true, 0, 0.0, 0.0)
+	var m := model_ref
+	get_tree().create_timer(RISE_SIT).timeout.connect(func() -> void:
+		if is_instance_valid(m):
+			Hero.play(m, "idle", true, 0, 0.0, 0.45))
+	_blend = 0.0
+	set_process(true)
+
+## Blends the skeleton from the pose it landed in to whatever the animation plays now.
+func _blend_step(delta: float) -> void:
+	_blend += delta
+	var t := clampf(_blend / _blend_t, 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	if t >= 1.0:
+		queue_free()
+		return
+	var inv := sk.global_transform.affine_inverse()
+	var anim: Array[Transform3D] = []
+	for bi in _bones:
+		anim.append(sk.get_bone_global_pose(bi))
+	for i in _bones.size():   # parents first (PARTS order)
+		var from: Transform3D = inv * (_from[i] as Transform3D)
+		sk.set_bone_global_pose(_bones[i], from.interpolate_with(anim[i], t))

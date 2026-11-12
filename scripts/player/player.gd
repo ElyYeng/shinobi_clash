@@ -64,6 +64,8 @@ var combo_timer := 0.0
 var attack_cd := 0.0
 var attack_lock := 0.0
 var anim_lock := 0.0
+var downed := 0.0      # knocked down by a combo finisher (PvP): ragdoll, then get up
+var _kd_rag: Ragdoll
 var sitting := false   # P: sit on the floor (test pose); moving gets you up
 var kunai_cd := 0.0
 var fire_cd := 0.0
@@ -342,6 +344,17 @@ func _physics_process(delta: float) -> void:
 			if not is_on_floor():
 				velocity.y -= GRAVITY * delta
 			move_and_slide()
+		return
+
+	if downed > 0.0:   # knocked down: no control until you're back up
+		downed -= delta
+		velocity.x = 0.0
+		velocity.z = 0.0
+		if not is_on_floor():
+			velocity.y -= GRAVITY * delta
+		move_and_slide()
+		if _kd_rag != null and is_instance_valid(_kd_rag) and not _kd_rag.parts.is_empty():
+			pivot.global_position = pivot.global_position.lerp(_kd_rag.hips() + Vector3.UP * 0.6, 4.0 * delta)
 		return
 
 	combo_timer = maxf(0.0, combo_timer - delta)
@@ -943,9 +956,11 @@ func _melee() -> void:
 		var reach := 3.2 * e.k
 		if to.length() < reach and (to.length() < 0.8 or facing.dot(to.normalized()) > 0.3):
 			e.take_damage(dmg, facing * knock)
+			if combo == 3:   # combo finisher knocks them down
+				e.knockdown(facing * knock)
 			VfxKit.hit(get_parent(), e.global_position + Vector3.UP * 1.1 * e.k, null, 0.7 if combo < 3 else 1.1)
 	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
-		NetworkSession.try_hit_players(dmg, facing * knock)
+		NetworkSession.try_hit_players(dmg, facing * knock, combo == 3)
 	if not _play_once("attack", attack_cd + 0.1, combo - 1):
 		Fx.swing(arm)
 
@@ -1232,6 +1247,27 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 		_hit_foe(e, dps * 0.5 * _dmg() * (_bl_mult() if not cur_mkey.begins_with("el:") else 1.0), Vector3.ZERO)
 		Fx.puff(get_parent(), e.global_position + Vector3.UP * 1.2, Color(col.r, col.g, col.b, 0.8), 0.9)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 16, 5.0, 0.15, 0.5, 0.0)
+
+## A combo finisher knocked you down: limp for a moment, then you get up where you landed.
+func _knockdown(knock: Vector3) -> void:
+	if downed > 0.0 or is_dead or susanoo != null or model == null:
+		return
+	if wall_walking:
+		_end_wall_walk(Vector3.ZERO)
+	sitting = false
+	_charge_aura(false)
+	_kd_rag = Ragdoll.knockdown(model, get_parent(), knock * 0.45 + Vector3.UP * 3.5, Enemy.DOWN_TIME, func(hips: Vector3, yaw: float) -> void:
+		global_position = Vector3(hips.x, global_position.y, hips.z)
+		if not is_nan(yaw):
+			facing = Vector3(-sin(yaw), 0.0, -cos(yaw))
+			model.basis = Basis(Vector3.UP, yaw).scaled(model.basis.get_scale()), self)
+	if _kd_rag == null:
+		return
+	downed = Enemy.DOWN_TIME + Enemy.RISE_TIME
+	anim_lock = 0.0
+	Sfx.play(self, "thud", -2.0)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("knockdown", 0)
 
 ## Chakra aura around you while you hold C to charge (Aura 3D shader shell).
 const CHARGE_AURA := Color(0.2, 0.55, 1.0)
@@ -1691,8 +1727,8 @@ func slot_info(key: String) -> Dictionary:
 				d["name"] = "Charge"
 	return d
 
-func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
-	if invuln > 0.0 or is_dead or god_mode:
+func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := false) -> void:
+	if invuln > 0.0 or is_dead or god_mode or downed > 0.0:
 		return
 	if _immune():   # e.g. Hozuki Hydrification
 		Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.4, 0.75, 0.95, 0.7), 1.2)
@@ -1728,4 +1764,6 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 			create_tween().tween_property(model, "rotation:x", -PI / 2.0, 0.4)
 	else:
 		Sfx.play(self, "hurt", -3.0)
+		if knockdown:
+			_knockdown(knock)
 		_play_once("hurt", 0.3)

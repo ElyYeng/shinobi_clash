@@ -244,6 +244,26 @@ func _start_world() -> void:
 		map.add_child(crowd)
 		Villager.populate(crowd, 28)
 	_refresh_markers()
+	_spawn_test_ninja()
+
+## TEST: a 1000 HP ninja near the spawn to try combos / knockdowns on. It only fights back once
+## you hit it, and comes back 5 s after it's beaten.
+const TEST_NINJA_HP := 1000.0
+func _spawn_test_ninja() -> void:
+	if not is_inside_tree() or player == null:
+		return
+	var e := Enemy.new()
+	e.health = TEST_NINJA_HP
+	e.speed = 3.5
+	e.damage = 3.0
+	e.aggro_range = 3.0
+	e.display_name = "Test Ninja (1K HP)"
+	var pos := player.global_position + Vector3(0, 0.5, -6)
+	e.position = pos
+	add_child(e)
+	e.tree_exited.connect(func() -> void:
+		if is_inside_tree():
+			get_tree().create_timer(5.0).timeout.connect(_spawn_test_ninja))
 
 func _refresh_markers() -> void:
 	var act := quests.active_def()

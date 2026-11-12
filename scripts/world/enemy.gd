@@ -39,6 +39,9 @@ var bl_dash_t := 0.0
 var bl_dash_dir := Vector3.ZERO
 var bl_dash_hit := false
 var bl_dash_dmg := 0.0
+var downed := 0.0        # > 0: knocked down (ragdoll) and getting up - no AI, can't be hit
+const DOWN_TIME := 2.0   # seconds limp on the ground
+const RISE_TIME := 1.3   # getting up (sit pose -> stand)
 var uses_hero := false   # true = random-outfit Hero model instead of the placeholder ninja
 var arm: Node3D
 var label: Label3D
@@ -150,7 +153,7 @@ func apply_quest_network_identity(id: String, appearance: Dictionary, synced_max
 
 ## Procedural run bob + forward lean for the placeholder ninjas (skipped for models with real animations).
 func _animate_body(delta: float) -> void:
-	if is_boss or model == null:
+	if is_boss or model == null or downed > 0.0:
 		return
 	var sp := Vector2(velocity.x, velocity.z).length()
 	if uses_hero:
@@ -168,6 +171,12 @@ func _animate_body(delta: float) -> void:
 func _ai(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= 26.0 * delta
+	if downed > 0.0:
+		downed -= delta
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		return
 	var ts := time_scale
 	atk_cd -= delta * ts
 	stun -= delta * ts
@@ -402,7 +411,7 @@ func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) 
 
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
-	if network_quest_defeated or health <= 0.0:
+	if network_quest_defeated or health <= 0.0 or downed > 0.0:
 		return
 	# PvP arena: the host can only hurt arena ninjas after joining Ninja Battle (remote players
 	# are checked by the host in NetworkSession._server_quest_enemy_damage).
@@ -445,6 +454,28 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 		_death_fx()
 		remove_from_group("enemies")
 		_remove_with_ragdoll(knock)
+
+## Combo finisher: ragdoll for a moment, then get back up where the body landed.
+## (Not on bosses, co-op quest copies or the placeholder ninja model.)
+func knockdown(knock: Vector3) -> void:
+	if downed > 0.0 or health <= 0.0 or is_boss or not uses_hero or network_quest_id != "" or model == null:
+		return
+	var world := get_parent()
+	if world == null or not is_inside_tree():
+		return
+	var vel := knock * 0.45 + Vector3.UP * 3.5
+	var r := Ragdoll.knockdown(model, world, vel, DOWN_TIME, func(hips: Vector3, yaw: float) -> void:
+		if not is_instance_valid(self):
+			return
+		global_position = Vector3(hips.x, global_position.y, hips.z)
+		if not is_nan(yaw):
+			model.rotation.y = yaw, self)
+	if r == null:
+		return
+	downed = DOWN_TIME + RISE_TIME
+	windup = 0.0
+	velocity = Vector3.ZERO
+	Sfx.play(self, "thud", -4.0)
 
 func _death_fx() -> void:
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(1, 0.85, 0.6, 0.9), 2.5 * k)

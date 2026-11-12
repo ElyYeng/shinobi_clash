@@ -72,10 +72,18 @@ func set_kurama_visual(enabled: bool) -> void:
 
 var susanoo: Susanoo
 
+var _kd_rag: Ragdoll   # knocked down (ragdoll / getting up)
 var sitting := false   # sitting on the floor (P); held until they stand or move
 
 func play_combat_animation(state: String, variant: int = 0) -> void:
 	if model == null or network_ragdoll_started:
+		return
+	if state == "knockdown":   # their combo-finisher knockdown: ragdoll here too, then get up
+		if _kd_rag == null or not is_instance_valid(_kd_rag):
+			var back := model.global_basis.z.normalized()
+			_kd_rag = Ragdoll.knockdown(model, get_parent(), back * 6.3 + Vector3.UP * 3.5, Enemy.DOWN_TIME)
+			if _kd_rag != null:
+				animation_lock = Enemy.DOWN_TIME + Enemy.RISE_TIME
 		return
 	if state == "sit":
 		sitting = variant == 1
@@ -274,7 +282,8 @@ func _process(delta: float) -> void:
 			sitting = false
 		if animation_lock <= 0.0 and not sitting:
 			Hero.play_move(model, Hero.move_state(speed), speed)
-		HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
+		if _kd_rag == null or not is_instance_valid(_kd_rag):
+			HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
 	_last_position = global_position
 
 

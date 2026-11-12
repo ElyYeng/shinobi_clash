@@ -1062,7 +1062,7 @@ func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: flo
 	else:
 		_apply_player_damage.rpc_id(target_id, safe_damage, Vector3.ZERO)
 
-func try_hit_players(damage: float, knockback: Vector3) -> void:
+func try_hit_players(damage: float, knockback: Vector3, knockdown := false) -> void:
 	if not is_active() or session_mode != "pvp":
 		return
 	for peer_id in _avatars.keys():
@@ -1074,15 +1074,15 @@ func try_hit_players(damage: float, knockback: Vector3) -> void:
 		to.y = 0.0
 		if to.length() <= 3.2 and to.length() > 0.01 and _local_player.facing.dot(to.normalized()) > 0.25:
 			if multiplayer.is_server():
-				_server_apply_hit(1, int(peer_id), damage, knockback)
+				_server_apply_hit(1, int(peer_id), damage, knockback, 4.0, 80.0, knockdown)
 			else:
-				_request_player_hit.rpc_id(1, int(peer_id), damage, knockback)
+				_request_player_hit.rpc_id(1, int(peer_id), damage, knockback, knockdown)
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_player_hit(target_id: int, damage: float, knockback: Vector3) -> void:
+func _request_player_hit(target_id: int, damage: float, knockback: Vector3, knockdown := false) -> void:
 	if not multiplayer.is_server():
 		return
-	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback)
+	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback, 4.0, 80.0, knockdown)
 
 ## Other players the local player may hit right now (PvP arena, both joined PvP Battle, not
 ## in your party, not ragdolled).
@@ -1115,7 +1115,7 @@ func _request_ability_hit(target_id: int, damage: float, knockback: Vector3) -> 
 		return
 	_server_apply_hit(multiplayer.get_remote_sender_id(), target_id, damage, knockback, ABILITY_HIT_RANGE, ABILITY_MAX_DAMAGE)
 
-func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3, max_range := 4.0, max_damage := 80.0) -> void:
+func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockback: Vector3, max_range := 4.0, max_damage := 80.0, knockdown := false) -> void:
 	if attacker_id == target_id or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
 	if not pvp_allowed(attacker_id, target_id):
@@ -1138,14 +1138,14 @@ func _server_apply_hit(attacker_id: int, target_id: int, damage: float, knockbac
 		return
 	var safe_damage := clampf(damage, 1.0, max_damage)
 	if target_id == 1 and _local_player != null:
-		_local_player.take_damage(safe_damage, knockback)
+		_local_player.take_damage(safe_damage, knockback, knockdown)
 	else:
-		_apply_player_damage.rpc_id(target_id, safe_damage, knockback)
+		_apply_player_damage.rpc_id(target_id, safe_damage, knockback, knockdown)
 
 @rpc("authority", "call_remote", "reliable")
-func _apply_player_damage(amount: float, knockback: Vector3) -> void:
+func _apply_player_damage(amount: float, knockback: Vector3, knockdown := false) -> void:
 	if _local_player != null:
-		_local_player.take_damage(amount, knockback)
+		_local_player.take_damage(amount, knockback, knockdown)
 
 
 ## Replicate the persistent bloodline power-up aura on remote player avatars.
