@@ -45,6 +45,9 @@ var _sent_quest_enemy_identities: Dictionary = {}
 var _pending_quest_enemy_identities: Dictionary = {}
 
 func _ready() -> void:
+	var vc := VoiceChat.new()   # proximity push-to-talk (hold K)
+	vc.name = "VoiceChat"
+	add_child(vc)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)

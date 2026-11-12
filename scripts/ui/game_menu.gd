@@ -1472,7 +1472,7 @@ func _page_controls() -> Array:
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
 			"Hold C: charge chakra - keep holding to power up or release a form (bloodline LV 1000, drains MD)\nX: power-up on / off\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
 		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
-			"M: this menu\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
+			"M: this menu\nHold K: voice chat (multiplayer, nearby players hear you)\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]
 
 # ------------------------------------------------------------------ actions
