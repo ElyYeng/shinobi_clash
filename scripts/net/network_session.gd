@@ -1310,6 +1310,41 @@ func broadcast_ability(move_id: String, color: Color) -> void:
 
 
 
+## World effects that everyone sees (Kokugan cube / rods / Sukunahikona). Visual only on the
+## other peers: the caster deals the damage.
+func broadcast_world_fx(kind: String, a: Vector3, b: Vector3, f: float) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_world_fx.rpc(1, kind, a, b, f)
+	else:
+		_request_world_fx.rpc_id(1, kind, a, b, f)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_world_fx(kind: String, a: Vector3, b: Vector3, f: float) -> void:
+	if not multiplayer.is_server():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	if not _known_players.has(sender):
+		return
+	_show_world_fx(sender, kind, a, b, f)
+	_world_fx.rpc(sender, kind, a, b, f)
+
+@rpc("authority", "call_remote", "reliable")
+func _world_fx(peer_id: int, kind: String, a: Vector3, b: Vector3, f: float) -> void:
+	if peer_id == multiplayer.get_unique_id():
+		return
+	_show_world_fx(peer_id, kind, a, b, f)
+
+func _show_world_fx(peer_id: int, kind: String, a: Vector3, b: Vector3, f: float) -> void:
+	var av = _avatars.get(peer_id)
+	var world: Node3D = (av as Node).get_parent() as Node3D if av != null and is_instance_valid(av) else null
+	if world == null:
+		world = get_tree().current_scene as Node3D
+	if av != null and is_instance_valid(av) and av.get("model") != null:
+		Hero.play(av.model, "jutsu", true)
+	KokuganFx.play(kind, world, a, b, clampf(f, 0.0, 40.0))
+
 ## Replicate clone spawns and their live transforms. Remote clones are visual-only.
 func broadcast_shadow_clones(clones: Array[Clone], lifetime: float) -> void:
 	if not is_active():

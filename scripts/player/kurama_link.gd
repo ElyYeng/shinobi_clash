@@ -7,6 +7,7 @@ extends Node3D
 
 const MODEL := "res://assets/kuramalinkmode/scene.gltf"
 const SCALE := 10.0
+const SKIN := "res://assets/kuramalinkmode/textures/Material.001_baseColor.png"
 const IDLE := "Armature|atstand"
 const RUN := "Armature|run"
 ## move -> [animation, seconds into it where the hit lands]
@@ -98,9 +99,9 @@ func _recolor(m: Node3D) -> void:
 				continue
 			var nm := src.duplicate() as BaseMaterial3D
 			if src.albedo_texture != null:
-				var key := src.albedo_texture.resource_path
+				var key := SKIN
 				if not _grey_cache.has(key):
-					var img := src.albedo_texture.get_image()
+					var img := (load(SKIN) as Texture2D).get_image()
 					if img.is_compressed():
 						img.decompress()
 					img.convert(Image.FORMAT_L8)

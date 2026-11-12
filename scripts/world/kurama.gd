@@ -146,6 +146,20 @@ func _placeholder() -> Node3D:
 	ph.scale = Vector3.ONE * 4.0
 	return ph
 
+## Force this Kurama's own texture: both Kurama models ship a texture with the same name (and
+## used to share an import UID), so an old import cache could hand it the Kurama Link skin.
+const SKIN := "res://assets/kurama/textures/Material.001_baseColor.png"
+func _own_skin(inst: Node3D) -> void:
+	var tex := load(SKIN) as Texture2D
+	if tex == null:
+		return
+	for mi in inst.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (mi as MeshInstance3D).mesh
+		for si in mesh.get_surface_count():
+			var src := mesh.surface_get_material(si) as BaseMaterial3D
+			if src != null and src.albedo_texture != null:
+				src.albedo_texture = tex   # (the toon pass below reads the mesh's own material)
+
 func _make_model() -> Node3D:
 	if not _searched:
 		_searched = true
@@ -165,6 +179,7 @@ func _make_model() -> Node3D:
 	wrapper.add_child(fixer)
 	fixer.add_child(inst)
 	_fit(fixer, inst)
+	_own_skin(inst)
 	Fx.toonify_model(inst)
 	for n in inst.find_children("*", "MeshInstance3D", true, false):
 		(n as MeshInstance3D).extra_cull_margin = 40.0   # skinned mesh bounds can be stale
