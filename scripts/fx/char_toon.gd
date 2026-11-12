@@ -22,6 +22,12 @@ static func _get_shader(two_sided: bool) -> Shader:
 		code = code.replace("uniform sampler2D albedo_texture;",
 			"uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;\nuniform vec3 uv1_scale = vec3(1.0);\nuniform vec3 uv1_offset = vec3(0.0);")
 		code = code.replace("void vertex() {", "void vertex() {\n\tUV = UV * uv1_scale.xy + uv1_offset.xy;")
+		# hard step on the light angle only; cast shadows (soft, grainy edges from tall objects)
+		# fade in smoothly instead of being snapped into dither
+		code = code.replace("float ndotl = clamp(dot(NORMAL,LIGHT),0.0,1.0) * ATTENUATION;",
+			"float ndotl = clamp(dot(NORMAL,LIGHT),0.0,1.0);")
+		code = code.replace("vec3 diffuse = vec3(pow(light, 1.0)) * (LIGHT_COLOR / PI);",
+			"light *= smoothstep(0.1, 0.9, ATTENUATION);\n\tvec3 diffuse = vec3(pow(light, 1.0)) * (LIGHT_COLOR / PI);")
 		if two_sided:
 			code = code.replace("shader_type spatial;", "shader_type spatial;\nrender_mode cull_disabled;")
 		var sh := Shader.new()
