@@ -13,9 +13,12 @@ var life := 3.0
 var shooter: Enemy = null      # host: the enemy that fired it (decides who it can hit)
 var target_peer := 1           # who a homing bolt chases
 var cosmetic := false
+var visual := ""               # the move's projectile look (LegendFx.PROJ / Mythic kinds), "" = glowing ball
 
 
 func _ready() -> void:
+	if visual != "" and _build_visual():
+		return
 	var mesh := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
 	sphere.radius = maxf(size, 0.15)
@@ -54,7 +57,24 @@ func _targets() -> Dictionary:
 	return out
 
 
+## The same projectile looks the players' moves have (spears, orbs, crystals, bones...).
+func _build_visual() -> bool:
+	if LegendFx.PROJ.has(visual):
+		LegendFx.build_proj(self, visual, size)
+	else:
+		match visual:
+			"dust": MythicFx.build_dust_cube(self, size)
+			"orb": MythicFx.build_orb(self, size)
+			"bone": MythicFx.build_bone(self, size)
+			"susanoo_arrow": SharinganFx.build_susanoo_arrow(self, size)
+			_: return false
+	if velocity.length() > 0.01:
+		look_at.call_deferred(global_position + velocity)
+	return true
+
 func _physics_process(delta: float) -> void:
+	if visual != "" and velocity.length() > 0.01 and is_inside_tree():
+		look_at(global_position + velocity)
 	life -= delta
 	var targets := _targets()
 	if homing and velocity.length() > 0.1 and targets.has(target_peer):

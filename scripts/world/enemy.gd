@@ -357,12 +357,43 @@ func targetable_players() -> Dictionary:
 				out[int(id)] = (avatar as Node3D).global_position
 	return out
 
+## Co-op quest enemies (host): the other players see the technique's effect too.
+func _npc_fx(kind: String, a: Vector3, b: Vector3, f: float) -> void:
+	if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
+		NetworkSession.broadcast_world_fx(kind, a, b, f, 0)
+
 func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) -> void:
 	var col: Color = a["col"]
 	var kind := str(a["kind"])
 	var is_buff := kind == "buff" or kind == "aura"
 	var dmg := 0.0 if is_buff else float(a["dmg"]) * NPC_DMG * _bl_dmg_mult()
 	Fx.puff(get_parent(), global_position + Vector3.UP, col, 2.5 * k)
+	# Legendary / Mythic moves: the same signature effects the players' versions have
+	var vfx := str(a.get("vfx", ""))
+	var tpos: Vector3 = targetable_players().get(target_peer_id, global_position + dir * minf(dist, float(a["r"])))
+	match kind:
+		"cube", "rods", "shrink":   # Kokugan: the hit lands where the technique does
+			var hit_r := float(a["r"]) + 0.6 if kind == "cube" else (2.0 if kind == "rods" else 2.6)
+			var hit_once := {}
+			var on_hit := func(p: Vector3) -> void:
+				if dmg <= 0.0 or not is_instance_valid(self):
+					return
+				var players := targetable_players()
+				for peer_id in players:
+					var pp: Vector3 = players[peer_id]
+					if not hit_once.has(peer_id) and Vector2(pp.x - p.x, pp.z - p.z).length() <= hit_r:
+						hit_once[peer_id] = true
+						hurt_peer(int(peer_id), dmg, Vector3.UP * 4.0)
+			var fa: Vector3 = tpos if kind == "cube" else global_position + (Vector3.UP * 1.3 + dir * 0.5 if kind == "shrink" else Vector3.ZERO)
+			var fb: Vector3 = tpos if kind == "shrink" else dir
+			KokuganFx.play(kind, get_parent() as Node3D, fa, fb, float(a["r"]), on_hit)
+			_npc_fx(kind, fa, fb, float(a["r"]))
+			return
+	if vfx != "" and kind != "fan" and kind != "homing":
+		var target_like := kind == "target" or kind == "amaterasu"
+		var fb2: Vector3 = tpos if target_like else dir
+		KokuganFx.play(vfx, get_parent() as Node3D, global_position, fb2, float(a.get("dist", a["r"])) if kind == "dash" else float(a["r"]))
+		_npc_fx(vfx, global_position, fb2, float(a["r"]))
 	match kind:
 		"burst", "cone", "cube", "rods":   # hits every player in range (in front of it for a cone)
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)
@@ -400,10 +431,11 @@ func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) 
 				bolt.velocity = dir.rotated(Vector3.UP, (i - (count - 1) * 0.5) * gap) * minf(float(a["speed"]), 22.0)
 				bolt.shooter = self
 				bolt.target_peer = target_peer_id
+				bolt.visual = vfx
 				get_parent().add_child(bolt)
 				bolt.global_position = global_position + Vector3.UP * 1.2 + dir * 0.8
 				if network_quest_id != "" and NetworkSession.is_active() and multiplayer.is_server():
-					NetworkSession.broadcast_enemy_bolt(bolt.global_position, bolt.velocity, col, bolt.size, bolt.homing, target_peer_id)
+					NetworkSession.broadcast_enemy_bolt(bolt.global_position, bolt.velocity, col, bolt.size, bolt.homing, target_peer_id, vfx)
 		_:
 			bl_buff_t = maxf(float(a["t"]), 4.0)
 			var sp := float(a["speed"])

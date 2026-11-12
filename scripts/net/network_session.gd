@@ -1315,11 +1315,12 @@ func broadcast_ability(move_id: String, color: Color) -> void:
 
 ## World effects that everyone sees (Kokugan cube / rods / Sukunahikona). Visual only on the
 ## other peers: the caster deals the damage.
-func broadcast_world_fx(kind: String, a: Vector3, b: Vector3, f: float) -> void:
+## from_peer: whose jutsu it is (0 = an NPC / enemy - no player avatar plays the cast).
+func broadcast_world_fx(kind: String, a: Vector3, b: Vector3, f: float, from_peer := 1) -> void:
 	if not is_active():
 		return
 	if multiplayer.is_server():
-		_world_fx.rpc(1, kind, a, b, f)
+		_world_fx.rpc(from_peer, kind, a, b, f)
 	else:
 		_request_world_fx.rpc_id(1, kind, a, b, f)
 
@@ -1574,12 +1575,12 @@ func arena_enemy_killed(enemy_id: String, killer_id: int) -> void:
 
 ## Host: show an enemy's clan projectile on every other screen (harmless copy; the host's
 ## real bolt does the damage).
-func broadcast_enemy_bolt(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int) -> void:
+func broadcast_enemy_bolt(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int, visual := "") -> void:
 	if is_active() and multiplayer.is_server():
-		_enemy_bolt_fx.rpc(pos, velocity, color, size, homing, target_peer)
+		_enemy_bolt_fx.rpc(pos, velocity, color, size, homing, target_peer, visual)
 
 @rpc("authority", "call_remote", "unreliable")
-func _enemy_bolt_fx(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int) -> void:
+func _enemy_bolt_fx(pos: Vector3, velocity: Vector3, color: Color, size: float, homing: bool, target_peer: int, visual := "") -> void:
 	if _game_root == null or not is_instance_valid(_game_root):
 		return
 	var bolt := NpcBolt.new()
@@ -1589,6 +1590,7 @@ func _enemy_bolt_fx(pos: Vector3, velocity: Vector3, color: Color, size: float, 
 	bolt.size = clampf(size, 0.1, 1.0)
 	bolt.homing = homing
 	bolt.target_peer = target_peer
+	bolt.visual = visual.left(24)
 	_game_root.add_child(bolt)
 	bolt.global_position = pos
 
