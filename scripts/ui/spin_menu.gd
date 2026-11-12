@@ -1234,10 +1234,10 @@ func _rebuild_color_targets() -> void:
 		for cat in Hero.CLOTH_COLORS:
 			if (opts.get(cat, []) as Array).is_empty():
 				continue
-			var copy := Hero.color_copy_id(preview_model, cat)
 			var key: String = Hero.CATEGORIES[cat]["key"]
-			if copy != "" and str(_working.get(key, "")) == copy:   # colourable copy: its own two colours
-				var d: Dictionary = Hero.COLOR_COPIES[cat]
+			var copy := Hero.color_copy_for(preview_model, str(_working.get(key, "")))
+			if copy != "":   # colourable copy: its own two colours
+				var d: Dictionary = Hero.COLOR_COPIES[copy]
 				targets.append([d["keys"][0], d["labels"][0]])
 				targets.append([d["keys"][1], d["labels"][1]])
 			# other clothes aren't colourable: no colour button for them

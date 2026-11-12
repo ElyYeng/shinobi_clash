@@ -37,6 +37,8 @@ const DEFAULT_APPEARANCE := {
 	"eye_color": "",                    # "" = the eye texture as painted (grey iris)
 	"cloak_color1": "#1C1B24",          # colourable Akatsuki cloak: the coat ...
 	"cloak_color2": "#B8161F",          # ... and the clouds
+	"vest_color1": "#848D7B",           # colourable jonin vest (Shirt 1 copy)
+	"vest_color2": "#35394F",
 	"pants_color1": "#E3804F",          # colourable Naruto pants
 	"pants_color2": "#32354C",
 }
@@ -184,7 +186,7 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var number := id.substr(String(cat).length())
 		if id.begins_with(String(cat)) and number.is_valid_int() and number.length() <= 2:
 			safe[key] = id
-	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "pants_color1", "pants_color2"]
+	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "vest_color1", "vest_color2", "pants_color1", "pants_color2"]
 	for slot in COLOR_SLOTS:
 		color_keys.append(COLOR_SLOTS[slot]["key"])
 	for color_key in color_keys:
@@ -547,24 +549,34 @@ static func float_pose(model: Node3D, vel: Vector3, delta: float, on: bool) -> v
 const CLOAK_SOURCE := "shirt3"
 const CLOAK_DIR := "res://assets/character/ColorableStuff/"
 const COLOR_COPIES := {
-	"shirt": {"src": "shirt3", "keys": ["cloak_color1", "cloak_color2"], "labels": ["Coat", "Clouds"],
+	"cloak": {"cat": "shirt", "src": "shirt3", "keys": ["cloak_color1", "cloak_color2"], "labels": ["Coat", "Clouds"],
 		"defaults": ["#1C1B24", "#B8161F"], "mask": "AkCloudMask.png", "overlays": ["AkLines.png"]},
-	"pants": {"src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
+	"vest": {"cat": "shirt", "src": "shirt1", "keys": ["vest_color1", "vest_color2"], "labels": ["Vest", "Undershirt"],
+		"defaults": ["#848D7B", "#35394F"], "mask": "VestC2Mask.png", "overlays": ["VestShade.png", "VestExtra.png"]},
+	"naruto_pants": {"cat": "pants", "src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
 		"defaults": ["#E3804F", "#32354C"], "mask": "NarutoPC2Mask.png", "overlays": ["NarutoPShade.png", "NarutoPCE.png"]},
 }
 static var _copy_cache := {}
 
-## Option id of the colourable copy in a category ("" = none on this model).
-static func color_copy_id(model: Node3D, cat: String) -> String:
-	return str(model.get_meta("color_copy_" + cat, "")) if model != null else ""
+## Option id of a colourable copy (by its COLOR_COPIES name; "" = not on this model).
+static func color_copy_id(model: Node3D, name: String) -> String:
+	return str(model.get_meta("color_copy_" + name, "")) if model != null else ""
+
+## The COLOR_COPIES name whose copy has option id `id` ("" = that option isn't colourable).
+static func color_copy_for(model: Node3D, id: String) -> String:
+	for n in COLOR_COPIES:
+		if id != "" and color_copy_id(model, n) == id:
+			return n
+	return ""
 
 static func cloak_id(model: Node3D) -> String:
-	return color_copy_id(model, "shirt")
+	return color_copy_id(model, "cloak")
 
 static func _add_color_cloak(model: Node3D) -> void:   # (all colourable copies)
 	var parts: Dictionary = model.get_meta("hero_parts")
-	for cat in COLOR_COPIES:
-		var d: Dictionary = COLOR_COPIES[cat]
+	for name in COLOR_COPIES:
+		var d: Dictionary = COLOR_COPIES[name]
+		var cat: String = d["cat"]
 		if not ResourceLoader.exists(CLOAK_DIR + str(d["mask"])):
 			continue
 		var list: Array = parts.get(cat, [])
@@ -582,7 +594,7 @@ static func _add_color_cloak(model: Node3D) -> void:   # (all colourable copies)
 		src.get_parent().add_child(copy)
 		copy.owner = src.owner
 		list.append({"id": id, "num": top + 1, "node": copy})
-		model.set_meta("color_copy_" + cat, id)
+		model.set_meta("color_copy_" + name, id)
 
 static func _img(file: String) -> Image:
 	var im := (load(CLOAK_DIR + file) as Texture2D).get_image()
@@ -591,11 +603,11 @@ static func _img(file: String) -> Image:
 	im.convert(Image.FORMAT_RGBA8)
 	return im
 
-static func _copy_texture(cat: String, c1: Color, c2: Color) -> Texture2D:
-	var key := cat + c1.to_html() + c2.to_html()
+static func _copy_texture(name: String, c1: Color, c2: Color) -> Texture2D:
+	var key := name + c1.to_html() + c2.to_html()
 	if _copy_cache.has(key):
 		return _copy_cache[key]
-	var d: Dictionary = COLOR_COPIES[cat]
+	var d: Dictionary = COLOR_COPIES[name]
 	var mask := _img(str(d["mask"]))
 	var sz := mask.get_size()
 	var rect := Rect2i(Vector2i.ZERO, sz)
@@ -615,12 +627,12 @@ static func _copy_texture(cat: String, c1: Color, c2: Color) -> Texture2D:
 	return tex
 
 static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:   # (all colourable copies)
-	for cat in COLOR_COPIES:
-		var id := color_copy_id(model, cat)
+	for name in COLOR_COPIES:
+		var id := color_copy_id(model, name)
 		if id == "":
 			continue
-		var d: Dictionary = COLOR_COPIES[cat]
-		for e in (model.get_meta("hero_parts") as Dictionary).get(cat, []):
+		var d: Dictionary = COLOR_COPIES[name]
+		for e in (model.get_meta("hero_parts") as Dictionary).get(str(d["cat"]), []):
 			if e["id"] != id:
 				continue
 			var mi := e["node"] as MeshInstance3D
@@ -628,7 +640,7 @@ static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:   # (a
 			if base == null:
 				continue
 			var m := base.duplicate() as BaseMaterial3D
-			m.albedo_texture = _copy_texture(cat, Color.html(str(look.get(d["keys"][0], d["defaults"][0]))),
+			m.albedo_texture = _copy_texture(name, Color.html(str(look.get(d["keys"][0], d["defaults"][0]))),
 				Color.html(str(look.get(d["keys"][1], d["defaults"][1]))))
 			m.albedo_color = Color.WHITE
 			mi.set_surface_override_material(0, m)
