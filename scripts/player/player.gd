@@ -306,9 +306,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom_step(-1)
+			if lock_target:   # locked on: the wheel switches targets instead of zooming
+				_switch_target(1)
+			else:
+				_zoom_step(-1)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom_step(1)
+			if lock_target:
+				_switch_target(-1)
+			else:
+				_zoom_step(1)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		yaw -= event.relative.x * 0.0028 * sens_mult
 		pitch = clampf(pitch - event.relative.y * 0.0028 * sens_mult, -1.35, 1.0)
@@ -414,10 +420,7 @@ func _physics_process(delta: float) -> void:
 		lock_target = null
 	elif global_position.distance_to(lock_target.global_position) > 45.0:
 		lock_target = null
-	if lock_target and not wall_walking:
-		var d := lock_target.global_position - global_position
-		yaw = lerp_angle(yaw, atan2(-d.x, -d.z), 6.0 * delta)
-		pitch = lerpf(pitch, -0.3, 3.0 * delta)
+	# (locked on, the camera stays free: you face and attack the target, but look where you like)
 
 	# Chakra walk: running up / along walls (see _wall_walk_step)
 	if wall_walking:
@@ -1745,6 +1748,20 @@ func _foes_in(radius: float) -> Array[Node3D]:
 		if to.length() <= radius:
 			out.append(av)
 	return out
+
+## Locked on: move the lock to the next foe around you (dir 1 = clockwise, -1 = back), ordered by
+## direction from you - like flicking between targets.
+func _switch_target(dir: int) -> void:
+	var foes: Array = _foes_in(30.0)
+	if foes.size() < 2:
+		return
+	var ang := func(f: Node3D) -> float:
+		var d := f.global_position - global_position
+		return atan2(d.x, d.z)
+	foes.sort_custom(func(a, b) -> bool: return ang.call(a) < ang.call(b))
+	var i := foes.find(lock_target)
+	lock_target = foes[posmod(i + dir, foes.size())] if i >= 0 else foes[0]
+	Sfx.play(self, "swing", -14.0)
 
 func _nearest_foe(max_dist: float) -> Node3D:
 	var best: Node3D = null
