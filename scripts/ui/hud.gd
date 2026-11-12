@@ -162,6 +162,86 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("quest_log"):
 		quest_visible = not quest_visible
+	if event.is_action_pressed("leaderboard"):
+		_toggle_board()
+
+# ---------------------------------------------------------------- leaderboard (Tab)
+## Everyone in the session ranked by level, top-right of the screen; refreshes while open.
+var _board: PanelContainer
+var _board_list: VBoxContainer
+var _board_t := 0.0
+
+func _toggle_board() -> void:
+	if _board == null:
+		_board = PanelContainer.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.05, 0.04, 0.03, 0.82)
+		sb.border_color = Color(0.75, 0.62, 0.3)
+		sb.set_border_width_all(2)
+		sb.set_corner_radius_all(6)
+		sb.set_content_margin_all(12)
+		_board.add_theme_stylebox_override("panel", sb)
+		_board.custom_minimum_size = Vector2(300, 0)
+		_board.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		_board.position = Vector2(get_viewport().get_visible_rect().size.x - 320, 70)
+		add_child(_board)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 4)
+		_board.add_child(v)
+		var t := Label.new()
+		t.text = "LEADERBOARD"
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		t.add_theme_font_size_override("font_size", 18)
+		t.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		v.add_child(t)
+		_board_list = VBoxContainer.new()
+		_board_list.add_theme_constant_override("separation", 2)
+		v.add_child(_board_list)
+		_board.visible = false
+	_board.visible = not _board.visible
+	if _board.visible:
+		_board.position.x = get_viewport().get_visible_rect().size.x - 320
+		_fill_board()
+
+func _fill_board() -> void:
+	for c in _board_list.get_children():
+		c.queue_free()
+	var rows: Array = []
+	var online := NetworkSession.is_active()
+	var my_id := multiplayer.get_unique_id() if online else 1
+	if online:
+		for id in NetworkSession._known_players:
+			var lv := GameData.level if int(id) == my_id else int(NetworkSession._known_levels.get(id, 1))
+			rows.append({"id": int(id), "name": NetworkSession.name_with_clan(int(id)), "lv": lv})
+	else:
+		rows.append({"id": 1, "name": NetworkSession.player_name, "lv": GameData.level})
+	rows.sort_custom(func(a, b) -> bool:
+		return int(a["lv"]) > int(b["lv"]) if int(a["lv"]) != int(b["lv"]) else str(a["name"]) < str(b["name"]))
+	var medals := [Color(1.0, 0.8, 0.2), Color(0.8, 0.82, 0.88), Color(0.85, 0.55, 0.3)]
+	for i in rows.size():
+		var r: Dictionary = rows[i]
+		var row := HBoxContainer.new()
+		_board_list.add_child(row)
+		var me := int(r["id"]) == my_id
+		var col: Color = medals[i] if i < 3 else (Color(0.6, 1.0, 0.65) if me else Color(0.9, 0.88, 0.82))
+		for spec in [["#%d" % (i + 1), 34.0, HORIZONTAL_ALIGNMENT_LEFT], [str(r["name"]) + ("  (you)" if me else ""), 0.0, HORIZONTAL_ALIGNMENT_LEFT], ["Lv %d" % int(r["lv"]), 56.0, HORIZONTAL_ALIGNMENT_RIGHT]]:
+			var l := Label.new()
+			l.text = spec[0]
+			l.horizontal_alignment = spec[2]
+			l.clip_text = true
+			if float(spec[1]) > 0.0:
+				l.custom_minimum_size = Vector2(spec[1], 0)
+			else:
+				l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			l.add_theme_font_size_override("font_size", 15)
+			l.add_theme_color_override("font_color", col)
+			row.add_child(l)
+	if not online:
+		var n := Label.new()
+		n.text = "Host or join a game to see other players"
+		n.add_theme_font_size_override("font_size", 12)
+		n.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
+		_board_list.add_child(n)
 
 func bind(player: Player) -> void:
 	p = player
@@ -245,6 +325,11 @@ func _label(pos: Vector2, size: int) -> Label:
 	return l
 
 func _process(delta: float) -> void:
+	if _board != null and _board.visible:   # keep the leaderboard live while it's open
+		_board_t -= delta
+		if _board_t <= 0.0:
+			_board_t = 1.0
+			_fill_board()
 	if p == null:
 		return
 	bar.update_from(p)
