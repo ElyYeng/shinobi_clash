@@ -210,8 +210,9 @@ func _update_camera(delta: float) -> void:
 		if p.distance_to(head) > 6.0:
 			p = head
 		else:
-			var kh := 1.0 - exp(-18.0 * delta)
-			var kv := 1.0 - exp(-11.0 * delta)
+			# (first person: the view is the head - no trailing, or it lags behind the body)
+			var kh := 1.0 if _first_person else 1.0 - exp(-18.0 * delta)
+			var kv := 1.0 if _first_person else 1.0 - exp(-11.0 * delta)
 			p = Vector3(lerpf(p.x, head.x, kh), lerpf(p.y, head.y, kv), lerpf(p.z, head.z, kh))
 			var lag := p - head   # never trail too far behind at dash speed
 			if lag.length() > 2.2:
@@ -491,6 +492,8 @@ func _physics_process(delta: float) -> void:
 			tf.y = 0.0
 			if tf.length() > 0.1:
 				facing = tf.normalized()
+		elif _first_person:   # first person: the body faces where you look (strafing, aiming)
+			facing = Vector3(-sin(yaw), 0.0, -cos(yaw))
 		elif moving:
 			facing = dir.normalized()
 	model.rotation.y = lerp_angle(model.rotation.y, atan2(-facing.x, -facing.z), 14.0 * delta)

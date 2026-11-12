@@ -714,7 +714,7 @@ const COLOR_COPIES := {
 	"cloak": {"cat": "shirt", "src": "shirt3", "keys": ["cloak_color1", "cloak_color2"], "labels": ["Coat", "Clouds"],
 		"defaults": ["#1C1B24", "#B8161F"], "mask": "AkCloudMask.png", "overlays": ["AkLines.png"],
 		# the swatch corner of the original texture (neck skin, ring, lining) stays as painted
-		"keep": [[0.81, 0.81, 1.0, 1.0], [0.73, 0.94, 0.81, 1.0]], "orig": "res://assets/character/character_main_237_sin_título_20261011165935.png"},
+		"keep": [[0.81, 0.81, 1.0, 1.0], [0.73, 0.94, 0.81, 1.0]], "skin": [0.81, 0.81, 0.905, 0.91], "orig": "res://assets/character/character_main_237_sin_título_20261011165935.png"},
 	"vest": {"cat": "shirt", "src": "shirt1", "keys": ["vest_color1", "vest_color2"], "labels": ["Vest", "Undershirt"],
 		"defaults": ["#848D7B", "#35394F"], "mask": "VestC2Mask.png", "overlays": ["VestShade.png", "VestExtra.png"]},
 	"naruto_pants": {"cat": "pants", "src": "pants2", "keys": ["pants_color1", "pants_color2"], "labels": ["Pants", "Trim"],
@@ -773,8 +773,8 @@ static func _img(file: String) -> Image:
 	im.convert(Image.FORMAT_RGBA8)
 	return im
 
-static func _copy_texture(name: String, c1: Color, c2: Color) -> Texture2D:
-	var key := name + c1.to_html() + c2.to_html()
+static func _copy_texture(name: String, c1: Color, c2: Color, skin := Color(0, 0, 0, 0)) -> Texture2D:
+	var key := name + c1.to_html() + c2.to_html() + skin.to_html()
 	if _copy_cache.has(key):
 		return _copy_cache[key]
 	var d: Dictionary = COLOR_COPIES[name]
@@ -802,6 +802,9 @@ static func _copy_texture(name: String, c1: Color, c2: Color) -> Texture2D:
 			for k: Array in d["keep"]:
 				var r := Rect2i(int(k[0] * sz.x), int(k[1] * sz.y), int((k[2] - k[0]) * sz.x), int((k[3] - k[1]) * sz.y))
 				img.blit_rect(src, r, r.position)
+	if d.has("skin") and skin.a > 0.0:   # the neck patch takes the character's skin colour
+		var k2: Array = d["skin"]
+		img.fill_rect(Rect2i(int(k2[0] * sz.x), int(k2[1] * sz.y), int((k2[2] - k2[0]) * sz.x), int((k2[3] - k2[1]) * sz.y)), skin)
 	img.generate_mipmaps()
 	var tex := ImageTexture.create_from_image(img)
 	_copy_cache[key] = tex
@@ -821,8 +824,10 @@ static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:   # (a
 			if base == null:
 				continue
 			var m := base.duplicate() as BaseMaterial3D
+			var sk := str(look.get("skin_color", ""))
 			m.albedo_texture = _copy_texture(name, Color.html(str(look.get(d["keys"][0], d["defaults"][0]))),
-				Color.html(str(look.get(d["keys"][1], d["defaults"][1]))))
+				Color.html(str(look.get(d["keys"][1], d["defaults"][1]))),
+				Color.html(sk) if sk != "" and Color.html_is_valid(sk) else skin_original(model))
 			m.albedo_color = Color.WHITE
 			mi.set_surface_override_material(0, m)
 
