@@ -295,7 +295,9 @@ static func _apply_appearance_impl(model: Node3D, appearance: Dictionary = {}) -
 			(model.get_meta("hero_outfits")[oid][cat] as MeshInstance3D).visible = false
 	_apply_hair_color(model, Color.html(str(look["hair_color"])), look)
 	for cat in CLOTH_COLORS:
-		var tint := Color.html(str(look[CLOTH_COLORS[cat]]))
+		# clothes without colourable layers always show their own colours (colourable copies
+		# get theirs from COLOR_COPIES in _apply_cloak_colors)
+		var tint := Color.WHITE
 		for entry in parts.get(cat, []):
 			var mi := entry["node"] as MeshInstance3D
 			for surface in mi.mesh.get_surface_count():

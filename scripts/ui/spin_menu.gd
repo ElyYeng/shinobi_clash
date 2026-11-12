@@ -1240,8 +1240,7 @@ func _rebuild_color_targets() -> void:
 				var d: Dictionary = Hero.COLOR_COPIES[cat]
 				targets.append([d["keys"][0], d["labels"][0]])
 				targets.append([d["keys"][1], d["labels"][1]])
-				continue
-			targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
+			# other clothes aren't colourable: no colour button for them
 	if not targets.any(func(t): return t[0] == _color_target):
 		_color_target = "hair_color"
 	var group := ButtonGroup.new()
