@@ -182,7 +182,6 @@ func _toggle_board() -> void:
 		sb.set_content_margin_all(12)
 		_board.add_theme_stylebox_override("panel", sb)
 		_board.custom_minimum_size = Vector2(300, 0)
-		_board.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		_board.position = Vector2(get_viewport().get_visible_rect().size.x - 320, 220)   # (below the minimap)
 		add_child(_board)
 		var v := VBoxContainer.new()
@@ -254,7 +253,6 @@ func bind(player: Player) -> void:
 		var ph = player.get_parent().get("play_half")
 		if ph != null:
 			minimap.half = float(ph)
-		minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		minimap.position = Vector2(get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0, 16.0)
 		add_child(minimap)
 		get_viewport().size_changed.connect(func() -> void:
