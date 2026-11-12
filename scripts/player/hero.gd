@@ -431,7 +431,7 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 	var eye_tex: Texture2D = Moves.tex(str(look["eyes"])) if look.has("eyes") else null
 	if eye_tex != null and look.has("eye_col"):   # personal colour (Ink Mode): recolour the iris
 		eye_tex = recolor_iris(eye_tex, Color.html(str(look["eye_col"])))
-	set_eyes(model, eye_tex)
+	set_eyes(model, eye_tex, str(look.get("eye_side", "")))
 	_set_orbs(model, int(look.get("orbs", 0)))
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
 	var outfit_glow := float(look.get("outfit_glow", 0.0))
@@ -791,11 +791,12 @@ static func recolor_iris(tex: Texture2D, col: Color) -> Texture2D:
 	_iris_cache[key] = out
 	return out
 
-static func set_eyes(model: Node3D, tex: Texture2D) -> void:
-	_set_eyes_impl(model, tex)
+## side: "" = both eyes, "left" / "righ" = only that eye (the other stays normal), e.g. Kakashi.
+static func set_eyes(model: Node3D, tex: Texture2D, side := "") -> void:
+	_set_eyes_impl(model, tex, side)
 	CharToon.apply(model)
 
-static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
+static func _set_eyes_impl(model: Node3D, eye_tex: Texture2D, side := "") -> void:
 	if model == null or not model.has_meta("hero_extra"):
 		return
 	var face = (model.get_meta("hero_extra") as Dictionary).get("face")
@@ -812,6 +813,7 @@ static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
 			tex_path = (base as BaseMaterial3D).albedo_texture.resource_path.to_lower()
 		if nm.contains("brow") or not (nm.ends_with("eye") or tex_path.contains("eye_bc")):
 			continue
+		var tex: Texture2D = eye_tex if side == "" or nm.contains(side) else null
 		if tex == null:   # normal eyes: the appearance's eye colour (or the texture as painted)
 			var tint = model.get_meta("eye_tint") if model.has_meta("eye_tint") else null
 			if tint is Texture2D and base is BaseMaterial3D:

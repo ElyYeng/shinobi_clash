@@ -235,7 +235,8 @@ const DEFS := {
 			{"name": "Lightning Blade", "vfx": "chidori", "kind": "dash", "dist": 12.0, "dmg": 80.0, "desc": "Dash through enemies, striking everything in your path."},
 			{"name": "Lightning Hound", "vfx": "lightning_hound", "kind": "homing", "n": 1, "dmg": 90.0, "aoe": 3.0, "size": 0.45, "desc": "A lightning hound hunts the nearest enemy."},
 			{"name": "Kamui", "vfx": "kamui", "kind": "target", "r": 20.0, "dmg": 150.0, "stun": 1.0, "col": Color(0.25, 0.1, 0.35), "desc": "Warps away a chunk of the nearest enemy."}],
-		"mode": {"name": "Copy Wheel Eye", "dmg": 1.25, "cd": 0.6, "ck": 15.0, "desc": "+25% damage, cooldowns 40% faster, +15 chakra/s."}},
+		"mode": {"name": "Copy Wheel Eye", "dmg": 1.25, "cd": 0.6, "ck": 15.0,
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Sharingan.png", "eye_side": "left", "aura": true}, "desc": "+25% damage, cooldowns 40% faster, +15 chakra/s."}},
 	"chinoike": {"name": "Chinoike", "rarity": "Legendary", "weight": 1.5, "color": Color(0.6, 0.02, 0.08),
 		"desc": "Blood clan: +40 max health, slow regeneration.", "stats": {"hp": 40.0, "hp_regen": 1.0},
 		"abilities": [
