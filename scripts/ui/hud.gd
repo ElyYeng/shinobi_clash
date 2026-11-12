@@ -182,7 +182,7 @@ func _toggle_board() -> void:
 		sb.set_content_margin_all(12)
 		_board.add_theme_stylebox_override("panel", sb)
 		_board.custom_minimum_size = Vector2(300, 0)
-		_board.position = Vector2(get_viewport().get_visible_rect().size.x - 320, 220)   # (below the minimap)
+		_board.position = (get_viewport().get_visible_rect().size - Vector2(300, 260)) * 0.5   # centre of the screen
 		add_child(_board)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 4)
@@ -199,7 +199,7 @@ func _toggle_board() -> void:
 		_board.visible = false
 	_board.visible = not _board.visible
 	if _board.visible:
-		_board.position.x = get_viewport().get_visible_rect().size.x - 320
+		_board.position = (get_viewport().get_visible_rect().size - Vector2(300, _board.size.y)) * 0.5
 		_fill_board()
 
 func _fill_board() -> void:
@@ -243,6 +243,130 @@ func _fill_board() -> void:
 		_board_list.add_child(n)
 
 var minimap: Minimap
+
+# ---------------------------------------------------------------- quest panel (under the minimap)
+var _qpanel: PanelContainer
+var _qtitle: Label
+var _qbody: Label
+
+static func _panel_style(accent: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.05, 0.04, 0.78)
+	sb.border_color = accent
+	sb.border_width_left = 4
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.set_corner_radius_all(5)
+	sb.content_margin_left = 12
+	sb.content_margin_right = 10
+	sb.content_margin_top = 7
+	sb.content_margin_bottom = 8
+	sb.shadow_color = Color(0, 0, 0, 0.35)
+	sb.shadow_size = 4
+	return sb
+
+func _update_quest_panel() -> void:
+	var show := mode == "world" and quest_visible and quest_text != ""
+	if _qpanel == null:
+		if not show:
+			return
+		_qpanel = PanelContainer.new()
+		_qpanel.add_theme_stylebox_override("panel", _panel_style(Color(1.0, 0.78, 0.25)))
+		_qpanel.custom_minimum_size = Vector2(Minimap.SIZE + 40.0, 0)
+		_qpanel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_qpanel)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 3)
+		_qpanel.add_child(v)
+		_qtitle = Label.new()
+		_qtitle.add_theme_font_override("font", GameMenu.font())
+		_qtitle.add_theme_font_size_override("font_size", 17)
+		_qtitle.add_theme_color_override("font_color", Color(1.0, 0.82, 0.35))
+		_qtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(_qtitle)
+		_qbody = Label.new()
+		_qbody.add_theme_font_size_override("font_size", 14)
+		_qbody.add_theme_color_override("font_color", Color(0.92, 0.9, 0.85))
+		_qbody.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(_qbody)
+	_qpanel.visible = show
+	if not show:
+		return
+	var lines := quest_text.split("\n", false)
+	var t := lines[0] if lines.size() > 0 else ""
+	_qtitle.text = t.trim_prefix("QUEST: ")
+	_qbody.text = "\n".join(lines.slice(1)) if lines.size() > 1 else ""
+	_qbody.visible = _qbody.text != ""
+	var w := Minimap.SIZE + 40.0
+	_qpanel.size.x = w
+	_qpanel.position = Vector2(get_viewport().get_visible_rect().size.x - w - 16.0, 16.0 + Minimap.SIZE + 10.0)
+
+# ---------------------------------------------------------------- party frames (top-left)
+var _party: VBoxContainer
+var _party_t := 0.0
+
+func _update_party_frames(delta: float) -> void:
+	_party_t -= delta
+	if _party_t > 0.0:
+		return
+	_party_t = 0.25
+	var online := NetworkSession.is_active()
+	if _party == null:
+		_party = VBoxContainer.new()
+		_party.add_theme_constant_override("separation", 5)
+		_party.position = Vector2(16, 16)
+		_party.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_party)
+	for c in _party.get_children():
+		c.queue_free()
+	if not online:
+		return
+	var my_id := multiplayer.get_unique_id()
+	var members: Array = []
+	for id in NetworkSession._known_players:
+		if int(id) != my_id and NetworkSession._same_party(my_id, int(id)):
+			members.append(int(id))
+	if members.is_empty():
+		return
+	var head := Label.new()
+	head.text = "PARTY  %d / 4" % (members.size() + 1)
+	head.add_theme_font_override("font", GameMenu.font())
+	head.add_theme_font_size_override("font_size", 14)
+	head.add_theme_color_override("font_color", Color(0.6, 1.0, 0.65))
+	head.add_theme_color_override("font_outline_color", Color.BLACK)
+	head.add_theme_constant_override("outline_size", 5)
+	_party.add_child(head)
+	for id in members:
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", _panel_style(Color(0.35, 0.8, 0.45)))
+		card.custom_minimum_size = Vector2(210, 0)
+		_party.add_child(card)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 2)
+		card.add_child(v)
+		var nm := Label.new()
+		var leader: bool = int(NetworkSession._party_leader.get(id, id)) == int(id)
+		nm.text = "%s%s   Lv %d" % ["★ " if leader else "", str(NetworkSession._known_players.get(id, "?")), int(NetworkSession._known_levels.get(id, 1))]
+		nm.add_theme_font_size_override("font_size", 14)
+		nm.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88))
+		nm.clip_text = true
+		v.add_child(nm)
+		var av = NetworkSession._avatars.get(id)
+		var hp := float(av.get_meta("hp", 1.0)) if av != null and is_instance_valid(av) else 1.0
+		var bar := ProgressBar.new()
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(0, 8)
+		bar.value = hp * 100.0
+		var f := StyleBoxFlat.new()
+		f.bg_color = Color(0.3, 0.85, 0.3) if hp > 0.5 else (Color(0.95, 0.75, 0.2) if hp > 0.25 else Color(0.95, 0.25, 0.2))
+		f.set_corner_radius_all(3)
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = Color(0.15, 0.12, 0.1)
+		bg.set_corner_radius_all(3)
+		bar.add_theme_stylebox_override("fill", f)
+		bar.add_theme_stylebox_override("background", bg)
+		v.add_child(bar)
 
 func bind(player: Player) -> void:
 	p = player
@@ -374,8 +498,9 @@ func _process(delta: float) -> void:
 		boss_bar.value = boss.health
 		boss_ghost.max_value = boss.max_health
 		boss_ghost.value = maxf(boss_bar.value, move_toward(boss_ghost.value, boss_bar.value, boss.max_health * 0.12 * delta))
-	quest_label.visible = mode == "world" and quest_visible
-	quest_label.text = quest_text
+	quest_label.visible = false   # (shown in the styled quest panel instead)
+	_update_quest_panel()
+	_update_party_frames(delta)
 	prompt_label.text = Fx.keyfix(prompt_text)
 	if is_instance_valid(p.lock_target) and not p.cam.is_position_behind(p.lock_target.global_position):
 		lock_label.visible = true

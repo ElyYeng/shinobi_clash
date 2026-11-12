@@ -78,6 +78,7 @@ func _process(delta: float) -> void:
 	_open = maxf(0.0, _open - delta)
 	_level = lerpf(_level, 0.0, minf(1.0, 12.0 * delta))
 	_hint.visible = online and (muted or _open > 0.0)
+	_hint.position = Vector2(16, get_viewport().get_visible_rect().size.y * 0.55)   # (clear of the party frames)
 	_hint.text = "MIC MUTED  [K]" if muted else "● TALKING"
 	_hint.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if muted else Color(0.4, 1.0, 0.45))
 	var me := get_tree().get_first_node_in_group("player")

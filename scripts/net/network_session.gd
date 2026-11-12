@@ -368,6 +368,7 @@ func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float, look := Vector2
 		_avatars[peer_id].set_network_transform(pos, yaw, look)
 		_avatars[peer_id].set_stick_pose(stick, feet)
 		var m = _avatars[peer_id].get("model")
+		_avatars[peer_id].set_meta("hp", clampf(hp, 0.0, 1.0))   # (party frames)
 		if m != null and is_instance_valid(m) and m is Node3D:   # their battle damage (scratches / blood / swollen eye)
 			Hero.set_damage(m, clampf(hp, 0.0, 1.0))
 
