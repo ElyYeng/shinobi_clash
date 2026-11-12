@@ -41,7 +41,7 @@ const ROLE := ["Shopkeeper", "Farmer", "Baker", "Fisher", "Potter", "Tea Seller"
 
 var index := 0
 var _marker: Label3D
-var held := false        # stands still facing the player while you talk to them
+var held := false        # stands still (and looks at you) while you talk to them
 var _catch := 0.0        # after talking: seconds left easing back onto the shared route
 
 static func name_for(i: int) -> String:
@@ -173,11 +173,9 @@ func _process(delta: float) -> void:
 	var moving := t >= _t0 and t < _t1
 	var k := clampf(inverse_lerp(_t0, _t1, t), 0.0, 1.0) if _t1 > _t0 else 1.0
 	var route_pos := _leg_start.lerp(goal, k)
-	if held:   # talking: stay put, face the player (the route keeps running - we catch up after)
+	if held:   # talking: stay put and look at you (the route keeps running - we catch up after)
 		moving = false
 		_catch = 1.5
-		if p != null and pd > 0.1:
-			model.rotation.y = lerp_angle(model.rotation.y, atan2(-to_p.x, -to_p.z), 1.0 - exp(-8.0 * delta))
 	elif _catch > 0.0:   # walk briskly back onto the route
 		_catch -= delta
 		var gap := route_pos - global_position
@@ -199,10 +197,11 @@ func _process(delta: float) -> void:
 		model.rotation.y = lerp_angle(model.rotation.y, atan2(-dir.x, -dir.z), 1.0 - exp(-6.0 * delta))
 	Hero.play_move(model, Hero.move_state(speed) if moving else "idle", speed if moving else 0.0)
 	# glance at the player when they're close
-	if pd < 7.0 and pd > 0.1:
-		var want := wrapf(atan2(-to_p.x, -to_p.z) - model.global_rotation.y, -PI, PI)
+	var want := wrapf(atan2(-to_p.x, -to_p.z) - model.global_rotation.y, -PI, PI) if p != null else 0.0
+	var fade := 1.0 - smoothstep(deg_to_rad(95.0), deg_to_rad(130.0), absf(want))   # not behind them
+	if pd < 7.0 and pd > 0.1 and fade > 0.0:
 		var dy := (p.global_position.y + 1.5) - (global_position.y + 1.6)
-		HeadLook.drive(model, want, atan2(dy, pd), delta)
+		HeadLook.drive(model, want * fade, atan2(dy, pd) * fade, delta)
 	else:
 		HeadLook.drive(model, 0.0, 0.0, delta)
 

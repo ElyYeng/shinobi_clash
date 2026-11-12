@@ -112,6 +112,7 @@ static func build_model(path: String, height: float, yaw_deg: float, use_outline
 	# attachment pass here as well. Skinned hair and existing Head attachments are untouched.
 	Hero.attach_rigid_hair_to_head(inst)
 	Fx.toonify_model(inst, use_outline)
+	CharToon.apply(inst)   # same Ultimate Toon shader as the players (Kakashi etc.)
 	var aps := inst.find_children("*", "AnimationPlayer", true, false)
 	if not aps.is_empty():
 		var ap := aps[0] as AnimationPlayer
@@ -137,11 +138,11 @@ func _process(delta: float) -> void:
 	to.y = 0.0
 	var dist := to.length()
 	var want := atan2(-to.x, -to.z)
-	if dist < 9.0 and dist > 0.1:   # turn to face the player (world angle - the spawn may be rotated)
-		model.global_rotation.y = lerp_angle(model.global_rotation.y, want, 6.0 * delta)
-	# head follows the player a bit further out than the body turns
-	if dist < 16.0 and dist > 0.1:
+	# they don't turn around - only their head follows you (and lets go once you're behind them)
+	var rel := wrapf(want - model.global_rotation.y, -PI, PI)
+	var fade := 1.0 - smoothstep(deg_to_rad(95.0), deg_to_rad(130.0), absf(rel))
+	if dist < 16.0 and dist > 0.1 and fade > 0.0:
 		var dy := (p.global_position.y + 1.5) - (global_position.y + 1.6)
-		HeadLook.drive(model, wrapf(want - model.global_rotation.y, -PI, PI), atan2(dy, dist), delta)
+		HeadLook.drive(model, rel * fade, atan2(dy, dist) * fade, delta)
 	else:
 		HeadLook.drive(model, 0.0, 0.0, delta)
