@@ -401,6 +401,7 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 		return
 	apply_appearance(model, appearance)
 	set_eyes(model, Moves.tex(str(look["eyes"])) if look.has("eyes") else null)
+	_set_orbs(model, int(look.get("orbs", 0)))
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
 	var outfit_glow := float(look.get("outfit_glow", 0.0))
 	for cat in outfit:   # swap in the power-up outfit (it has its own textures and colours)
@@ -489,6 +490,60 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 			if flat and pmat != null:
 				pmat.albedo_texture = null
 
+## Truth-Seeking Orbs (look "orbs": n): a ring of black orbs floating behind the shoulders,
+## bobbing gently. 0 removes them.
+static func _set_orbs(model: Node3D, n: int) -> void:
+	var old := model.get_node_or_null("TruthSeekingOrbs")
+	if old != null:
+		old.free()
+	if n <= 0:
+		return
+	var ring := OrbRing.new()
+	ring.name = "TruthSeekingOrbs"
+	ring.count = n
+	model.add_child(ring)
+
+class OrbRing extends Node3D:
+	var count := 9
+	var _orbs: Array[MeshInstance3D] = []
+	var _t := 0.0
+	func _ready() -> void:
+		var s := 1.0 / maxf(get_parent().scale.x, 0.001) if get_parent() is Node3D else 1.0
+		scale = Vector3.ONE * s   # sizes below are in metres whatever the model's scale
+		position = Vector3(0, 1.32, 0.42) * s
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.075
+		mesh.height = 0.15
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.03, 0.025, 0.04)
+		mat.metallic = 0.0
+		mat.roughness = 0.35
+		mat.rim_enabled = true      # thin purple-white rim so they read against dark backgrounds
+		mat.rim = 0.6
+		mat.rim_tint = 0.2
+		mat.emission_enabled = true
+		mat.emission = Color(0.35, 0.3, 0.5)
+		mat.emission_energy_multiplier = 0.15
+		for i in count:
+			var o := MeshInstance3D.new()
+			o.mesh = mesh
+			o.material_override = mat
+			o.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(o)
+			_orbs.append(o)
+		_place()
+	func _process(delta: float) -> void:
+		_t += delta
+		_place()
+	func _place() -> void:
+		# an arc over and around the shoulders, from one side to the other (behind the back)
+		for i in _orbs.size():
+			var f := float(i) / maxf(float(_orbs.size() - 1), 1.0)
+			var a := lerpf(deg_to_rad(200.0), deg_to_rad(-20.0), f)
+			var bob := sin(_t * 2.2 + float(i) * 0.8) * 0.03
+			_orbs[i].position = Vector3(cos(a) * 0.58, sin(a) * 0.47 + bob, sin(_t * 1.5 + float(i)) * 0.03)
+
+const EYE_GLOW_FULL := 0.6   # whole-eye glow for eye textures without a _Glow mask
 const EYE_GLOW := 1.6   # how bright transformed irises glow (needs <eye>_Glow.png next to the eye texture)
 
 static var _neon_cache := {}
@@ -560,11 +615,12 @@ static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
 			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			# Neon iris: "<eye>_Glow.png" (black outside the iris) lights up only the iris.
 			var glow := Moves.tex(tex.resource_path.get_basename() + "_Glow.png") if tex.resource_path != "" else null
-			if glow != null:
-				m.emission_enabled = true
-				m.emission = Color.WHITE
-				m.emission_texture = glow
-				m.emission_energy_multiplier = EYE_GLOW
+			# Without a mask (e.g. the Rinnegan, which covers the whole eye) the eye itself glows:
+			# the texture is its own emission, so the rings stay dark and the purple lights up.
+			m.emission_enabled = true
+			m.emission = Color.WHITE
+			m.emission_texture = glow if glow != null else tex
+			m.emission_energy_multiplier = EYE_GLOW if glow != null else EYE_GLOW_FULL
 			mi.set_surface_override_material(surface, m)
 
 ## World position of the eyes (for close-ups): 30% of the way from the head bone to the head top.
