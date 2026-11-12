@@ -25,7 +25,7 @@ const ANIM := {
 # fraction of the animation at which the attack lands
 const HIT_AT := {"claw": 0.45, "roar": 0.4, "slam": 0.55, "bomb": 0.62}
 const FALLBACK_LEN := {"claw": 2.4, "roar": 3.9, "bomb": 3.3, "slam": 2.4}
-const COOLDOWNS := [1.5, 1.0, 0.55]      # pause between attacks in phase 1 / 2 / 3
+const COOLDOWNS := [1.15, 0.75, 0.45]    # pause between attacks in phase 1 / 2 / 3
 
 const CLAW_RANGE := 12.5
 const CLAW_DMG := 22.0
@@ -41,6 +41,8 @@ enum State { INTRO, CHASE, ATTACK, HURT, DEAD }
 static var _scene: PackedScene = null
 static var _searched := false
 var _raid_target_peer_id := 0
+var _threat := {}          # host: peer id -> recent damage dealt to Kurama (aggro)
+var _retarget_t := 0.0
 var _net_target_position := Vector3.ZERO
 var _net_target_yaw := 0.0
 var _has_net_snapshot := false
@@ -285,7 +287,11 @@ func _turn(dir: Vector3, rate: float, delta: float) -> void:
 	model.rotation.y = lerp_angle(model.rotation.y, target, 1.0 - exp(-rate * delta))
 
 func _dmg_mul() -> float:
-	return 1.0 + 0.15 * float(phase - 1)
+	return 1.15 + 0.15 * float(phase - 1)
+
+## Animation / attack speed per phase (a bit quicker all round, quickest when enraged).
+func _atk_speed() -> float:
+	return [1.1, 1.2, 1.32][clampi(phase - 1, 0, 2)]
 
 # ------------------------------------------------------------------ AI
 func _ai(delta: float) -> void:
@@ -306,8 +312,15 @@ func _ai(delta: float) -> void:
 		move_and_slide()
 		return
 	if ap:
-		ap.speed_scale = ts * (1.15 if phase == 3 else 1.0)
+		ap.speed_scale = ts * _atk_speed()
 	var is_raid := NetworkSession.is_active() and NetworkSession.session_mode == "raid" and multiplayer.is_server()
+	if is_raid:   # who to go after: re-checked every couple of seconds (and when they go down)
+		_retarget_t -= delta
+		for id in _threat.keys():
+			_threat[id] = float(_threat[id]) * exp(-0.15 * delta)   # aggro fades
+		if _retarget_t <= 0.0:
+			_retarget_t = 2.5
+			_select_next_raid_target()
 	var target_pos := _raid_target_position()
 	if is_raid and target_pos == Vector3.INF:
 		_select_next_raid_target()
@@ -360,22 +373,29 @@ func _raid_target_position() -> Vector3:
 			return avatar.global_position
 	return Vector3.INF
 
+## Picks who Kurama goes after: the closest living player, pulled towards whoever has been hurting
+## him most lately (aggro), and a bit sticky so he doesn't flip between targets every second.
 func _select_next_raid_target() -> void:
 	if not NetworkSession.is_active() or NetworkSession.session_mode != "raid" or not multiplayer.is_server():
 		return
-	var ids: Array[int] = []
+	var best := 0
+	var best_score := -INF
+	var cands := {}
 	if NetworkSession._local_player != null and not NetworkSession._local_player.is_dead:
-		ids.append(1)
+		cands[1] = NetworkSession._local_player.global_position
 	for id in NetworkSession._avatars:
 		var avatar = NetworkSession._avatars[id]
-		if is_instance_valid(avatar):
-			ids.append(int(id))
-	ids.sort()
-	if ids.is_empty():
-		_raid_target_peer_id = 0
-		return
-	var current_index := ids.find(_raid_target_peer_id)
-	_raid_target_peer_id = ids[(current_index + 1) % ids.size()]
+		if is_instance_valid(avatar) and not bool(avatar.get("network_ragdoll_started")):
+			cands[int(id)] = (avatar as Node3D).global_position
+	for id in cands:
+		var d := global_position.distance_to(cands[id])
+		var score := -d / 10.0 + float(_threat.get(id, 0.0)) / 60.0
+		if id == _raid_target_peer_id:
+			score += 1.5
+		if score > best_score:
+			best_score = score
+			best = id
+	_raid_target_peer_id = best
 
 func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float) -> void:
 	if not has_target:
@@ -384,13 +404,13 @@ func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float
 		_loop_anim("combat")
 		return
 	# Turn at a steady rate and accelerate smoothly instead of snapping to full speed.
-	_turn(dir, (3.0 + phase * 0.35) * ts, delta)
+	_turn(dir, (4.2 + phase * 0.45) * ts, delta)
 	if dist > CLAW_RANGE * 0.78:
 		var f := _fwd()
 		# Slightly faster than a player, but deliberately capped so the boss
 		# closes distance without constantly sprinting past its target.
-		var run_speed := (10.2 + float(phase - 1) * 0.65) * ts
-		var accel := 17.0 * delta
+		var run_speed := (12.0 + float(phase - 1) * 0.9) * ts
+		var accel := 22.0 * delta
 		velocity.x = move_toward(velocity.x, f.x * run_speed, accel)
 		velocity.z = move_toward(velocity.z, f.z * run_speed, accel)
 		_loop_anim("run")
@@ -403,7 +423,6 @@ func _chase(delta: float, ts: float, has_target: bool, dir: Vector3, dist: float
 		_pick_attack(dist)
 
 func _pick_attack(dist: float) -> void:
-	_select_next_raid_target()
 	if pending_roar:
 		pending_roar = false
 		_start_attack("roar")
@@ -456,7 +475,7 @@ func _start_attack(move: String, harmless := false) -> void:
 			Sfx.play(self, "power", 5.0)
 
 func _attack(delta: float, ts: float, has_target: bool, dir: Vector3) -> void:
-	atk_t += delta * ts * (1.15 if phase == 3 else 1.0)
+	atk_t += delta * ts * _atk_speed()
 	var f := atk_t / atk_len
 	velocity.x = move_toward(velocity.x, 0.0, 40.0 * delta)
 	velocity.z = move_toward(velocity.z, 0.0, 40.0 * delta)
@@ -531,6 +550,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO) -> void:
 		return
 	if state == State.DEAD or state == State.INTRO or atk_harmless:
 		return
+	_threat[last_hit_peer] = float(_threat.get(last_hit_peer, 0.0)) + amount
 	health -= amount
 	Sfx.play(self, "hit", -5.0)
 	var p := _player()
