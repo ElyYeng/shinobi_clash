@@ -59,7 +59,7 @@ adjustment_saturation = 1.12
 glow_hdr_threshold = 1.25
 
 [sub_resource type="BoxShape3D" id="floor_box"]
-size = Vector3(90, 2, 90)
+size = Vector3(100, 2, 100)
 
 [sub_resource type="BoxShape3D" id="wall_ns"]
 size = Vector3(200, 120, 2)
@@ -69,8 +69,8 @@ size = Vector3(2, 120, 200)
 
 [node name="Arena" type="Node3D"]
 script = ExtResource("gm")
-play_half = 40.0
-spawn_area = Rect2(-36, -36, 72, 72)
+play_half = 44.0
+spawn_area = Rect2(-40, -40, 80, 80)
 
 [node name="Environment" type="Node3D" parent="."]
 
@@ -91,6 +91,7 @@ directional_shadow_blend_splits = true
 directional_shadow_max_distance = 70.0
 
 [node name="Ground" parent="." instance=ExtResource("glb")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 0, 0, 0)
 script = ExtResource("am")
 
 [node name="Bounds" type="Node3D" parent="."]
@@ -102,25 +103,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 shape = SubResource("floor_box")
 
 [node name="WallN" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, -43)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, -47.2)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallN"]
 shape = SubResource("wall_ns")
 
 [node name="WallS" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 43)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 47.2)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallS"]
 shape = SubResource("wall_ns")
 
 [node name="WallE" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43, 50, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.2, 50, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallE"]
 shape = SubResource("wall_ew")
 
 [node name="WallW" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43, 50, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -47.2, 50, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="Bounds/WallW"]
 shape = SubResource("wall_ew")
