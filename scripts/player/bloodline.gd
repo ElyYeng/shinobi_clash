@@ -174,7 +174,7 @@ const DEFS := {
 			{"name": "Amenominaka", "kind": "burst", "r": 18.0, "dmg": 100.0, "knock": 25.0, "stun": 2.0, "desc": "Bends space: blasts everything within 18m."},
 			{"name": "Ash Killing Bones", "kind": "fan", "n": 5, "spread": 10.0, "speed": 45.0, "dmg": 90.0, "aoe": 2.0, "size": 0.25, "long": true, "desc": "Five bones that turn targets to ash."}],
 		"mode": {"name": "Six Paths", "dmg": 1.5, "def": 0.6, "speed": 1.25, "ck": 25.0, "hp": 5.0, "slow": 0.85,
-			"cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "orbs": 9},
+			"cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "orbs": 9, "aura": true},
 			"desc": "Rinnegan + Truth-Seeking Orbs: +50% damage, take 40% less damage, +25% speed, +25 chakra/s, heal 5/s, enemies 15% slower."}},
 	"rinnegan": {"name": "Rinnegan", "rarity": "Mythic", "weight": 1.0, "color": Color(0.62, 0.5, 0.85),
 		"desc": "The eye of the Sage: +20% damage, +40 max chakra, chakra regens 25% faster.",
@@ -184,7 +184,7 @@ const DEFS := {
 			{"name": "Bansho Ten'in", "kind": "burst", "r": 18.0, "dmg": 30.0, "knock": -14.0, "stun": 2.0, "col": Color(0.55, 0.45, 0.85), "desc": "Universal Pull: drags enemies within 18m to you and holds them."},
 			{"name": "Chibaku Tensei", "kind": "target", "r": 25.0, "dmg": 170.0, "stun": 3.0, "col": Color(0.2, 0.15, 0.25), "desc": "Planetary Devastation: crushes the nearest enemy under rock."}],
 		"mode": {"name": "Rinnegan", "dmg": 1.4, "def": 0.75, "ck": 20.0, "cd": 0.75, "cutscene": "eyes",
-			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png"},
+			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Rinnegan.png", "aura": true},
 			"desc": "+40% damage, take 25% less damage, +20 chakra/s, cooldowns 25% faster."}},
 }
 
@@ -233,4 +233,4 @@ static func roll(guarantee_legendary: bool) -> String:
 ## coloured light, the glowing irises are the effect.
 static func eye_mode(m: Dictionary) -> bool:
 	var look: Dictionary = m.get("look", {})
-	return look.has("eyes") and not look.has("glow") and not look.has("outfit")
+	return look.has("eyes") and not look.has("glow") and not look.has("outfit") and not look.get("aura", false)

@@ -57,7 +57,7 @@ func _ready() -> void:
 	mat.set_shader_parameter("_SpeedY", 6.0)       # flames rise faster
 	for node in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
-		if mi.mesh == null or not mi.is_visible_in_tree() or mi.has_meta("aura_shell") \
+		if mi.mesh == null or not mi.is_visible_in_tree() or mi.has_meta("aura_shell") or mi.has_meta("no_aura") \
 				or mi.get_aabb().size.length() < 0.001:
 			continue
 		var sh := MeshInstance3D.new()

@@ -525,6 +525,7 @@ class OrbRing extends Node3D:
 			var o := MeshInstance3D.new()
 			o.mesh = mesh
 			o.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			o.set_meta("no_aura", true)   # the chakra aura wraps the body, not the orbs
 			add_child(o)
 			_orbs.append(o)
 		CharToon.apply(self)
