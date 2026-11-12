@@ -1405,7 +1405,42 @@ func _page_cheats() -> Array:
 			"Knocks out every enemy on the map, bosses too." + note, {"actions": [_act("DEFEAT", _kill_all)]}),
 	]
 
+## Customs: the Bloodline Bag - every bloodline you've rolled; put any of them in a slot.
 func _page_customs() -> Array:
+	var ids: Array = []
+	for id in GameData.owned:
+		if str(id) != "none" and Bloodline.DEFS.has(str(id)):
+			ids.append(str(id))
+	ids.sort_custom(func(a, b) -> bool:   # best rarity first, then name
+		var ra := GameData.rarity_rank(a)
+		var rb := GameData.rarity_rank(b)
+		return ra > rb if ra != rb else str(a) < str(b))
+	var out: Array = []
+	if ids.is_empty():
+		out.append(_item("Bloodline Bag is empty", "Spin to fill it", Color(0.6, 0.55, 0.45), "?",
+			"Every bloodline you roll is kept here, so you can put it back in a slot any time."))
+	for id in ids:
+		var d := Bloodline.get_def(id)
+		var in_slot: int = GameData.slots.find(id)
+		var acts: Array = []
+		for i in GameData.SLOT_COUNT:
+			if GameData.slot_unlocked[i] and i != in_slot:
+				acts.append(_act("SLOT %d" % (i + 1), _bag_place.bind(i, id)))
+		var sub := "%s  -  LV %d%s" % [d["rarity"], GameData.mastery_level(id), "  -  in slot %d" % (in_slot + 1) if in_slot >= 0 else ""]
+		out.append(_item(str(d["name"]), sub, d["color"], str(d["name"]).substr(0, 1), d["desc"], {"actions": acts}))
+	extras = [_act("OPEN SPIN", _open_spin, "[Awakening - %d spins]" % GameData.spins)]
+	return out
+
+func _bag_place(slot: int, id: String) -> void:
+	if not GameData.place_bloodline(slot, id):
+		return
+	p.apply_bloodline()
+	Sfx.play(self, "poof", -6.0)
+	_refresh_header()
+	_reload_page()
+
+## Settings (camera / volume) - shown at the top of Controls.
+func _settings_items() -> Array:
 	var vol := db_to_linear(AudioServer.get_bus_volume_db(0)) * 100.0
 	return [
 		_item("Mouse Sensitivity", "Camera turn speed", Color(0.5, 0.7, 0.9), "M",
@@ -1427,7 +1462,7 @@ func _page_customs() -> Array:
 	]
 
 func _page_controls() -> Array:
-	return [
+	return _settings_items() + [
 		_item("Movement", "WASD, Shift, Space, Q", Color(0.4, 0.7, 0.4), "W",
 			"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nQ: dash"),
 		_item("Hotbar", "R T Y F G H V B N", Color(0.85, 0.3, 0.2), "R",
