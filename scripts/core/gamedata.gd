@@ -132,9 +132,9 @@ static func load_data() -> void:
 		toon_shading = bool(d.get("toon_shading", true))
 		var appearance_data = d.get("character_appearance", {})
 		if appearance_data is Dictionary:
-			for key in character_appearance:
-				if appearance_data.has(key):
-					character_appearance[key] = appearance_data[key]
+			# every saved key (skin / eye colour etc. too); sanitize_appearance drops anything unknown
+			for key in appearance_data:
+				character_appearance[key] = appearance_data[key]
 			# Old saves used other ids ("spiky", "shirt_1" ...); map them onto the mesh names.
 			character_appearance = Hero.sanitize_appearance(character_appearance)
 		quests_done = d.get("quests_done", [])

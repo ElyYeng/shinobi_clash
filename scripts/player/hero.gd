@@ -258,7 +258,6 @@ static func get_options(model: Node3D) -> Dictionary:
 ## Shows the chosen hair / shirt / pants and colours the hair. Cheap - the creator calls it live.
 static func apply_appearance(model: Node3D, appearance: Dictionary = {}) -> void:
 	_apply_appearance_impl(model, appearance)
-	ToonKit.toonify(model)   # toon shading on whatever the look just set
 
 static func _apply_appearance_impl(model: Node3D, appearance: Dictionary = {}) -> void:
 	if model == null or not model.has_meta("hero_parts"):
@@ -390,7 +389,6 @@ static func _apply_skin(model: Node3D, hex: String) -> void:
 ## flat = drop the clothes' own textures so the top is one glowing colour (outline keeps the shape).
 static func apply_mode_look(model: Node3D, look: Dictionary, appearance: Dictionary = {}) -> void:
 	_apply_mode_look_impl(model, look, appearance)
-	ToonKit.toonify(model)
 
 static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: Dictionary = {}) -> void:
 	if model == null or not model.has_meta("hero_parts"):
@@ -521,7 +519,6 @@ const NEON_DARK := 0.42  # outfit pixels darker than this become (near) black in
 ## surfaces whose material is called "... Eye" or uses an "Eye" texture (not the eyebrows).
 static func set_eyes(model: Node3D, tex: Texture2D) -> void:
 	_set_eyes_impl(model, tex)
-	ToonKit.toonify(model)
 
 static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
 	if model == null or not model.has_meta("hero_extra"):

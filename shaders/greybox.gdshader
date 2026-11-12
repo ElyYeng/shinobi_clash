@@ -28,13 +28,16 @@ void fragment() {
 	ROUGHNESS = 0.9;
 }
 
-// Toon light (same style as shaders/toon.gdshader): two hard bands, cool shadow tint, faint rim.
+// Cel light - same look as shaders/cel.gdshader: crisp lit / shadow tones, cool shadows,
+// warm terminator, faint rim.
 void light() {
-	float l = clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION;
-	float s = l * 2.0;
-	float b = floor(s);
-	l = (b + smoothstep(0.42, 0.58, s - b)) / 2.0;
-	vec3 tint = vec3(0.36, 0.32, 0.55) * (1.0 - l) * 0.35;
-	float rim = smoothstep(0.44, 0.56, pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 3.0)) * l * 0.18;
-	DIFFUSE_LIGHT += (vec3(l) + tint + rim) * LIGHT_COLOR / PI;
+	float shade = (dot(NORMAL, LIGHT) * 0.5 + 0.5) * ATTENUATION;
+	float aa = fwidth(shade) + 0.015;
+	float lit = smoothstep(0.48 - aa, 0.48 + aa, shade);
+	vec3 tone = mix(vec3(0.30, 0.29, 0.48), vec3(1.0), lit);
+	float term = clamp(1.0 - abs(shade - 0.48) / 0.07, 0.0, 1.0);
+	tone += vec3(1.0, 0.55, 0.45) * term * term * 0.16;
+	float fres = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+	float rim = smoothstep(0.75, 0.81, fres) * lit * 0.2;
+	DIFFUSE_LIGHT += LIGHT_COLOR * (tone * 0.72 + rim) / PI;
 }

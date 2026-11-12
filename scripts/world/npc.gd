@@ -70,7 +70,10 @@ static func character_look(look: Dictionary, seed_key: String) -> Node3D:
 		rng.seed = hash(seed_key)
 		Hero.randomize_look(m, rng, Hero.VILLAGER_EXCLUDE)   # no Akatsuki cloaks in the village
 	else:
-		Hero.apply_appearance(m, Hero.sanitize_appearance(look))
+		var full := look.duplicate()
+		if str(full.get("eye_color", "")) == "":   # hand-made looks without an eye colour: a natural one
+			full["eye_color"] = Hero.EYE_TONES[absi(hash(seed_key)) % 6]
+		Hero.apply_appearance(m, Hero.sanitize_appearance(full))
 	Hero.play(m, "idle", true)
 	return m
 
