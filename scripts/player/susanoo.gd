@@ -57,10 +57,15 @@ static func fire_noise() -> NoiseTexture2D:
 
 ## Fixed anime colours for other Mangekyo users (sent as colour index 100 + n):
 ## 100 = Kakashi's blue, 101 = Shisui's green.
-## Shisui's Susanoo (Mangekyo) uses his second form; its one attack animation plays for every attack.
-const FORM2 := "res://assets/susanoo/ShisuiSusanooForm2.glb"
-const FORM2_ATTACK := "4ssiawatk01"
-var form2 := false
+## Form 2 = the skeletal Susanoo (everyone). Form 3 = Shisui's armoured Susanoo (Mangekyo, hold C + 3)
+## with glowing yellow eyes; its one attack animation plays for every attack.
+const FORM3 := "res://assets/susanoo/ShisuiSusanooForm2.glb"
+const FORM3_ATTACK := "4ssiawatk01"
+const FORM3_USERS := ["mangekyo"]
+const FORM3_DMG := 1.4      # form 3 hits harder...
+const FORM3_DRAIN := 1.5    # ...and burns chakra faster
+const EYE_COLOR := Color(1.0, 0.85, 0.2)
+var form := 2
 
 const ANIME_COLORS := [Color(0.25, 0.62, 1.0), Color(0.22, 0.85, 0.42)]
 const ANIME_BASE := 100
@@ -99,16 +104,16 @@ static func reroll_color() -> int:
 static func impact_delay(kind: String) -> float:
 	return IMPACT / float(SPEED.get(kind, 1.0))
 
-static func create(col: Color, follow_model: Node3D) -> Susanoo:
+static func create(col: Color, follow_model: Node3D, form_ := 2) -> Susanoo:
 	var s := Susanoo.new()
+	s.form = form_
 	s.name = "Susanoo"
 	s.color = col
 	s.follow = follow_model
 	return s
 
 func _ready() -> void:
-	form2 = color.is_equal_approx(ANIME_COLORS[1])   # Shisui's green = his second form (synced by colour)
-	var m: Node3D = load(FORM2 if form2 else "res://assets/susanoo/susanoo.glb").instantiate()
+	var m: Node3D = load(FORM3 if form == 3 else "res://assets/susanoo/susanoo.glb").instantiate()
 	add_child(m)
 	m.rotation.y = PI          # the model faces +Z, characters face -Z
 	scale = Vector3.ONE * SCALE * 0.3
@@ -141,11 +146,54 @@ func _ready() -> void:
 	light.omni_range = 9.0
 	light.position = Vector3(0, 2.5, 0)
 	add_child(light)
+	if form == 3:
+		_add_eyes(m)
 	_sound("summon.ogg", 2.0)
 	# form up: grow from small and fade in
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(self, "scale", Vector3.ONE * SCALE, 0.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_method(_set_fade, 0.0, 1.0, 0.45)
+
+## Form 3: two glowing yellow eyes on the face, riding the head bone.
+func _add_eyes(m: Node3D) -> void:
+	var sks := m.find_children("*", "Skeleton3D", true, false)
+	if sks.is_empty():
+		return
+	var sk := sks[0] as Skeleton3D
+	var head := sk.find_bone("4zss00t0 head")
+	if head < 0:
+		return
+	var att := BoneAttachment3D.new()
+	att.bone_idx = head
+	sk.add_child(att)
+	var inv := sk.get_bone_global_rest(head).affine_inverse()
+	for x in [-0.12, 0.12]:
+		var eye := Node3D.new()
+		att.add_child(eye)
+		eye.position = inv * Vector3(x, 2.9, 0.62)   # (on the face, in the head bone's space)
+		var core := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.045
+		sm.height = 0.07
+		var cm := StandardMaterial3D.new()
+		cm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		cm.albedo_color = Color(1.0, 0.97, 0.75)
+		cm.emission_enabled = true
+		cm.emission = EYE_COLOR
+		cm.emission_energy_multiplier = 6.0
+		sm.material = cm
+		core.mesh = sm
+		core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		eye.add_child(core)
+		var glow := MeshInstance3D.new()
+		glow.mesh = Vfx.quad()
+		var gm := Vfx.tex_mat("effects/Glow01.png", EYE_COLOR, 2.4, true)
+		gm.billboard_keep_scale = true
+		glow.material_override = gm
+		glow.scale = Vector3.ONE * 0.45
+		glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		eye.add_child(glow)
+		glow.create_tween().set_loops().tween_property(glow, "scale", Vector3.ONE * 0.55, 0.6).from(Vector3.ONE * 0.4).set_trans(Tween.TRANS_SINE)
 
 func _set_fade(v: float) -> void:
 	_fade = v
@@ -161,8 +209,8 @@ func attack(kind: String) -> void:
 	if ap == null or _dying or not ANIMS.has(kind):
 		return
 	var anim: String = ANIMS[kind]
-	if not ap.has_animation(anim) and ap.has_animation(FORM2_ATTACK):
-		anim = FORM2_ATTACK
+	if not ap.has_animation(anim) and ap.has_animation(FORM3_ATTACK):
+		anim = FORM3_ATTACK
 	if ap.has_animation(anim):
 		ap.play(anim, 0.12, float(SPEED[kind]))
 	var hit_at := impact_delay(kind)

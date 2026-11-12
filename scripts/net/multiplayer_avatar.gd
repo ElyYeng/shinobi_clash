@@ -152,8 +152,8 @@ func _susanoo_event(ev: String, variant: int) -> void:
 		"on":
 			if susanoo != null and is_instance_valid(susanoo):
 				susanoo.queue_free()
-			var col := Susanoo.palette_color(variant)
-			susanoo = Susanoo.create(col, model)
+			var col := Susanoo.palette_color(variant % 1000)
+			susanoo = Susanoo.create(col, model, 3 if variant >= 1000 else 2)   # (+1000 = form 3)
 			add_child(susanoo)
 			AuraShell.flare(self, model, col, 1.6)
 			var ma := AuraShell.find_in(power_fx)

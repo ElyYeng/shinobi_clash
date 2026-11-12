@@ -622,8 +622,24 @@ func _activate_form(n: int) -> void:
 		else:
 			_klink_on()
 		return
+	if Susanoo.FORM3_USERS.has(str(GameData.equipped)) and n == 3:   # Shisui's full Susanoo
+		if susanoo != null and susanoo.form == 3:
+			_susanoo_off()
+			_toast("Susanoo released")
+		elif not _susanoo_ready():
+			_toast("Susanoo unlocks at %s LV %d  (you are LV %d)" % [Bloodline.get_def(str(GameData.equipped))["name"], Bloodline.MODE_LEVEL, _bl_level()])
+		elif chakra < SUS_MIN_CHAKRA * 1.6:
+			_toast("Not enough chakra for Susanoo form 3  (%d / %d)" % [int(chakra), int(SUS_MIN_CHAKRA * 1.6)])
+		else:
+			if susanoo != null:   # form 2 -> form 3
+				_susanoo_off()
+			_susanoo_on(3)
+		return
 	if Susanoo.USERS.has(str(GameData.equipped)) and n == 2:
-		if susanoo != null:
+		if susanoo != null and susanoo.form == 3:   # form 3 -> back to the skeletal form
+			_susanoo_off()
+			_susanoo_on(2)
+		elif susanoo != null:
 			_susanoo_off()
 			_toast("Susanoo released")
 		elif not _susanoo_ready():
@@ -755,7 +771,7 @@ func _susanoo_charge_stop() -> void:
 		_sus_charge_fx.queue_free()
 	_sus_charge_fx = null
 
-func _susanoo_on() -> void:
+func _susanoo_on(form := 2) -> void:
 	if susanoo != null:
 		return
 	if not powered:
@@ -764,13 +780,13 @@ func _susanoo_on() -> void:
 			return
 	var idx := Susanoo.color_index_for(str(GameData.equipped))   # Kakashi blue / Shisui green / yours
 	var col := Susanoo.palette_color(idx)
-	susanoo = Susanoo.create(col, model)
+	susanoo = Susanoo.create(col, model, form)
 	add_child(susanoo)
 	_sus_cd = 0.6
 	_sus_zoom = cam_zoom
 	cam_zoom = maxf(cam_zoom, 13.0)   # pull back so the ribcage doesn't fill the screen
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_combat_animation("susanoo_on", idx)
+		NetworkSession.broadcast_combat_animation("susanoo_on", idx + (1000 if form == 3 else 0))   # (+1000 = form 3)
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 48, 11.0, 0.3, 0.8, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 7.0, 0.45)
@@ -779,7 +795,7 @@ func _susanoo_on() -> void:
 	if ma != null:
 		ma.set_colors(col, col.lightened(0.6))
 	Vfx.shake(cam, 0.35, 0.5)
-	_toast("SUSANOO!   left click: punch  -  right click: slam  -  hold C: release")
+	_toast(("SUSANOO - FORM 3!" if form == 3 else "SUSANOO!") + "   left click: punch  -  right click: slam  -  hold C: release")
 
 func _susanoo_off() -> void:
 	_susanoo_charge_stop()
@@ -805,7 +821,7 @@ func _susanoo_update(delta: float) -> void:
 	_sus_cd = maxf(0.0, _sus_cd - delta)
 	_sus_slam_cd = maxf(0.0, _sus_slam_cd - delta)
 	if not inf_chakra:
-		chakra = maxf(0.0, chakra - SUS_DRAIN * delta)
+		chakra = maxf(0.0, chakra - SUS_DRAIN * (Susanoo.FORM3_DRAIN if susanoo.form == 3 else 1.0) * delta)
 	if chakra <= 0.0 or not powered or is_dead:
 		_toast("Susanoo faded - out of chakra" if chakra <= 0.0 else "Susanoo released")
 		_susanoo_off()
@@ -846,7 +862,7 @@ func _susanoo_impact(kind: String, d: Dictionary, fwd: Vector3) -> void:
 			var away := (t.global_position - global_position)
 			away.y = 0.0
 			var knock := away.normalized() * float(d["knock"]) + Vector3.UP * (7.0 if kind == "slam" else 3.0)
-			_hit_foe(t, float(d["dmg"]) * _dmg(), knock)
+			_hit_foe(t, float(d["dmg"]) * _dmg() * (Susanoo.FORM3_DMG if susanoo.form == 3 else 1.0), knock)
 			VfxKit.hit(get_parent(), t.global_position + Vector3.UP * 1.2, col, 1.4)
 	if kind == "slam":
 		Vfx.shockwave(get_parent(), center + Vector3.UP * 0.15, col, r, 0.5)
