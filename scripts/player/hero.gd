@@ -514,23 +514,20 @@ class OrbRing extends Node3D:
 		var mesh := SphereMesh.new()
 		mesh.radius = 0.075
 		mesh.height = 0.15
+		# toon-shaded like the characters (CharToon converts it): dark with a hard lit side
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.03, 0.025, 0.04)
-		mat.metallic = 0.0
-		mat.roughness = 0.35
-		mat.rim_enabled = true      # thin purple-white rim so they read against dark backgrounds
-		mat.rim = 0.6
-		mat.rim_tint = 0.2
+		mat.albedo_color = Color(0.13, 0.11, 0.17)
 		mat.emission_enabled = true
-		mat.emission = Color(0.35, 0.3, 0.5)
-		mat.emission_energy_multiplier = 0.15
+		mat.emission = Color(0.3, 0.25, 0.45)
+		mat.emission_energy_multiplier = 0.12
+		mesh.material = mat
 		for i in count:
 			var o := MeshInstance3D.new()
 			o.mesh = mesh
-			o.material_override = mat
 			o.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			add_child(o)
 			_orbs.append(o)
+		CharToon.apply(self)
 		_place()
 	func _process(delta: float) -> void:
 		_t += delta
