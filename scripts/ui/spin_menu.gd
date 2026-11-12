@@ -215,7 +215,7 @@ func _ready() -> void:
 
 	# ---- left: title, tabs, the parchment page
 	var left := VBoxContainer.new()
-	left.custom_minimum_size = Vector2(560, 0)
+	left.custom_minimum_size = Vector2(960, 0)
 	left.add_theme_constant_override("separation", 8)
 	body.add_child(left)
 	UiStyle.title(left, "CUSTOMIZE", 40)
@@ -234,10 +234,11 @@ func _ready() -> void:
 		tab_buttons[t[0]] = b
 	var scroll_box := UiStyle.scroll(left, Vector2(0, 0))
 	scroll_box.get_parent().size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll_box.add_theme_constant_override("margin_left", 18)
-	scroll_box.add_theme_constant_override("margin_right", 10)
-	scroll_box.add_theme_constant_override("margin_top", 24)
-	scroll_box.add_theme_constant_override("margin_bottom", 24)
+	# keep the page clear of the frame's posts and rope
+	scroll_box.add_theme_constant_override("margin_left", 84)
+	scroll_box.add_theme_constant_override("margin_right", 58)
+	scroll_box.add_theme_constant_override("margin_top", 52)
+	scroll_box.add_theme_constant_override("margin_bottom", 60)
 	var page_holder := Control.new()
 	scroll_box.add_child(page_holder)
 	for t in TABS:
@@ -285,16 +286,7 @@ func _ready() -> void:
 	_setup_preview()
 
 	var plate := PanelContainer.new()
-	var psb := StyleBoxFlat.new()
-	psb.bg_color = Color(0.03, 0.03, 0.03, 0.88)
-	psb.skew = Vector2(0.12, 0)
-	psb.border_width_left = 6
-	psb.border_color = Color(0.78, 0.1, 0.06)
-	psb.content_margin_left = 20
-	psb.content_margin_right = 16
-	psb.content_margin_top = 6
-	psb.content_margin_bottom = 8
-	plate.add_theme_stylebox_override("panel", psb)
+	plate.add_theme_stylebox_override("panel", UiStyle.tex_box("plate_dark", [22, 10, 22, 10], [30, 8, 26, 10]))
 	right.add_child(plate)
 	var pv := VBoxContainer.new()
 	pv.add_theme_constant_override("separation", 0)
@@ -757,14 +749,7 @@ func _build_odds_panel() -> void:
 # ================================================================== small widgets
 func _chip_label(parent: Node) -> Label:
 	var l := UiStyle.label(parent, "", 16, Color.WHITE, 4)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.03, 0.03, 0.03, 0.9)
-	sb.skew = Vector2(0.15, 0)
-	sb.content_margin_left = 14
-	sb.content_margin_right = 14
-	sb.content_margin_top = 4
-	sb.content_margin_bottom = 4
-	l.add_theme_stylebox_override("normal", sb)
+	l.add_theme_stylebox_override("normal", UiStyle.tex_box("plate_dark", [22, 10, 22, 10], [22, 6, 22, 6]))
 	return l
 
 ## Small toggle chip on parchment (part choices, colour targets, textures).
@@ -1042,13 +1027,14 @@ func _paper_color(id: String) -> Color:
 		"Mythic": return Color(0.78, 0.06, 0.22)
 	return INK
 
-func _card_style(active: bool, locked: bool) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.7, 0.66, 0.52) if locked else (Color(0.95, 0.9, 0.72) if active else PAPER_DK)
-	sb.set_border_width_all(3 if active else 2)
-	sb.border_color = Color(0.85, 0.6, 0.1) if active else Color(0.5, 0.42, 0.28)
-	sb.set_content_margin_all(8)
-	return sb
+static var _cards := {}
+## Torn-paper slot card: bright when it's the selected slot, dimmer otherwise, grey when locked.
+func _card_style(active: bool, locked: bool) -> StyleBoxTexture:
+	var key := 2 if locked else (1 if active else 0)
+	if not _cards.has(key):
+		var tint := Color(0.62, 0.6, 0.58) if locked else (Color(1.08, 1.04, 0.92) if active else Color(0.86, 0.82, 0.76))
+		_cards[key] = UiStyle.tex_box("paper_card", [24, 18, 24, 18], [16, 12, 16, 12], tint)
+	return _cards[key]
 
 func _refresh() -> void:
 	var busy := spinning or auto_running

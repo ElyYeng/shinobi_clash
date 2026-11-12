@@ -679,14 +679,16 @@ func _select_item(i: int) -> void:
 func _dlabel(text: String, r: Rect2, size: int, col: Color, stylized := true, outline := 0) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.position = r.position
-	l.size = r.size
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if stylized:
 		_style_label(l, size, col, outline)
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS   # keep long names inside the page
 	else:
 		l.add_theme_font_size_override("font_size", size)
 		l.add_theme_color_override("font_color", col)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.position = r.position
+	l.size = r.size   # after wrap/overrun so the label can't grow wider than its rect
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail.add_child(l)
 	return l
@@ -743,27 +745,20 @@ func _show_detail() -> void:
 			cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		var b := Button.new()
 		b.text = str(a["label"])
-		b.position = Vector2(0, y + 20)
-		b.size = Vector2(w, 30)
+		b.clip_text = true
+		b.position = Vector2(0, y + 18)
+		b.size = Vector2(w, 34)
 		_style_green(b)
 		b.disabled = bool(a.get("disabled", false))
 		b.pressed.connect(a["cb"])
 		detail.add_child(b)
 
 func _style_green(b: Button) -> void:
-	for st in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var sb := StyleBoxFlat.new()
-		var col := BTN
-		if st == "hover":
-			col = BTN.lightened(0.15)
-		elif st == "pressed":
-			col = BTN.darkened(0.2)
-		elif st == "disabled":
-			col = Color(0.35, 0.4, 0.33)
-		sb.bg_color = col
-		sb.set_border_width_all(3)
-		sb.border_color = Color(0.06, 0.25, 0.05)
-		b.add_theme_stylebox_override(st, sb)
+	b.add_theme_stylebox_override("normal", kit("btn_red", [24, 0, 24, 0]))
+	b.add_theme_stylebox_override("hover", kit("btn_red", [24, 0, 24, 0], Color(1.25, 1.1, 1.0)))
+	b.add_theme_stylebox_override("focus", kit("btn_red", [24, 0, 24, 0], Color(1.25, 1.1, 1.0)))
+	b.add_theme_stylebox_override("pressed", kit("btn_dark", [24, 0, 24, 0]))
+	b.add_theme_stylebox_override("disabled", kit("btn_dark", [24, 0, 24, 0], Color(0.7, 0.7, 0.7)))
 	b.add_theme_font_override("font", font())
 	b.add_theme_font_size_override("font_size", 19)
 	for c in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
