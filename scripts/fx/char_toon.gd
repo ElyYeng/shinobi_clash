@@ -21,10 +21,17 @@ static func material_for(src: Material) -> Material:
 		return src
 	if b.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
 		return src
+	var nm := b.resource_name.to_lower()
+	if nm.ends_with("eye") or nm.ends_with(" eye"):   # eyes keep their own material (eye colour, iris)
+		return src
 	if b.has_meta("char_toon"):
 		return b.get_meta("char_toon")
 	if _shader == null:
-		_shader = load(SHADER)
+		# Same shader, but the colour texture is read as a colour image (sRGB) - without that hint
+		# Godot treats it as raw data and every colour comes out pale and grey.
+		_shader = Shader.new()
+		_shader.code = (load(SHADER) as Shader).code.replace("uniform sampler2D albedo_texture;",
+			"uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_enable;")
 	var sm := ShaderMaterial.new()
 	sm.shader = _shader
 	for k in PARAMS:
