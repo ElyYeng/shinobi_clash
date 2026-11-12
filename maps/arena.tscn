@@ -60,19 +60,10 @@ adjustment_enabled = true
 adjustment_contrast = 1.08
 adjustment_saturation = 1.12
 
-[sub_resource type="BoxShape3D" id="floor_box"]
-size = Vector3(100, 2, 100)
-
-[sub_resource type="BoxShape3D" id="wall_ns"]
-size = Vector3(200, 120, 2)
-
-[sub_resource type="BoxShape3D" id="wall_ew"]
-size = Vector3(2, 120, 200)
-
 [node name="Arena" type="Node3D" unique_id=35740728]
 script = ExtResource("gm")
-play_half = 44.0
-spawn_area = Rect2(-40, -40, 80, 80)
+play_half = 50.0
+spawn_area = Rect2(-38, -38, 76, 76)
 
 [node name="Environment" type="Node3D" parent="." unique_id=1855876141]
 
@@ -96,36 +87,6 @@ transform = Transform3D(1.318833, 0, 0, 0, 1.318833, 0, 0, 0, 1.318833, 0, 0, 0)
 script = ExtResource("am")
 
 [node name="Bounds" type="Node3D" parent="." unique_id=726141078]
-
-[node name="Floor" type="StaticBody3D" parent="Bounds" unique_id=1018137490]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
-
-[node name="Shape" type="CollisionShape3D" parent="Bounds/Floor" unique_id=1629189624]
-shape = SubResource("floor_box")
-
-[node name="WallN" type="StaticBody3D" parent="Bounds" unique_id=349415109]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, -47.2)
-
-[node name="Shape" type="CollisionShape3D" parent="Bounds/WallN" unique_id=719499038]
-shape = SubResource("wall_ns")
-
-[node name="WallS" type="StaticBody3D" parent="Bounds" unique_id=136544198]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 47.2)
-
-[node name="Shape" type="CollisionShape3D" parent="Bounds/WallS" unique_id=437805571]
-shape = SubResource("wall_ns")
-
-[node name="WallE" type="StaticBody3D" parent="Bounds" unique_id=1268004242]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.2, 50, 0)
-
-[node name="Shape" type="CollisionShape3D" parent="Bounds/WallE" unique_id=1009711781]
-shape = SubResource("wall_ew")
-
-[node name="WallW" type="StaticBody3D" parent="Bounds" unique_id=222181161]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -47.2, 50, 0)
-
-[node name="Shape" type="CollisionShape3D" parent="Bounds/WallW" unique_id=2120965979]
-shape = SubResource("wall_ew")
 
 [node name="Markers" type="Node3D" parent="." unique_id=2048500981]
 
