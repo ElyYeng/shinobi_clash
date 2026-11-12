@@ -111,21 +111,69 @@ static func restore_world(world: Node, leaving: Node = null) -> void:
 			(c as Camera3D).environment = e if e is Environment else null
 			c.remove_meta("gen_env")
 
-## Bound to the cross: arms out in a T-pose, no animations until unbound (Hero.play skips it).
-static func bind(model: Node3D) -> void:
+## Height of the cross bar (the bound victim's shoulders go here).
+func bar_y() -> float:
+	var bar := get_node_or_null("Cross2") as Node3D
+	return bar.global_position.y if bar != null else victim_spot().y + 3.1
+
+## Bound to the cross: lifted up so the shoulders are at the bar (`bar`, world height), arms
+## straight out in a T-pose, no animations until unbound (Hero.play skips a bound model).
+static func bind(model: Node3D, bar := INF) -> void:
 	if model == null or not is_instance_valid(model):
 		return
+	if not model.has_meta("gen_bound"):
+		model.set_meta("gen_y", model.position.y)
 	model.set_meta("gen_bound", true)
-	var ap = model.get_meta("anim_player", null)
-	if ap is AnimationPlayer and is_instance_valid(ap):
-		(ap as AnimationPlayer).stop()
+	if model.has_meta("anim_player"):
+		var ap = model.get_meta("anim_player")
+		if ap is AnimationPlayer and is_instance_valid(ap):
+			(ap as AnimationPlayer).stop()
 	for sk: Skeleton3D in model.find_children("*", "Skeleton3D", true, false):
-		sk.reset_bone_poses()   # (the rest pose is the T-pose)
+		sk.reset_bone_poses()
+		var shoulder := INF
+		for side in ["Left", "Right"]:   # the rest pose is an A-pose: straighten each arm out sideways
+			var chain: Array[int] = []
+			for part in ["Arm", "ForeArm", "Hand", "HandMiddle1"]:
+				chain.append(_bone(sk, side + part))
+			if chain[0] < 0 or chain[1] < 0:
+				continue
+			var out := Vector3(signf((_gpose(sk, chain[1]).origin - _gpose(sk, chain[0]).origin).x), 0, 0)
+			for k in 3:
+				if chain[k] < 0 or chain[k + 1] < 0:
+					break
+				var g := _gpose(sk, chain[k])
+				var cur := ((g * sk.get_bone_pose(chain[k + 1])).origin - g.origin).normalized()
+				if cur.length() < 0.5 or cur.is_equal_approx(out):
+					continue
+				var want := Basis(Quaternion(cur, out)) * g.basis   # (turned in skeleton space)
+				var par := sk.get_bone_parent(chain[k])
+				var pb := _gpose(sk, par).basis if par >= 0 else Basis()
+				sk.set_bone_pose_rotation(chain[k], (pb.inverse() * want).get_rotation_quaternion())
+			if sk.is_inside_tree():
+				shoulder = (sk.global_transform * _gpose(sk, chain[0]).origin).y
+		if bar != INF and shoulder != INF:   # up onto the cross
+			model.global_position.y += bar - shoulder
+
+## A bone's pose in skeleton space, from the local poses (always current, unlike the cached one).
+static func _gpose(sk: Skeleton3D, b: int) -> Transform3D:
+	var t := Transform3D()
+	while b >= 0:
+		t = sk.get_bone_pose(b) * t
+		b = sk.get_bone_parent(b)
+	return t
+
+static func _bone(sk: Skeleton3D, n: String) -> int:
+	var i := sk.find_bone("mixamorig_" + n)
+	if i < 0:
+		i = sk.find_bone("mixamorig:" + n)
+	return i if i >= 0 else sk.find_bone(n)
 
 static func unbind(model: Node3D) -> void:
 	if model == null or not is_instance_valid(model) or not model.has_meta("gen_bound"):
 		return
 	model.remove_meta("gen_bound")
+	model.position.y = float(model.get_meta("gen_y", model.position.y))
+	model.remove_meta("gen_y")
 	Hero.play(model, "idle", true)
 
 ## Where the victim stands (in front of the cross, facing the caster).
