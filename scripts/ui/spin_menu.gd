@@ -1440,37 +1440,52 @@ func _on_hex_submitted(text: String) -> void:
 const MAX_PRESETS := 12
 var preset_name: LineEdit
 var preset_box: VBoxContainer
+var preset_pick: OptionButton
 
 func _fill_presets() -> void:
 	if preset_box == null:
 		return
 	for c in preset_box.get_children():
 		c.queue_free()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	preset_box.add_child(row)
+	preset_pick = OptionButton.new()
+	preset_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preset_pick.fit_to_longest_item = false
 	if GameData.look_presets.is_empty():
-		UiStyle.label(preset_box, "No presets yet - make a look, name it and press SAVE LOOK.", 12, UiStyle.BODY_TEXT)
-		return
-	for i in GameData.look_presets.size():
-		var pr: Dictionary = GameData.look_presets[i]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		preset_box.add_child(row)
-		var load_b := UiStyle.green_button(row, str(pr.get("name", "Preset %d" % (i + 1))), 14)
-		load_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		load_b.tooltip_text = "Wear this look"
-		load_b.pressed.connect(_load_preset.bind(i))
-		var over := UiStyle.green_button(row, "OVERWRITE", 12)
-		over.tooltip_text = "Save the current look into this preset"
-		over.pressed.connect(func() -> void:
-			GameData.look_presets[i]["look"] = Hero.sanitize_appearance(_working).duplicate(true)
-			GameData.save()
-			_toast_look("Saved over \"%s\"" % str(GameData.look_presets[i]["name"])))
-		var del := UiStyle.green_button(row, "X", 12)
-		del.tooltip_text = "Delete this preset"
-		del.custom_minimum_size = Vector2(36, 0)
-		del.pressed.connect(func() -> void:
-			GameData.look_presets.remove_at(i)
-			GameData.save()
-			_fill_presets())
+		preset_pick.add_item("No presets yet")
+		preset_pick.disabled = true
+	else:
+		preset_pick.add_item("Choose a preset...")
+		preset_pick.set_item_disabled(0, true)
+		for i in GameData.look_presets.size():
+			preset_pick.add_item(str(GameData.look_presets[i].get("name", "Preset %d" % (i + 1))))
+		preset_pick.select(0)
+	preset_pick.item_selected.connect(func(n: int) -> void: _load_preset(n - 1))   # (picking one wears it)
+	row.add_child(preset_pick)
+	var over := UiStyle.green_button(row, "OVERWRITE", 12)
+	over.tooltip_text = "Save the current look into the chosen preset"
+	over.disabled = GameData.look_presets.is_empty()
+	over.pressed.connect(func() -> void:
+		var i := preset_pick.selected - 1
+		if i < 0 or i >= GameData.look_presets.size():
+			_toast_look("Pick a preset first")
+			return
+		GameData.look_presets[i]["look"] = Hero.sanitize_appearance(_working).duplicate(true)
+		GameData.save()
+		_toast_look("Saved over \"%s\"" % str(GameData.look_presets[i]["name"])))
+	var del := UiStyle.green_button(row, "DELETE", 12)
+	del.tooltip_text = "Delete the chosen preset"
+	del.disabled = GameData.look_presets.is_empty()
+	del.pressed.connect(func() -> void:
+		var i := preset_pick.selected - 1
+		if i < 0 or i >= GameData.look_presets.size():
+			_toast_look("Pick a preset first")
+			return
+		GameData.look_presets.remove_at(i)
+		GameData.save()
+		_fill_presets())
 
 func _save_preset() -> void:
 	if GameData.look_presets.size() >= MAX_PRESETS:
@@ -1483,6 +1498,7 @@ func _save_preset() -> void:
 	GameData.save()
 	preset_name.text = ""
 	_fill_presets()
+	preset_pick.select(GameData.look_presets.size())
 	_toast_look("Saved \"%s\"" % n)
 
 func _load_preset(i: int) -> void:
