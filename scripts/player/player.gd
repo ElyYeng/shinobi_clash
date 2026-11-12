@@ -2125,6 +2125,13 @@ func _genjutsu_toggle() -> void:
 		_toast("Genjutsu released")
 		return
 	var t = lock_target if _alive(lock_target) and lock_target.global_position.distance_to(global_position) <= GEN_RANGE else _nearest_foe(GEN_RANGE)
+	if t == null:   # no enemy around: a villager will do
+		var bd := GEN_RANGE
+		for v in Villager._all:
+			if is_instance_valid(v) and (v as Villager).model != null and (v as Villager)._hp > 0.0 \
+					and (v as Node3D).global_position.distance_to(global_position) < bd:
+				bd = (v as Node3D).global_position.distance_to(global_position)
+				t = v
 	if t == null:
 		_toast("No one to catch in your genjutsu")
 		return
@@ -2138,7 +2145,10 @@ func _genjutsu_toggle() -> void:
 		NetworkSession.send_genjutsu(peer, true)
 		_gen_master_enter(peer, t as Node3D)
 		_toast("Genjutsu! You're both in your world - beat them up, tap C to release")
-	else:
+	elif t is Villager or (t is Enemy and not (t as Enemy).is_boss):   # NPCs are pulled in too
+		_gen_master_enter(0, t as Node3D)
+		_toast("Genjutsu! They're bound in your world - beat them up, tap C to release")
+	else:   # (bosses are too big to pull in: frozen where they stand)
 		_toast("Genjutsu! Tap C to release")
 
 func _genjutsu_release() -> void:
@@ -2150,13 +2160,15 @@ func _genjutsu_release() -> void:
 		NetworkSession.send_genjutsu(peer, false)
 	if is_instance_valid(_gen_target) and _gen_target is Enemy:
 		(_gen_target as Enemy).stun = 0.0
+	if is_instance_valid(_gen_target) and _gen_target is Villager:
+		(_gen_target as Villager)._stun = 0.0
 	_gen_target = null
 
 ## Caster upkeep (enemy victims) + victim damage over time.
 func _genjutsu_tick(delta: float) -> void:
 	if _gen_target != null:
-		var ok: bool = _alive(_gen_target) and powered and not is_dead \
-			and (_gen_target as Node3D).global_position.distance_to(global_position) < GEN_RANGE * 1.6
+		var ok: bool = (_alive(_gen_target) or (_gen_target is Villager and (_gen_target as Villager)._hp > 0.0)) and powered and not is_dead \
+			and (_gen_target as Node3D).global_position.distance_to(gen_anchor if _gen_target is Villager and gen_anchor != Vector3.INF else global_position) < GEN_RANGE * 1.6
 		if not ok:
 			_genjutsu_release()
 		elif _gen_target is Enemy:   # enemies: frozen + the same 1-10 every half second
@@ -2164,7 +2176,33 @@ func _genjutsu_tick(delta: float) -> void:
 			_gen_t += delta
 			if _gen_t >= GEN_TICK:
 				_gen_t -= GEN_TICK
-				_hit_foe(_gen_target, float(randi_range(1, 10)), Vector3.ZERO)
+				var gd := float(randi_range(1, 10))
+				if gen_master and (_gen_target as Enemy).health <= gd * _dmg():
+					var e: Enemy = _gen_target
+					_genjutsu_release()   # (dies back in the real world, where everyone sees it fall)
+					_hit_foe(e, gd, Vector3.ZERO)
+				else:
+					_hit_foe(_gen_target, gd, Vector3.ZERO)
+		elif _gen_target is Villager:   # villagers: bound, bruising up, until they drop
+			var v: Villager = _gen_target
+			v._stun = maxf(v._stun, 0.6)
+			_gen_t += delta
+			if _gen_t >= GEN_TICK:
+				_gen_t -= GEN_TICK
+				var vd := float(randi_range(1, 10))
+				v._hp = maxf(0.0, v._hp - vd)
+				Hero.set_damage(v.model, v._hp / 100.0)
+				var fig = get_meta("gen_fig", null)
+				if fig != null and is_instance_valid(fig):
+					Hero.set_damage(fig, v._hp / 100.0)
+					Hero.play(fig, "hurt", true, 0, 0.3)
+					Vfx.damage_number(get_parent(), (fig as Node3D).global_position + Vector3.UP * 2.1, vd)
+				if v._hp <= 0.0:   # out cold: back in the real world they collapse
+					_genjutsu_release()
+					get_tree().create_timer(0.15).timeout.connect(func() -> void:
+						if is_instance_valid(v):
+							v._hp = 1.0
+							v.get_hit(Vector3.FORWARD, true, 1.0))
 		if _gen_target != null and _peer_of(_gen_target) > 0:
 			set_meta("gen_peer", _peer_of(_gen_target))
 			_gen_send_t -= delta
@@ -2196,7 +2234,24 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 	_gen_world = GenjutsuWorld.build(get_parent() as Node3D, {}, peer, Vector3.ZERO, true)
 	global_position = _gen_world.victim_spot() + Vector3(0, 0.2, -5.0)
 	velocity = Vector3.ZERO
-	if victim != null and is_instance_valid(victim):   # their body appears bound in here (for you)
+	if victim is Villager:   # a villager's illusion stands bound in here (their body stays on its street)
+		var fig := Npc.character_look({}, "villager_%d" % (victim as Villager).rng.seed)   # (same look, same seed)
+		if fig != null:
+			_gen_world.add_child(fig)
+			Hero.set_damage(fig, (victim as Villager)._hp / 100.0)
+			fig.global_position = _gen_world.victim_spot()
+			fig.rotation = Vector3.ZERO   # (facing the caster)
+			Hero.play(fig, "idle", true)
+			set_meta("gen_fig", fig)
+	elif victim is Enemy:   # the enemy itself is pulled in (and put back where it stood after)
+		victim.set_meta("gen_home", victim.global_position)
+		victim.global_position = _gen_world.victim_spot()
+		(victim as Enemy).velocity = Vector3.ZERO
+		var em = (victim as Enemy).model
+		if em != null:
+			em.rotation.y = 0.0
+		set_meta("gen_victim", victim)
+	elif victim != null and is_instance_valid(victim):   # their body appears bound in here (for you)
 		victim.set_meta("gen_pos", _gen_world.victim_spot())
 		victim.global_position = _gen_world.victim_spot()
 		set_meta("gen_victim", victim)
@@ -2208,7 +2263,13 @@ func _gen_master_exit() -> void:
 	var v = get_meta("gen_victim", null)
 	if v != null and is_instance_valid(v):
 		(v as Node).remove_meta("gen_pos")
+		if (v as Node).has_meta("gen_home"):   # an enemy: back to where it stood
+			(v as Node3D).global_position = (v as Node).get_meta("gen_home")
+			(v as Node).remove_meta("gen_home")
+			if v is Enemy:
+				(v as Enemy).velocity = Vector3.ZERO
 	remove_meta("gen_victim")
+	remove_meta("gen_fig")   # (the villager illusion goes with the world)
 	if is_instance_valid(_gen_world):
 		_gen_world.queue_free()
 		GenjutsuWorld.restore_world(get_parent(), _gen_world)   # light + camera back to normal

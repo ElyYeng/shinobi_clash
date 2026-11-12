@@ -974,7 +974,7 @@ func _sync_quest_enemy_states() -> void:
 					continue
 				_quest_enemy_identity.rpc_id(peer_id, enemy.network_quest_id, enemy.bloodline_id, enemy.character_appearance, enemy.max_health)
 		var yaw := enemy.model.rotation.y if enemy.model != null else 0.0
-		_quest_enemy_state.rpc(enemy.network_quest_id, enemy.global_position, yaw, enemy.health)
+		_quest_enemy_state.rpc(enemy.network_quest_id, enemy.get_meta("gen_home", enemy.global_position), yaw, enemy.health)   # (in a genjutsu: where its body stands)
 
 
 ## Reliable, one-time identity packet: bloodline is the clan and appearance contains

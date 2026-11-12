@@ -120,6 +120,9 @@ func _update_label() -> void:
 		label.modulate = (def["color"] as Color).lerp(Color.WHITE, 0.35)
 
 func _physics_process(delta: float) -> void:
+	if network_quest_mirror and has_meta("gen_home"):   # pulled into our genjutsu: stays bound in there
+		_animate_body(delta)
+		return
 	if network_quest_mirror:
 		var old_position := global_position
 		var blend := 1.0 - exp(-14.0 * delta)
