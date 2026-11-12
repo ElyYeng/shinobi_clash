@@ -41,8 +41,11 @@ const EYE_TONES := ["#3B7BD4", "#3E9A5A", "#6B4423", "#8E7A3A", "#7C8A96", "#2C2
 ## Skin: every surface using the GLB material with this name (face, arms on the shirts, legs on the
 ## pants...) takes the appearance's skin_color. Each character gets its own copy of the material.
 const SKIN_MATERIAL := "Skin Color"
-## Preset skin tones (Customize > Appearance > Skin; villagers roll from these).
+## Preset skin tones (Customize > Appearance > Skin; villagers roll from these with SKIN_WEIGHTS).
 const SKIN_TONES := ["#FBE3CF", "#F4CDAE", "#EBB894", "#D9A07A", "#C08560", "#A06A48", "#7E5136", "#5B3A27"]
+## How often villagers / NPCs get each tone - mostly light and medium (a Japanese village);
+## the darkest three together are about 1 in 20.
+const SKIN_WEIGHTS := [24.0, 30.0, 24.0, 10.0, 6.0, 3.0, 2.0, 1.0]
 ## Clothing tints: category -> appearance key. The colour multiplies the mesh's own colours.
 const CLOTH_COLORS := {"shirt": "shirt_color", "pants": "pants_color"}
 ## Extra colour targets on hair meshes. A hairstyle gets one only if it has a surface whose
@@ -228,7 +231,7 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 		if not ids.is_empty():
 			look[CATEGORIES[cat]["key"]] = str(ids[rng.randi() % ids.size()])
 	look["hair_color"] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.0, 0.8), rng.randf_range(0.15, 1.0)).to_html(false)
-	look["skin_color"] = SKIN_TONES[rng.randi() % SKIN_TONES.size()]
+	look["skin_color"] = SKIN_TONES[rng.rand_weighted(PackedFloat32Array(SKIN_WEIGHTS))]
 	look["eye_color"] = EYE_TONES[rng.randi() % 6]
 	for slot in COLOR_SLOTS:
 		var info: Dictionary = COLOR_SLOTS[slot]
