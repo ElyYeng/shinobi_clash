@@ -357,6 +357,8 @@ static func personal_mode(id: String, m: Dictionary, col: Color) -> Dictionary:
 	if look.has("glow"):
 		look["glow"] = "#" + col.lerp(Color.WHITE, 0.45).to_html(false)
 		look["hair_glow"] = "#" + col.lerp(Color.WHITE, 0.15).to_html(false)
+	if look.has("eyes"):
+		look["eye_col"] = "#" + col.to_html(false)
 	out["look"] = look
 	return out
 

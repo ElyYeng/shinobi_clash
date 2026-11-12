@@ -428,7 +428,10 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 	if model == null or not model.has_meta("hero_parts"):
 		return
 	apply_appearance(model, appearance)
-	set_eyes(model, Moves.tex(str(look["eyes"])) if look.has("eyes") else null)
+	var eye_tex: Texture2D = Moves.tex(str(look["eyes"])) if look.has("eyes") else null
+	if eye_tex != null and look.has("eye_col"):   # personal colour (Ink Mode): recolour the iris
+		eye_tex = recolor_iris(eye_tex, Color.html(str(look["eye_col"])))
+	set_eyes(model, eye_tex)
 	_set_orbs(model, int(look.get("orbs", 0)))
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})
 	var outfit_glow := float(look.get("outfit_glow", 0.0))
@@ -761,6 +764,33 @@ const NEON_DARK := 0.42  # outfit pixels darker than this become (near) black in
 
 ## Swaps the iris texture on both eyes (null = the model's own eyes). The eyes are the face
 ## surfaces whose material is called "... Eye" or uses an "Eye" texture (not the eyebrows).
+## The eye texture with every coloured pixel (the iris) shifted to `col`'s hue; the white of the
+## eye and the dark rings stay as they are. Cached per texture + colour. Keeps the original
+## resource_path in meta "src" so the "_Glow" mask is still found.
+static var _iris_cache := {}
+static func recolor_iris(tex: Texture2D, col: Color) -> Texture2D:
+	var key := tex.resource_path + col.to_html()
+	if _iris_cache.has(key):
+		return _iris_cache[key]
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.s > 0.2 and c.v > 0.08:
+				var n := Color.from_hsv(col.h, c.s * col.s, c.v, c.a)
+				img.set_pixel(x, y, n)
+	img.generate_mipmaps()
+	var out := ImageTexture.create_from_image(img)
+	out.set_meta("src", tex.resource_path)
+	_iris_cache[key] = out
+	return out
+
 static func set_eyes(model: Node3D, tex: Texture2D) -> void:
 	_set_eyes_impl(model, tex)
 	CharToon.apply(model)
@@ -796,7 +826,8 @@ static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
 			# Unshaded: toon lighting over-brightens the eye and washes the iris colours out.
 			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			# Neon iris: "<eye>_Glow.png" (black outside the iris) lights up only the iris.
-			var glow := Moves.tex(tex.resource_path.get_basename() + "_Glow.png") if tex.resource_path != "" else null
+			var src_path: String = str(tex.get_meta("src")) if tex.has_meta("src") else tex.resource_path
+			var glow := Moves.tex(src_path.get_basename() + "_Glow.png") if src_path != "" else null
 			# Without a mask (e.g. the Rinnegan, which covers the whole eye) the eye itself glows:
 			# the texture is its own emission, so the rings stay dark and the purple lights up.
 			m.emission_enabled = true
