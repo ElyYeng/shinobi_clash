@@ -541,7 +541,7 @@ static func _set_eyes_impl(model: Node3D, tex: Texture2D) -> void:
 		if nm.contains("brow") or not (nm.ends_with("eye") or tex_path.contains("eye_bc")):
 			continue
 		if tex == null:   # normal eyes: the appearance's eye colour (or the texture as painted)
-			var tint = model.get_meta("eye_tint", null)
+			var tint = model.get_meta("eye_tint") if model.has_meta("eye_tint") else null
 			if tint is Texture2D and base is BaseMaterial3D:
 				var tm := (base as BaseMaterial3D).duplicate() as BaseMaterial3D
 				tm.albedo_texture = tint

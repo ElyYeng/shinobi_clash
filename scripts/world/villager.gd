@@ -41,6 +41,8 @@ const ROLE := ["Shopkeeper", "Farmer", "Baker", "Fisher", "Potter", "Tea Seller"
 
 var index := 0
 var _marker: Label3D
+var held := false        # stands still facing the player while you talk to them
+var _catch := 0.0        # after talking: seconds left easing back onto the shared route
 
 static func name_for(i: int) -> String:
 	return "%s %s" % [ROLE[(i * 7 + 3) % ROLE.size()], FIRST[(i * 11 + 5) % FIRST.size()]]
@@ -170,7 +172,26 @@ func _process(delta: float) -> void:
 	dir = dir.normalized() if dir.length() > 0.01 else Vector3.ZERO
 	var moving := t >= _t0 and t < _t1
 	var k := clampf(inverse_lerp(_t0, _t1, t), 0.0, 1.0) if _t1 > _t0 else 1.0
-	global_position = _leg_start.lerp(goal, k)
+	var route_pos := _leg_start.lerp(goal, k)
+	if held:   # talking: stay put, face the player (the route keeps running - we catch up after)
+		moving = false
+		_catch = 1.5
+		if p != null and pd > 0.1:
+			model.rotation.y = lerp_angle(model.rotation.y, atan2(-to_p.x, -to_p.z), 1.0 - exp(-8.0 * delta))
+	elif _catch > 0.0:   # walk briskly back onto the route
+		_catch -= delta
+		var gap := route_pos - global_position
+		gap.y = 0.0
+		if gap.length() > 0.05:
+			global_position += gap.normalized() * minf(gap.length(), maxf(speed * 2.5, gap.length() * 3.0) * delta)
+			dir = gap.normalized()
+			moving = true
+		else:
+			_catch = 0.0
+		if _catch <= 0.0:
+			global_position = route_pos
+	else:
+		global_position = route_pos
 	_update_marker()
 	if far:
 		return

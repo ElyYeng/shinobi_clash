@@ -260,9 +260,15 @@ func _refresh_markers() -> void:
 			m = "!"
 		n.set_marker(m, col)
 
+var _held_villager: Villager
+
 func _world_interact() -> void:
 	if dialog.is_open:
 		return
+	if _held_villager != null:   # dialog closed: let them walk on
+		if is_instance_valid(_held_villager):
+			_held_villager.held = false
+		_held_villager = null
 	var near: Npc = null
 	var best := 4.5
 	for id in npcs:
@@ -293,6 +299,10 @@ const VILLAGER_LINES := ["Nice weather today.", "Have you tried Ichiraku's ramen
 ## Walking villagers: their errand (Errands) if they have one, otherwise small talk.
 func _talk_villager(i: int) -> void:
 	var nm := Villager.name_for(i)
+	var v := Villager.by_index(i)
+	if v != null:   # stand still while we talk
+		v.held = true
+		_held_villager = v
 	var none := Callable()
 	var act := quests.active_def()
 	if not act.is_empty():

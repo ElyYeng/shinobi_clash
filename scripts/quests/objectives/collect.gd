@@ -14,7 +14,7 @@ func start() -> void:
 		var a := TAU * float(i) / float(n) + 0.7 * float(i % 3)
 		var r := spread * (0.45 + 0.5 * float((i * 7) % 5) / 4.0)
 		var item := _make_item()
-		item.position = Vector3(center.x + cos(a) * r, 0.0, center.z + sin(a) * r)
+		item.position = _open_spot(center, a, r)
 		quests.world.add_child(item)
 		_snap(item)
 		_items.append(item)
@@ -91,9 +91,21 @@ func _make_item() -> Node3D:
 	return root
 
 ## Puts the item on the ground (terrain or floor) under it.
+## A spot on open ground near (angle a, radius r) around `center` - never inside a building's
+## footprint (else the item ends up on a roof or a wall). Deterministic, so a party agrees.
+func _open_spot(center: Vector3, a: float, r: float) -> Vector3:
+	var gm = quests.world.get("map")
+	for k in 16:
+		var aa := a + float(k) * 0.9
+		var rr := r * (1.0 - 0.06 * float(k))
+		var p := Vector3(center.x + cos(aa) * rr, 0.0, center.z + sin(aa) * rr)
+		if not (gm is GameMap) or not (gm as GameMap).blocked(p, 1.2):
+			return p
+	return center
+
 func _snap(item: Node3D) -> void:
 	var space := quests.world.get_world_3d().direct_space_state
-	var from := item.global_position + Vector3.UP * 60.0
-	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 140.0))
+	var from := item.global_position + Vector3.UP * 2.5   # from just above the ground, not the rooftops
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 10.0))
 	if not hit.is_empty():
 		item.global_position.y = (hit["position"] as Vector3).y
