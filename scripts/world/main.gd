@@ -285,6 +285,7 @@ func _start_world() -> void:
 	_refresh_markers()
 	_build_uchiha_gate()
 	_spawn_sparrers.call_deferred()
+	_spawn_training_logs.call_deferred()
 	if GameData.world_return_pos != Vector3.ZERO:   # back from the boss arena
 		player.global_position = GameData.world_return_pos
 		GameData.world_return_pos = Vector3.ZERO
@@ -318,6 +319,18 @@ func _build_uchiha_gate() -> void:
 
 ## Shinobi sparring in pairs outside the village (forest and meadow past the main gate).
 const SPAR_SPOTS := [Vector3(-45, 0, 205), Vector3(-62, 0, 228), Vector3(45, 0, 205), Vector3(62, 0, 228)]   # clearings in the Outskirts forest
+## Two training logs near the spawn to try jutsu on.
+func _spawn_training_logs() -> void:
+	await get_tree().physics_frame
+	var base := map.spawn("PlayerSpawn", Vector3.ZERO)
+	var space := get_world_3d().direct_space_state
+	for off in [Vector3(-3.5, 0, -7), Vector3(3.5, 0, -7)]:
+		var at: Vector3 = base + off
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 60.0, at + Vector3.DOWN * 50.0))
+		if not hit.is_empty():
+			at = hit["position"]
+		TrainingLog.spawn(self, at)
+
 func _spawn_sparrers() -> void:
 	await get_tree().physics_frame
 	var space := get_world_3d().direct_space_state
