@@ -71,9 +71,16 @@ func set_kurama_visual(enabled: bool) -> void:
 
 var susanoo: Susanoo
 
+var sitting := false   # sitting on the floor (P); held until they stand or move
+
 func play_combat_animation(state: String, variant: int = 0) -> void:
 	if model == null or network_ragdoll_started:
 		return
+	if state == "sit":
+		sitting = variant == 1
+		Hero.play(model, "sit" if sitting else "idle", sitting, 0, 0.0, 0.45 if sitting else 0.35)
+		return
+	sitting = false
 	if state.begins_with("susanoo_"):   # Susanoo (Uchiha): form / release / attacks
 		_susanoo_event(state.trim_prefix("susanoo_"), variant)
 		return
@@ -256,7 +263,9 @@ func _process(delta: float) -> void:
 		else:
 			model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(1.0, delta * 14.0))
 		var speed := global_position.distance_to(_last_position) / maxf(delta, 0.001)
-		if animation_lock <= 0.0:
+		if sitting and speed > 1.0:
+			sitting = false
+		if animation_lock <= 0.0 and not sitting:
 			Hero.play_move(model, Hero.move_state(speed), speed)
 		HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
 	_last_position = global_position

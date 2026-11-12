@@ -845,7 +845,9 @@ func _end_wall_walk(launch: Vector3) -> void:
 
 func _update_anim() -> void:
 	if anim_lock > 0.0:
-		sitting = false
+		if sitting:
+			sitting = false
+			NetworkSession.broadcast_combat_animation("sit", 0)
 		return
 	var st := "idle"
 	var ground := 0.0
@@ -856,9 +858,11 @@ func _update_anim() -> void:
 			Hero.play(model, "sit", true, 0, 0.0, 0.45)
 		else:
 			Hero.play(model, "idle", false, 0, 0.0, 0.35)
+		NetworkSession.broadcast_combat_animation("sit", 1 if sitting else 0)
 	if sitting:
 		if hv.length() > 0.5 or not is_on_floor() or dash_time > 0.0:
 			sitting = false
+			NetworkSession.broadcast_combat_animation("sit", 0)
 		else:
 			return
 	if not is_on_floor():

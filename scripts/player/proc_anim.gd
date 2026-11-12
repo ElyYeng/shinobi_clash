@@ -10,8 +10,8 @@ const SIT := "proc_sit"
 const SIT_POSE := {
 	"Spine": [0.2, 1.0, 0.0], "Spine1": [0.15, 1.0, 0.0], "Spine2": [0.1, 1.0, 0.0],
 	"Neck": [0.15, 1.0, 0.0], "Head": [-0.05, 1.0, 0.0],
-	"UpLeg": [0.87, 0.45, 0.3], "Leg": [0.1, -1.0, 0.08], "Foot": [1.0, -0.35, 0.05],
-	"Arm": [0.75, -0.55, 0.35], "ForeArm": [0.9, -0.2, -0.3],
+	"UpLeg": [0.55, 0.8, 0.3], "Leg": [-0.3, -1.0, 0.05], "Foot": [1.0, -0.35, 0.05],
+	"Arm": [0.6, -0.45, 0.35], "ForeArm": [0.7, -0.4, -0.45],
 }
 ## Child bone each limb bone points at.
 const CHILD := {"Hips": "Spine", "Spine": "Spine1", "Spine1": "Spine2", "Spine2": "Neck", "Neck": "Head",
@@ -70,6 +70,8 @@ static func _pose_anim(ap: AnimationPlayer, sk: Skeleton3D, pose: Dictionary, hi
 
 	# world-space rotation delta per bone, parents first (bone indices are parent-ordered)
 	var delta := {}
+	var posed := {}
+	var hips_i := b["Hips"] as int
 	var anim := Animation.new()
 	anim.length = 0.6
 	var prefix := _track_prefix(ap, sk)
@@ -104,14 +106,28 @@ static func _pose_anim(ap: AnimationPlayer, sk: Skeleton3D, pose: Dictionary, hi
 		anim.rotation_track_insert_key(tr, 0.0, local)
 		anim.rotation_track_insert_key(tr, anim.length, local)
 		if name == "Hips":
-			var drop := (hips.y - ground) - height * hip_frac
-			var world_pos := hips - up * drop
-			var pos := world_pos
-			if par >= 0:
-				pos = sk.get_bone_global_rest(par).affine_inverse() * world_pos
-			var pt := anim.add_track(Animation.TYPE_POSITION_3D)
-			anim.track_set_path(pt, NodePath(prefix + ":" + full))
-			anim.position_track_insert_key(pt, 0.0, pos)
-			anim.position_track_insert_key(pt, anim.length, pos)
+			hips_i = i
+		# posed position (hips at rest height) to find where the feet end up
+		var rest_o: Vector3 = sk.get_bone_global_rest(i).origin
+		if par >= 0 and posed.has(par):
+			var wpar: Quaternion = delta.get(par, Quaternion.IDENTITY)
+			posed[i] = posed[par] + wpar * (rest_o - sk.get_bone_global_rest(par).origin)
+		else:
+			posed[i] = rest_o
+	# Hips height: the sitting height, but never so low that a foot/toe goes under the floor.
+	var lowest := INF
+	for n in ["LeftFoot", "RightFoot", "LeftToeBase", "RightToeBase", "LeftToe_End", "RightToe_End"]:
+		if b.has(n) and posed.has(b[n]):
+			lowest = minf(lowest, (posed[b[n]] as Vector3).y)
+	var target_y := ground + height * hip_frac
+	if lowest < INF:
+		target_y = maxf(target_y, hips.y + (ground + height * 0.03 - lowest))   # 0.03: ankle/sole thickness
+	var world_pos := Vector3(hips.x, target_y, hips.z)
+	var hpar := sk.get_bone_parent(hips_i)
+	var pos := world_pos if hpar < 0 else sk.get_bone_global_rest(hpar).affine_inverse() * world_pos
+	var pt := anim.add_track(Animation.TYPE_POSITION_3D)
+	anim.track_set_path(pt, NodePath(prefix + ":" + sk.get_bone_name(hips_i)))
+	anim.position_track_insert_key(pt, 0.0, pos)
+	anim.position_track_insert_key(pt, anim.length, pos)
 	anim.loop_mode = Animation.LOOP_NONE
 	return anim
