@@ -60,7 +60,7 @@ static func make(id: String) -> Dictionary:
 	match rng.randi() % 4:
 		0:   # gather things
 			var it: Array = ITEMS[rng.randi() % ITEMS.size()]
-			var n := rng.randi_range(4, 7)
+			var n := rng.randi_range(6, 10)
 			step["type"] = "collect"
 			step["count"] = n
 			step["item_name"] = it[1]

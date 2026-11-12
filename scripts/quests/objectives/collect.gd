@@ -1,15 +1,24 @@
 extends QuestObjective
 ## Pick up `count` `item_name`s scattered within `radius` of `pos`. Each one is a glowing scroll
 ## on the ground; walk over it to take it. Already-collected ones don't come back after a reload.
+## Harder than it sounds: they're spread wide, thieves guard the area, and each item jumps away
+## (twice) when you get close - catch it on the third try.
 
 const PICK_RANGE := 1.6
+const SPOOK_RANGE := 4.5   # this close and an item still able to dodge jumps away
+const DODGES := 2
 var _items: Array[Node3D] = []
+var _center := Vector3.ZERO
+var _spread := 14.0
 
 func start() -> void:
 	quests.make_beacon(step["pos"], str(step["place"]) if str(step["place"]) != "" else str(step["item_name"]))
 	var n := int(step["count"])
 	var center: Vector3 = step["pos"]
-	var spread := maxf(float(step["radius"]), 6.0)
+	var spread := maxf(float(step["radius"]) * 2.0, 14.0)
+	_center = center
+	_spread = spread
+	_guards(n)
 	for i in range(progress(), n):   # fixed spots, so every party member sees the same ones
 		var a := TAU * float(i) / float(n) + 0.7 * float(i % 3)
 		var r := spread * (0.45 + 0.5 * float((i * 7) % 5) / 4.0)
@@ -17,6 +26,8 @@ func start() -> void:
 		item.position = _open_spot(center, a, r)
 		quests.world.add_child(item)
 		_snap(item)
+		item.set_meta("dodges", DODGES)
+		item.set_meta("i", i)
 		_items.append(item)
 
 func update(delta: float) -> void:
@@ -25,7 +36,11 @@ func update(delta: float) -> void:
 			_items.erase(item)
 			continue
 		item.rotate_y(delta * 1.6)
-		if flat_distance(item.global_position) < PICK_RANGE and absf(player().global_position.y - item.global_position.y) < 3.0:
+		var dodges := int(item.get_meta("dodges", 0))
+		if dodges > 0 and not item.has_meta("hopping") and flat_distance(item.global_position) < SPOOK_RANGE:
+			_hop(item, dodges)
+			continue
+		if not item.has_meta("hopping") and flat_distance(item.global_position) < PICK_RANGE and absf(player().global_position.y - item.global_position.y) < 3.0:
 			_items.erase(item)
 			Fx.puff(quests.world, item.global_position + Vector3.UP * 0.6, Color(1.0, 0.9, 0.5, 0.8), 1.2)
 			Sfx.play(player(), "poof", -6.0)
@@ -44,6 +59,39 @@ func stop() -> void:
 
 func hud_text() -> String:
 	return text_or("Collect %ss: %d / %d" % [step["item_name"], progress(), int(step["count"])])
+
+## Thieves guarding the area (a few, tougher with your level). They don't count for anything -
+## they just make the gathering a fight.
+func _guards(n: int) -> void:
+	if progress() >= n:
+		return
+	var st := step.duplicate()
+	var g := clampi(n / 2, 2, 5)
+	st["count"] = g
+	st["enemy_health"] = 45.0 + GameData.level * 14.0
+	st["enemy_damage"] = 6.0 + GameData.level * 0.5
+	st["enemy_speed"] = minf(6.0, 4.2 + GameData.level * 0.03)
+	st["enemy_color"] = Color(0.2, 0.22, 0.28)
+	st["enemy_band"] = Color(0.3, 0.3, 0.35)
+	quests.spawn_enemies(g, st, false, 500)
+
+## The item leaps away to another spot (same spots for everyone: picked from its index).
+func _hop(item: Node3D, dodges: int) -> void:
+	item.set_meta("dodges", dodges - 1)
+	item.set_meta("hopping", true)
+	var i := int(item.get_meta("i", 0))
+	var to := _open_spot(_center, 1.3 + i * 2.1 + dodges * 2.4, _spread * (0.5 + 0.12 * dodges))
+	var from := item.global_position
+	Fx.puff(quests.world, from + Vector3.UP * 0.5, Color(1.0, 0.9, 0.5, 0.7), 0.8)
+	Sfx.play(player(), "dash", -10.0)
+	var tw := item.create_tween()
+	tw.tween_method(func(t: float) -> void:
+		if is_instance_valid(item):
+			item.global_position = from.lerp(to, t) + Vector3.UP * sin(t * PI) * 4.0, 0.0, 1.0, 0.7)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(item):
+			_snap(item)
+			item.remove_meta("hopping"))
 
 ## A small rolled scroll with a soft glow and a light beam so it's easy to spot.
 func _make_item() -> Node3D:

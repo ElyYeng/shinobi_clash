@@ -20,6 +20,8 @@ var muted := false
 var _k_was := false
 var _open := 0.0               # voice gate: > 0 = sending
 var _level := 0.0              # own mic level (mouth)
+var _quiet := 0.0              # seconds of silence (mic restart when it's safe)
+var _since_restart := 0.0
 var _step := 4                 # mix rate / RATE
 var _pending := PackedFloat32Array()
 var _voices := {}              # peer id -> {"player": AudioStreamPlayer3D, "pb": AudioStreamGeneratorPlayback}
@@ -70,6 +72,17 @@ func _process(_delta: float) -> void:
 			_open = 0.0
 	if _talking:
 		_send_mic()
+		# Godot's microphone stream slowly falls behind real time (its input and output clocks
+		# drift), which is what made voices arrive seconds late. Restarting it resets that, so
+		# do it in every pause between sentences (and at least every 20 s of silence).
+		_since_restart += _delta
+		_quiet = _quiet + _delta if _open <= 0.0 else 0.0
+		if (_quiet > 0.25 and _since_restart > 4.0) or (_quiet > 0.1 and _since_restart > 20.0):
+			_mic.stop()
+			_mic.play()
+			_capture.clear_buffer()
+			_pending.clear()
+			_since_restart = 0.0
 	_open = maxf(0.0, _open - _delta)
 	_level = lerpf(_level, 0.0, minf(1.0, 12.0 * _delta))
 	_hint.visible = online and (muted or _open > 0.0)
@@ -90,8 +103,8 @@ func _send_mic() -> void:
 	if n <= 0:
 		return
 	var mix := AudioServer.get_mix_rate()
-	var keep := int(mix * 0.06)   # Godot's mic input can fall behind and pile up: only send the newest 60 ms
-	if n > int(mix * 0.15):
+	var keep := int(mix * 0.05)   # Godot's mic input can fall behind and pile up: only send the newest 50 ms
+	if n > int(mix * 0.1):
 		_capture.get_buffer(n - keep)   # (thrown away)
 		n = keep
 		_pending.clear()
@@ -139,7 +152,7 @@ func _voice(pkt: PackedByteArray) -> void:
 	var pb := v["pb"] as AudioStreamGeneratorPlayback
 	# never let their voice queue up: if more than ~120 ms is waiting, skip to now
 	var queued := int(RATE * 0.5) - pb.get_frames_available()
-	if queued > int(RATE * 0.12) or pb.get_frames_available() < CHUNK:
+	if queued > int(RATE * 0.09) or pb.get_frames_available() < CHUNK:
 		pb.clear_buffer()
 	var rms := 0.0
 	for b in pkt:
