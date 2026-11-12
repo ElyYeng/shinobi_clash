@@ -178,6 +178,7 @@ static func amenominaka(world: Node3D, pos: Vector3, r: float) -> void:
 ## Shinra Tensei: an invisible push - a clear distortion sphere bursting outwards, a ring of
 ## dust racing along the ground and a crater flash.
 static func shinra_tensei(world: Node3D, pos: Vector3, r: float) -> void:
+	Sfx.play(world, "shinra")
 	var c := pos + Vector3.UP * 1.0
 	var wave := _mesh(world, _sphere(1.0), _glow_mat(Color(0.85, 0.85, 1.0), 0.22), c)
 	wave.scale = Vector3.ONE * 0.5
@@ -197,6 +198,7 @@ static func shinra_tensei(world: Node3D, pos: Vector3, r: float) -> void:
 
 ## Bansho Ten'in: the reverse - rings and streaks rush IN to the user's palm.
 static func bansho_tenin(world: Node3D, pos: Vector3, r: float) -> void:
+	Sfx.play(world, "bansho")
 	var c := pos + Vector3.UP * 1.0
 	for i in 3:
 		var tm := TorusMesh.new()
@@ -260,7 +262,7 @@ static func chibaku_tensei(world: Node3D, target: Vector3) -> void:
 		tw.tween_interval(0.25 + i * 0.03)
 		tw.tween_property(rk, "global_position", c + dir * randf_range(1.5, 2.1), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		rocks.append(rk)
-	Sfx.play(core, "power", 0.0)
+	Sfx.play(core, "chibaku")
 	var end := core.create_tween()
 	end.tween_interval(2.6)
 	end.tween_callback(func() -> void:

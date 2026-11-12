@@ -1616,6 +1616,8 @@ func _toggle_power() -> void:
 		_toast("Charge your chakra to full to transform  (%d / %d)" % [int(chakra), int(max_chakra)])
 		return
 	m = Bloodline.personal_mode(id, m, Susanoo.palette_color(Susanoo.my_color_index()))   # Ink Mode: your colour
+	if id == "rinnegan" or id == "otsutsuki":
+		Sfx.play(self, "rinnegan")
 	powered = true
 	pmode = m
 	mode_tick = 0.0
