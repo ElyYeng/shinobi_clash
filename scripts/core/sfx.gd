@@ -28,6 +28,7 @@ const FILES := {
 	"swing": ["swing", -2.0], "hit": ["hit", 0.0], "dash": ["dash", -3.0], "jump": ["dash", -6.0],
 	"fire": ["fire", -2.0], "power": ["power", -4.0], "teleport": ["teleport", -3.0],
 	"step_walk": ["step_walk", -10.0], "step_run": ["step_run", -8.0],
+	"rasenshuriken": ["rasenshuriken", -4.0],
 }
 static var _variants := {}   # id -> Array[AudioStream]
 

@@ -28,6 +28,7 @@ func _ready() -> void:
 	add_child(col)
 	if visual_kind == "rasenshuriken":
 		_build_rasenshuriken_visual()
+		Sfx.play(self, "rasenshuriken")   # (cut to ~2.8s) - also plays for remote copies
 	elif MYTHIC.has(visual_kind):   # Dust cube / Truth-Seeking Orb / Ash Killing Bone
 		match visual_kind:
 			"dust": MythicFx.build_dust_cube(self, size)
