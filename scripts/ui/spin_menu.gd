@@ -1228,6 +1228,9 @@ func _rebuild_color_targets() -> void:
 		for cat in Hero.CLOTH_COLORS:
 			if not (opts.get(cat, []) as Array).is_empty():
 				targets.append([Hero.CLOTH_COLORS[cat], str(cat).capitalize()])
+		if str(_working.get("shirt_style", "")) == Hero.cloak_id(preview_model) and Hero.cloak_id(preview_model) != "":
+			targets.append(["cloak_color1", "Cloak colour 1"])   # colourable Akatsuki cloak
+			targets.append(["cloak_color2", "Cloak colour 2"])
 	if not targets.any(func(t): return t[0] == _color_target):
 		_color_target = "hair_color"
 	var group := ButtonGroup.new()
