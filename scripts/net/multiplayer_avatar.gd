@@ -309,7 +309,7 @@ func set_party_member(value: bool) -> void:
 func set_network_transform(pos: Vector3, yaw: float, look := Vector2.ZERO) -> void:
 	if network_ragdoll_started:
 		return
-	target_position = pos
+	target_position = pos if not has_meta("gen_pos") else get_meta("gen_pos")   # (held in your genjutsu world)
 	target_yaw = yaw
 	target_look = look
 

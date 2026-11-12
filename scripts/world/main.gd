@@ -329,10 +329,25 @@ const SPAR_SPOTS := [Vector3(-45, 0, 205), Vector3(-62, 0, 228), Vector3(45, 0, 
 ## Two training logs near the spawn to try jutsu on.
 func _spawn_training_logs() -> void:
 	await get_tree().physics_frame
-	var base := map.spawn("PlayerSpawn", Vector3.ZERO)
 	var space := get_world_3d().direct_space_state
-	for off in [Vector3(-3.5, 0, -7), Vector3(3.5, 0, -7)]:
-		var at: Vector3 = base + off
+	var spots: Array = []
+	# the map's training ground: its greybox posts are replaced by real training logs
+	var tg := find_child("TrainingGround3", true, false)
+	if tg != null:
+		for post_name in ["Post1", "Post2", "Post3"]:
+			var post := tg.get_node_or_null(post_name) as Node3D
+			if post == null:
+				continue
+			spots.append(Vector3(post.global_position.x, 0.0, post.global_position.z))
+			post.visible = false
+			if post is CollisionObject3D:
+				(post as CollisionObject3D).collision_layer = 0
+				(post as CollisionObject3D).collision_mask = 0
+	if spots.is_empty():   # (maps without one: next to the spawn)
+		var base := map.spawn("PlayerSpawn", Vector3.ZERO)
+		spots = [base + Vector3(-3.5, 0, -7), base + Vector3(3.5, 0, -7)]
+	for s in spots:
+		var at: Vector3 = s
 		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 60.0, at + Vector3.DOWN * 50.0))
 		if not hit.is_empty():
 			at = hit["position"]

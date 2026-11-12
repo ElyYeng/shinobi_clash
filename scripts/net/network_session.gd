@@ -192,6 +192,30 @@ func _villager_clock(host_time: float) -> void:
 		lag = enet.get_peer(1).get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME) / 2000.0
 	Villager.sync_clock(host_time + lag)
 
+## Genjutsu: where the caster is in the genjutsu world (relative to the victim), 10x a second.
+func send_gen_master(target: int, off: Vector3, yaw: float) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		if target != 1:
+			_gen_master_at.rpc_id(target, off, yaw)
+	else:
+		_request_gen_master.rpc_id(1, target, off, yaw)
+
+@rpc("any_peer", "call_remote", "unreliable_ordered")
+func _request_gen_master(target: int, off: Vector3, yaw: float) -> void:
+	if not multiplayer.is_server() or not _known_players.has(target):
+		return
+	if target == 1:
+		_gen_master_at(off, yaw)
+	else:
+		_gen_master_at.rpc_id(target, off, yaw)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _gen_master_at(off: Vector3, yaw: float) -> void:
+	if _local_player != null and is_instance_valid(_local_player):
+		_local_player.genjutsu_master_at(off.limit_length(60.0), yaw)
+
 ## Paralysis genjutsu: tell `target` they're in (or out of) your genjutsu.
 func send_genjutsu(target: int, on: bool) -> void:
 	if not is_active():
@@ -285,7 +309,7 @@ func _process(delta: float) -> void:
 			_raid_snapshot.rpc(_raid_boss.global_position, _raid_boss.model.rotation.y, _raid_boss.health, _raid_boss.phase, int(_raid_boss.state), _raid_boss.atk, _raid_boss.atk_t, _raid_boss.atk_len, _raid_boss.slam_pos)
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
-	if _local_player.get("in_genjutsu") == true and _local_player.gen_anchor != Vector3.INF:
+	if (_local_player.get("in_genjutsu") == true or _local_player.get("gen_master") == true) and _local_player.gen_anchor != Vector3.INF:
 		pos = _local_player.gen_anchor   # in a genjutsu: your body stays standing where it was
 		yaw = _local_player.gen_anchor_yaw
 	var look: Vector2 = _local_player.get("look_angles") if _local_player.get("look_angles") != null else Vector2.ZERO
@@ -456,6 +480,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 		return
 	if _party_leader.has(peer_id):
 		_server_leave_party(peer_id)
+	if world_pvp.has(peer_id):
+		world_pvp.erase(peer_id)
+		_world_pvp_flags.rpc(world_pvp)
 	_known_players.erase(peer_id)
 	_known_levels.erase(peer_id)
 	_known_clans.erase(peer_id)
@@ -1211,7 +1238,7 @@ func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: flo
 		_apply_player_damage.rpc_id(target_id, safe_damage, Vector3.ZERO)
 
 func try_hit_players(damage: float, knockback: Vector3, knockdown := false) -> void:
-	if not is_active() or session_mode != "pvp":
+	if not is_active() or not pvp_possible():
 		return
 	for peer_id in _avatars.keys():
 		if _same_party(multiplayer.get_unique_id(), int(peer_id)) or not pvp_allowed(multiplayer.get_unique_id(), int(peer_id)):
@@ -1236,7 +1263,7 @@ func _request_player_hit(target_id: int, damage: float, knockback: Vector3, knoc
 ## in your party, not ragdolled).
 func hostile_avatars() -> Array[Node3D]:
 	var out: Array[Node3D] = []
-	if not is_active() or session_mode != "pvp":
+	if not is_active() or not pvp_possible():
 		return out
 	var me := multiplayer.get_unique_id()
 	for id in _avatars:
@@ -1250,7 +1277,7 @@ func hostile_avatars() -> Array[Node3D]:
 
 ## A jutsu (burst, cone, target, dash, aura) hit another player. The host checks range and PvP.
 func request_ability_hit(target_id: int, damage: float, knockback: Vector3) -> void:
-	if not is_active() or session_mode != "pvp":
+	if not is_active() or not pvp_possible():
 		return
 	if multiplayer.is_server():
 		_server_apply_hit(1, target_id, damage, knockback, ABILITY_HIT_RANGE, ABILITY_MAX_DAMAGE)
@@ -1680,9 +1707,55 @@ func _enemy_bolt_fx(pos: Vector3, velocity: Vector3, color: Color, size: float, 
 func arena_flag(peer_id: int, kind: String) -> bool:
 	return bool((arena_pvp if kind == "pvp" else arena_ninja).get(peer_id, false))
 
-## In the PvP arena two players can only hurt each other if both joined PvP Battle.
+## In the PvP arena two players can only hurt each other if both joined PvP Battle; on the main
+## map (co-op) only if both turned PvP on (M > Party).
 func pvp_allowed(a_id: int, b_id: int) -> bool:
-	return session_mode != "pvp" or (arena_flag(a_id, "pvp") and arena_flag(b_id, "pvp"))
+	if session_mode == "pvp":
+		return arena_flag(a_id, "pvp") and arena_flag(b_id, "pvp")
+	return bool(world_pvp.get(a_id, false)) and bool(world_pvp.get(b_id, false))
+
+## Can players hurt each other at all here? (PvP sessions, or the main map with PvP turned on)
+func pvp_possible() -> bool:
+	return is_active() and (session_mode == "pvp" or world_pvp.size() >= 2)
+
+# ---------------------------------------------------------------- main-map PvP (opt-in)
+var world_pvp := {}   # peer id -> true: has PvP turned on
+
+func set_world_pvp(on: bool) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_server_world_pvp(1, on)
+	else:
+		_request_world_pvp.rpc_id(1, on)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_world_pvp(on: bool) -> void:
+	if multiplayer.is_server():
+		_server_world_pvp(multiplayer.get_remote_sender_id(), on)
+
+func _server_world_pvp(peer_id: int, on: bool) -> void:
+	if on:
+		world_pvp[peer_id] = true
+	else:
+		world_pvp.erase(peer_id)
+	_world_pvp_flags.rpc(world_pvp)
+	_apply_world_pvp_tags()
+
+@rpc("authority", "call_remote", "reliable")
+func _world_pvp_flags(flags: Dictionary) -> void:
+	world_pvp.clear()
+	for id in flags:
+		if bool(flags[id]):
+			world_pvp[int(id)] = true
+	_apply_world_pvp_tags()
+
+## PvP-on players get a red name tag.
+func _apply_world_pvp_tags() -> void:
+	for id in _avatars:
+		var av = _avatars[id]
+		if is_instance_valid(av) and av.get("name_tag") is Label3D:
+			(av.name_tag as Label3D).outline_modulate = Color(0.6, 0.0, 0.0) if world_pvp.has(int(id)) else Color(0, 0, 0)
 
 ## Local player talks to an arena NPC: join or leave that battle.
 func request_arena_toggle(kind: String) -> void:

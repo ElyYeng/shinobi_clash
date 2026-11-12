@@ -6,11 +6,14 @@ extends Node3D
 
 const ORIGIN := Vector3(0, -900, 0)
 
-static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := Vector3.ZERO) -> GenjutsuWorld:
+## caster_look: who stands in it with you (the victim sees the caster; the caster, master=true,
+## sees nobody extra - the victim's own avatar is moved in instead).
+static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := Vector3.ZERO, master := false) -> GenjutsuWorld:
 	var g := GenjutsuWorld.new()
 	g.name = "GenjutsuWorld"
 	g.caster_peer = caster
 	g.anchor = body
+	g.master = master
 	world.add_child(g)
 	g.global_position = ORIGIN
 	g._make(caster_look)
@@ -24,7 +27,10 @@ func _unshaded(col: Color) -> StandardMaterial3D:
 
 var caster_fig: Node3D       # the caster's figure in here (mirrors their real movement)
 var caster_peer := 0
-var anchor := Vector3.ZERO     # the victim's body in the real world (the caster moves around it)
+var anchor := Vector3.ZERO     # the victim's body in the real world
+var master := false            # built for the caster (who walks around freely in here)
+var master_off := Vector3(0, 0, -5.1)   # (victim) where the caster is, relative to you - sent by the caster
+var master_yaw := PI
 
 func _make(caster_look: Dictionary) -> void:
 	var sky := MeshInstance3D.new()   # inside of a huge sphere: blood-red sky, darker at the top
@@ -110,7 +116,7 @@ func _make(caster_look: Dictionary) -> void:
 	moonlight.shadow_enabled = true
 	add_child(moonlight)
 	moonlight.look_at_from_position(moon.position, Vector3.ZERO, Vector3.UP)
-	var caster := Hero.create(caster_look)   # the caster, in here with you
+	var caster: Node3D = null if master else Hero.create(caster_look)   # the caster, in here with you
 	if caster != null:
 		add_child(caster)
 		caster.position = Vector3(0, 0.2, -4.5)
@@ -124,19 +130,12 @@ func _make(caster_look: Dictionary) -> void:
 func _process(delta: float) -> void:
 	if caster_fig == null or not is_instance_valid(caster_fig):
 		return
-	var av = NetworkSession._avatars.get(caster_peer)
-	if av == null or not is_instance_valid(av):
-		return
-	var off: Vector3 = (av as Node3D).global_position - anchor
-	off.y = 0.0
-	var want := victim_spot() + off - Vector3(0, 0.1, 0)
+	var want := victim_spot() + Vector3(master_off.x, -0.1, master_off.z)   # the caster walks around in here
 	var step := want - caster_fig.global_position
 	step.y = 0.0
 	var spd := step.length() / maxf(delta, 0.001)
 	caster_fig.global_position = caster_fig.global_position.lerp(want, minf(1.0, 12.0 * delta))
-	var am = av.get("model")
-	if am != null and is_instance_valid(am):
-		caster_fig.rotation.y = lerp_angle(caster_fig.rotation.y, (am as Node3D).global_rotation.y, minf(1.0, 12.0 * delta))
+	caster_fig.rotation.y = lerp_angle(caster_fig.rotation.y, master_yaw, minf(1.0, 12.0 * delta))
 	Hero.play_move(caster_fig, Hero.move_state(spd) if spd > 0.4 else "idle", spd if spd > 0.4 else 0.0)
 
 ## Where the victim stands (in front of the cross, facing the caster).

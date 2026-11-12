@@ -835,6 +835,13 @@ func _page_party() -> Array:
 	var party_actions: Array = []
 	if party_count > 1:
 		party_actions.append(_act("LEAVE PARTY", NetworkSession.leave_party, "", false))
+	var my_pvp := NetworkSession.world_pvp.has(my_id)
+	if NetworkSession.session_mode != "pvp":   # main map: opt-in PvP
+		out.append(_item("PvP: %s" % ("ON" if my_pvp else "OFF"), "Fight other players on the main map", Color(0.85, 0.15, 0.1) if my_pvp else Color(0.45, 0.42, 0.38), "!",
+			"With PvP on you can hurt - and be hurt by - every other player who has PvP on too (not your party). PvP players have a red outline on their name.",
+			{"actions": [_act("TURN OFF" if my_pvp else "TURN ON", func() -> void:
+				NetworkSession.set_world_pvp(not my_pvp)
+				get_tree().create_timer(0.3).timeout.connect(_reload_page))]}))
 	out.append(_item("Your Party", "%d / 4 members" % party_count, Color(0.8, 0.65, 0.2), "P", "Invite connected players below. Party members cannot damage each other.", {"actions": party_actions}))
 	for id in NetworkSession._known_players:
 		var peer_id := int(id)

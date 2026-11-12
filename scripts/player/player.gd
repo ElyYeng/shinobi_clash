@@ -747,7 +747,7 @@ func _klink_impact(kind: String, fwd: Vector3) -> void:
 		if to.length() <= r + en.k:
 			_stun(en, float(d["stun"]))
 			_hit_foe(en, dmg, (to.normalized() if to.length() > 0.1 else fwd) * float(d["knock"]))
-	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
+	if NetworkSession.pvp_possible():
 		NetworkSession.try_hit_players(dmg * 0.5, fwd * float(d["knock"]))
 
 func _susanoo_charge_stop() -> void:
@@ -1151,7 +1151,7 @@ func _melee() -> void:
 			tv.y = 0.0
 			if tv.length() < 2.6 and (tv.length() < 0.8 or facing.dot(tv.normalized()) > 0.3):
 				v.get_hit(facing, combo == 3, dmg)
-	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
+	if NetworkSession.pvp_possible():
 		NetworkSession.try_hit_players(dmg, facing * knock, combo == 3)
 	if not _play_once("attack", attack_cd + 0.1, combo - 1):
 		Fx.swing(arm)
@@ -2129,11 +2129,13 @@ func _genjutsu_toggle() -> void:
 	var peer := _peer_of(t)
 	if peer > 0:
 		NetworkSession.send_genjutsu(peer, true)
-		_toast("Genjutsu! They're trapped - hit their body, tap C to release")
+		_gen_master_enter(peer, t as Node3D)
+		_toast("Genjutsu! You're both in your world - beat them up, tap C to release")
 	else:
 		_toast("Genjutsu! Tap C to release")
 
 func _genjutsu_release() -> void:
+	_gen_master_exit()
 	if _gen_target == null:
 		return
 	var peer := _peer_of(_gen_target) if is_instance_valid(_gen_target) else int(get_meta("gen_peer", 0))
@@ -2158,6 +2160,10 @@ func _genjutsu_tick(delta: float) -> void:
 				_hit_foe(_gen_target, float(randi_range(1, 10)), Vector3.ZERO)
 		if _gen_target != null and _peer_of(_gen_target) > 0:
 			set_meta("gen_peer", _peer_of(_gen_target))
+			_gen_send_t -= delta
+			if gen_master and _gen_send_t <= 0.0 and is_instance_valid(_gen_world):   # tell the victim where you are in here
+				_gen_send_t = 0.1
+				NetworkSession.send_gen_master(_peer_of(_gen_target), global_position - _gen_world.victim_spot(), model.global_rotation.y if model != null else 0.0)
 	if in_genjutsu and not is_dead:
 		_gen_t += delta
 		_gen_life += delta
@@ -2168,6 +2174,47 @@ func _genjutsu_tick(delta: float) -> void:
 			take_damage(dmg)
 		if _gen_life > 90.0 or not NetworkSession.is_active() or not NetworkSession._known_players.has(_gen_from):
 			_genjutsu_exit()   # (safety: caster left)
+
+var gen_master := false   # (caster) you're in your genjutsu world too; your body stays in the real one
+var _gen_send_t := 0.0
+
+## (caster) you go into your own genjutsu world with the victim: you move freely in there while
+## your body stays standing in the real world. The victim's avatar is held bound in front of you.
+func _gen_master_enter(peer: int, victim: Node3D) -> void:
+	gen_master = true
+	gen_anchor = global_position
+	gen_anchor_yaw = model.rotation.y if model != null else 0.0
+	if wall_walking:
+		_end_wall_walk(Vector3.ZERO)
+	_gen_world = GenjutsuWorld.build(get_parent() as Node3D, {}, peer, Vector3.ZERO, true)
+	global_position = _gen_world.victim_spot() + Vector3(0, 0.2, -5.0)
+	velocity = Vector3.ZERO
+	if victim != null and is_instance_valid(victim):   # their body appears bound in here (for you)
+		victim.set_meta("gen_pos", _gen_world.victim_spot())
+		victim.global_position = _gen_world.victim_spot()
+		set_meta("gen_victim", victim)
+
+func _gen_master_exit() -> void:
+	if not gen_master:
+		return
+	gen_master = false
+	var v = get_meta("gen_victim", null)
+	if v != null and is_instance_valid(v):
+		(v as Node).remove_meta("gen_pos")
+	remove_meta("gen_victim")
+	if is_instance_valid(_gen_world):
+		_gen_world.queue_free()
+	if gen_anchor != Vector3.INF:
+		global_position = gen_anchor
+	gen_anchor = Vector3.INF
+	velocity = Vector3.ZERO
+	Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.8, 0.1, 0.1, 0.8), 1.5)
+
+## (victim) the caster's position in the genjutsu world (relative to you).
+func genjutsu_master_at(off: Vector3, yaw_: float) -> void:
+	if in_genjutsu and is_instance_valid(_gen_world):
+		_gen_world.master_off = off
+		_gen_world.master_yaw = yaw_
 
 ## (victim) pulled into the genjutsu by `caster`.
 func genjutsu_enter(caster: int) -> void:
@@ -2239,6 +2286,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := fals
 	if health <= 0.0:
 		health = 0.0
 		_genjutsu_exit()   # die in the genjutsu -> your body falls back in the real world
+		_genjutsu_release()   # (caster dies: everyone's out)
 		_susanoo_off()
 		if wall_walking:
 			_end_wall_walk(Vector3.ZERO)
