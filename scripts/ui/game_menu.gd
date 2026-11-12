@@ -17,8 +17,8 @@ const BODY_TEXT := Color(0.16, 0.1, 0.05)
 const SCROLL_SIZE := Vector2(900, 580)
 const TABS := ["Stats", "Ninja Tools", "Element", "Bloodline", "Sub-Ability", "Companions",
 	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party"]
-const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight"}
-const MODE_ORDER := ["fight", "world", "kurama"]
+const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight", "uchiha": "Uchiha Boss Fight"}
+const MODE_ORDER := ["fight", "world", "kurama", "uchiha"]
 
 static var _font: Font
 
@@ -1335,7 +1335,7 @@ func _page_travel() -> Array:
 			for id in Quests.NPCS:
 				var n: Dictionary = Quests.NPCS[id]
 				spots.append([n["name"], str(n["name"]).substr(0, 1), n["color"].lightened(0.2), n["pos"] + Vector3(0, 1, 4), "Teleport next to this villager."])
-		"kurama":
+		"kurama", "uchiha":
 			spots.append(["Arena Edge", "E", Color(0.6, 0.3, 0.2), Vector3(0, 1, 30), "Where the fight begins."])
 			spots.append(["Arena Center", "C", Color(0.8, 0.3, 0.1), Vector3(0, 1, 0), "The middle of the scorched arena."])
 			spots.append(["Near Kurama", "K", Color(0.9, 0.2, 0.1), Vector3(0, 1, -18), "Right in front of the beast. Brave."])

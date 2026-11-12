@@ -5,7 +5,7 @@ extends Node3D
 ## After baking, edit the maps in Godot's 3D editor - re-baking would overwrite your edits.
 ##   Bake from the editor: open tools/bake_maps.gd and use File > Run (it skips maps that already exist).
 
-const MAP_FILES := {"fight": "res://maps/village.tscn", "world": "res://maps/konoha_greybox.tscn", "kurama": "res://maps/kurama_arena.tscn"}
+const MAP_FILES := {"fight": "res://maps/village.tscn", "world": "res://maps/konoha_greybox.tscn", "kurama": "res://maps/kurama_arena.tscn", "uchiha": "res://maps/kurama_arena.tscn"}
 
 var mode := "fight"
 var solids: Array[Rect2] = []   # footprints of what has been placed (keeps houses / trees apart while generating)
@@ -52,7 +52,7 @@ static func build(for_mode: String) -> GameMap:
 			sp.position = Quests.NPCS[id]["pos"]
 			b._add(sp, str(Quests.NPCS[id]["name"]).replace(" ", ""))
 	var map := GameMap.new()
-	map.name = {"fight": "Village", "world": "OpenWorld", "kurama": "KuramaArena"}[b.mode]
+	map.name = {"fight": "Village", "world": "OpenWorld", "kurama": "KuramaArena", "uchiha": "KuramaArena"}.get(b.mode, "Arena")
 	map.play_half = 46.0 if b.mode == "fight" else (96.0 if b.mode == "kurama" else 246.0)
 	for c in b.get_children():
 		b.remove_child(c)

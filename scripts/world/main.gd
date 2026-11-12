@@ -37,7 +37,7 @@ func _ready() -> void:
 		Sfx.ambient(self, "slight_breeze", -22.0)
 	play_half = map.play_half
 	player = Player.new()
-	player.position = map.spawn("PlayerSpawn", Vector3(0, 1, 30) if mode == "kurama" else Vector3(0, 1, 0))
+	player.position = map.spawn("PlayerSpawn", Vector3(0, 1, 30) if _boss_mode() else Vector3(0, 1, 0))
 	if mode == "world":
 		var terrain := map.get_node_or_null("WorldTerrain")
 		if terrain != null:
@@ -57,19 +57,21 @@ func _ready() -> void:
 	gmenu.bind(player, self)
 	if mode == "kurama":
 		_start_kurama()
+	elif mode == "uchiha":
+		_start_uchiha()
 	elif mode == "world":
 		_start_world()
 	elif _is_pvp_arena():
 		_start_arena()
 
 func _process(delta: float) -> void:
-	var over := player.is_dead or (mode == "kurama" and hud.victory)
+	var over := player.is_dead or (_boss_mode() and hud.victory)
 	if over and Input.is_action_just_pressed("restart"):
 		get_tree().reload_current_scene()
 		return
 	if player.is_dead:
 		return
-	if mode != "kurama":
+	if not _boss_mode():
 		while player.kills - awarded_kills >= 8:
 			awarded_kills += 8
 			_give_spins(1, "8 kills")
@@ -188,6 +190,26 @@ func _start_kurama() -> void:
 	kurama.enraged.connect(_on_kurama_enraged)
 	player.cam_zoom = 12.0      # pull the camera back for the giant
 	hud.toast("KURAMA, THE NINE-TAILED BEAST")
+
+func _boss_mode() -> bool:
+	return mode == "kurama" or mode == "uchiha"
+
+# ---------------------------------------------------------------- Mode: UCHIHA BOSS
+var uchiha: UchihaBoss
+func _start_uchiha() -> void:
+	uchiha = UchihaBoss.new()
+	uchiha.position = map.spawn("BossSpawn", Vector3(0, 0, -34)) + Vector3(0, 0.5, 30)   # closer: he's human-sized
+	add_child(uchiha)
+	hud.boss = uchiha
+	uchiha.phase_changed.connect(func(ph: int) -> void:
+		hud.toast("SUSANOO!  The Uchiha's chakra takes form" if ph == 2 else "The Uchiha is enraged!"))
+	uchiha.defeated.connect(func() -> void:
+		GameData.spins += 5
+		GameData.save()
+		hud.victory_text = "The rogue Uchiha has fallen   -   +5 spins"
+		hud.victory = true
+		hud.toast("Akatsuki Uchiha defeated!  +5 spins"))
+	hud.toast("AN AKATSUKI UCHIHA BLOCKS YOUR PATH")
 
 func _on_kurama_enraged(phase: int) -> void:
 	hud.toast("KURAMA IS ENRAGED!" if phase == 3 else "Kurama is getting serious...")

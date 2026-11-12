@@ -5,6 +5,7 @@ var p: Player
 var mode := "fight"
 var boss: Enemy = null
 var victory := false
+var victory_text := "The Nine-Tailed Beast has fallen   -   +5 spins"
 var quest_text := ""
 var prompt_text := ""
 
@@ -256,6 +257,8 @@ func _process(delta: float) -> void:
 	boss_ghost.visible = show_boss
 	boss_label.visible = show_boss
 	if show_boss:
+		var bt = boss.get("boss_title")
+		boss_label.text = str(bt) if bt != null else Kurama.BOSS_NAME
 		boss_bar.max_value = boss.max_health
 		boss_bar.value = boss.health
 		boss_ghost.max_value = boss.max_health
@@ -276,7 +279,7 @@ func _process(delta: float) -> void:
 			end_screen.show_end("DEFEATED", false, "Get back up, shinobi.", [["KILLS", p.kills],
 				["LEVEL", GameData.level], ["TIME", "%d:%02d" % [t / 60, t % 60]]])
 	elif victory:
-		end_screen.show_end("VICTORY", true, "The Nine-Tailed Beast has fallen   -   +5 spins",
+		end_screen.show_end("VICTORY", true, victory_text,
 			[["KILLS", p.kills], ["LEVEL", GameData.level]])
 	else:
 		_alive_time += delta
