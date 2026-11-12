@@ -40,14 +40,10 @@ static func _fade(mi: MeshInstance3D, t: float, delay := 0.0) -> void:
 	tw.tween_callback(mi.queue_free)
 
 static func _ring(world: Node3D, pos: Vector3, r: float, col: Color, t: float, grow := 1.0) -> void:
-	var tm := TorusMesh.new()
-	tm.inner_radius = r * 0.9
-	tm.outer_radius = r
-	tm.rings = 48
-	var mi := _mesh(world, tm, _glow_mat(col, 0.8), pos)
-	mi.scale = Vector3(0.1, 0.25, 0.1)
+	var mi := Vfx.decal(world, pos, "circles/Ring_SharpBlur_000.png", col, 1.6)
+	mi.scale = Vector3.ONE * r * 0.1
 	var tw := mi.create_tween().set_parallel()
-	tw.tween_property(mi, "scale", Vector3(grow, 1.0, grow), t).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mi, "scale", Vector3.ONE * r * grow * 1.1, t).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mi.material_override, "albedo_color:a", 0.0, t).set_ease(Tween.EASE_IN)
 	tw.chain().tween_callback(mi.queue_free)
 

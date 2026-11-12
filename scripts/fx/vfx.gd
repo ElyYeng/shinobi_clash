@@ -158,12 +158,12 @@ void fragment() {
 }
 """
 
-static var _glow_tex: GradientTexture2D = null
+static var _glow_tex: Texture2D = null
 static var _quad: QuadMesh = null
 static var _shrink: Curve = null
 
 # ---------------------------------------------------------------- shared resources
-static func glow_tex() -> GradientTexture2D:
+static func glow_tex() -> Texture2D:
 	if _glow_tex == null:
 		var g := Gradient.new()
 		g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.55), Color(1, 1, 1, 0)])
@@ -226,7 +226,12 @@ static func burst(parent: Node, pos: Vector3, color: Color, amount := 24, speed 
 	p.explosiveness = 1.0
 	p.local_coords = false
 	p.mesh = quad()
-	p.material_override = particle_mat(true, 1.8)
+	var bm := particle_mat(true, 1.8)
+	if tex("effects/Star_Shape_03.png") != null:   # 4-point spark from the VFX pack
+		bm.albedo_texture = tex("effects/Star_Shape_03.png")
+		p.angle_min = -45.0
+		p.angle_max = 45.0
+	p.material_override = bm
 	p.direction = Vector3.UP
 	p.spread = 180.0
 	p.initial_velocity_min = speed * 0.35
@@ -257,7 +262,14 @@ static func smoke(parent: Node, pos: Vector3, color: Color, size := 2.0) -> void
 	p.explosiveness = 0.9
 	p.local_coords = false
 	p.mesh = quad()
-	p.material_override = particle_mat(false, 1.0)
+	var sm := particle_mat(false, 1.0)
+	var st := tex("effects/Smoke_Dissolve_03.png")
+	if st != null:
+		sm.albedo_texture = st
+		sm.albedo_color = Color(1.4, 1.4, 1.4, 1.0)
+	p.material_override = sm
+	p.angle_min = -180.0
+	p.angle_max = 180.0
 	p.direction = Vector3.UP
 	p.spread = 180.0
 	p.initial_velocity_min = size * 0.3
@@ -291,30 +303,67 @@ static func flash(parent: Node, pos: Vector3, color: Color, energy := 4.0, light
 	t.tween_property(l, "light_energy", 0.0, secs)
 	t.tween_callback(l.queue_free)
 
-## Expanding ground ring (additive glow).
+## Expanding ground ring: a flat shockwave texture from the VFX pack, spinning as it grows.
 static func shockwave(parent: Node, pos: Vector3, color: Color, radius := 8.0, secs := 0.5) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
-	var m := MeshInstance3D.new()
-	var tm := TorusMesh.new()
-	tm.inner_radius = 0.88
-	tm.outer_radius = 1.0
-	tm.rings = 40
-	tm.ring_segments = 6
-	m.mesh = tm
+	var y := maxf(pos.y, 0.0) + 0.15
+	var m := decal(parent, Vector3(pos.x, y, pos.z), "circles/Ring_ShockWave_005.png", color, 1.6)
+	m.scale = Vector3.ONE * 0.3
+	var mat := m.material_override as StandardMaterial3D
+	var t := m.create_tween().set_parallel(true)
+	t.tween_property(m, "scale", Vector3.ONE * radius * 1.15, secs).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(m, "rotation:y", randf_range(-1.2, 1.2), secs)
+	t.tween_property(mat, "albedo_color:a", 0.0, secs).set_ease(Tween.EASE_IN)
+	t.chain().tween_callback(m.queue_free)
+
+## A texture from the VFX pack (assets/vfx_tex/<folder>/<file>), cached; null if missing.
+const TEX_DIR := "res://assets/vfx_tex/"
+static var _texs := {}
+static func tex(path: String) -> Texture2D:
+	if not _texs.has(path):
+		_texs[path] = load(TEX_DIR + path) if ResourceLoader.exists(TEX_DIR + path) else null
+	return _texs[path]
+
+## Additive glow material with a pack texture (black or transparent = invisible), tinted.
+static func tex_mat(path: String, color: Color, boost := 1.5, billboard := false) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(color.r * 1.5, color.g * 1.5, color.b * 1.5, 0.85)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_texture = tex(path)
+	mat.albedo_color = Color(color.r * boost, color.g * boost, color.b * boost, 1.0)
+	if billboard:
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	return mat
+
+## A flat textured quad lying on the ground (2 x 2 m at scale 1).
+static func decal(parent: Node, pos: Vector3, path: String, color: Color, boost := 1.5) -> MeshInstance3D:
+	var m := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(2, 2)
+	m.mesh = pm
+	m.material_override = tex_mat(path, color, boost)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(m)
+	m.global_position = pos
+	return m
+
+## A camera-facing textured flash that pops and fades (impact stars etc).
+static func sprite_flash(parent: Node, pos: Vector3, path: String, color: Color, size: float, secs := 0.25) -> void:
+	var m := MeshInstance3D.new()
+	m.mesh = quad()
+	var mat := tex_mat(path, color, 1.6, true)
 	m.material_override = mat
 	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(m)
-	m.global_position = Vector3(pos.x, maxf(pos.y, 0.0) + 0.25, pos.z)
-	m.scale = Vector3(0.3, 0.12, 0.3)
+	m.global_position = pos
+	m.rotate_object_local(Vector3.FORWARD, randf() * TAU)
+	m.scale = Vector3.ONE * size * 0.3
 	var t := m.create_tween().set_parallel(true)
-	t.tween_property(m, "scale", Vector3(radius, radius * 0.1, radius), secs).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(mat, "albedo_color:a", 0.0, secs)
+	t.tween_property(m, "scale", Vector3.ONE * size, secs).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_property(mat, "albedo_color:a", 0.0, secs).set_ease(Tween.EASE_IN)
 	t.chain().tween_callback(m.queue_free)
 
 ## The standard hit / poof effect used by Fx.puff: glow core + sparks + light (+ smoke + shockwave when big).
@@ -322,27 +371,9 @@ static func hit(parent: Node, pos: Vector3, color: Color, size := 1.0) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
 	var c := Color(color.r, color.g, color.b, 1.0)
-	var m := MeshInstance3D.new()
-	var s := SphereMesh.new()
-	s.radius = 0.5
-	s.height = 1.0
-	s.radial_segments = 16
-	s.rings = 8
-	m.mesh = s
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	mat.albedo_color = Color(c.r * 1.5, c.g * 1.5, c.b * 1.5, 0.9)
-	m.material_override = mat
-	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(m)
-	m.global_position = pos
-	m.scale = Vector3.ONE * 0.2 * size
-	var t := m.create_tween().set_parallel(true)
-	t.tween_property(m, "scale", Vector3.ONE * size * 1.3, 0.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_property(mat, "albedo_color:a", 0.0, 0.28)
-	t.chain().tween_callback(m.queue_free)
+	# impact star + a glow behind it (VFX pack textures)
+	sprite_flash(parent, pos, "effects/Glow01.png", c, size * 2.2, 0.3)
+	sprite_flash(parent, pos, "effects/Impact24.png", c.lerp(Color.WHITE, 0.35), size * 2.0, 0.22)
 	burst(parent, pos, c, clampi(int(10.0 + size * 8.0), 10, 70), 4.0 + size * 2.5, 0.12 + size * 0.04, 0.45 + size * 0.08)
 	flash(parent, pos, c, clampf(1.5 + size * 1.2, 1.5, 12.0), clampf(3.0 + size * 3.0, 4.0, 26.0), 0.22)
 	if size >= 1.8:
