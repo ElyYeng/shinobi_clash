@@ -584,7 +584,7 @@ var _sus_left := true
 var _sus_zoom := -1.0             # your camera distance before the Susanoo (restored after)
 
 func _susanoo_ready() -> bool:
-	return GameData.equipped == "uchiha" and _bl_level() >= Bloodline.MODE_LEVEL
+	return Susanoo.USERS.has(str(GameData.equipped)) and _bl_level() >= Bloodline.MODE_LEVEL
 
 ## Hold C and press 1-4: bloodline forms. Uchiha form 2 = Susanoo; the others are coming.
 func _activate_form(n: int) -> void:
@@ -601,12 +601,12 @@ func _activate_form(n: int) -> void:
 		else:
 			_klink_on()
 		return
-	if GameData.equipped == "uchiha" and n == 2:
+	if Susanoo.USERS.has(str(GameData.equipped)) and n == 2:
 		if susanoo != null:
 			_susanoo_off()
 			_toast("Susanoo released")
 		elif not _susanoo_ready():
-			_toast("Susanoo unlocks at Uchiha LV %d  (you are LV %d)" % [Bloodline.MODE_LEVEL, _bl_level()])
+			_toast("Susanoo unlocks at %s LV %d  (you are LV %d)" % [Bloodline.get_def(str(GameData.equipped))["name"], Bloodline.MODE_LEVEL, _bl_level()])
 		elif chakra < SUS_MIN_CHAKRA:
 			_toast("Not enough chakra for Susanoo  (%d / %d)" % [int(chakra), int(SUS_MIN_CHAKRA)])
 		else:
@@ -738,7 +738,7 @@ func _susanoo_on() -> void:
 		_toggle_power()   # Sharingan first (needs MD like a normal power-up)
 		if not powered:
 			return
-	var idx := Susanoo.my_color_index()
+	var idx := Susanoo.color_index_for(str(GameData.equipped))   # Kakashi blue / Shisui green / yours
 	var col := Susanoo.palette_color(idx)
 	susanoo = Susanoo.create(col, model)
 	add_child(susanoo)

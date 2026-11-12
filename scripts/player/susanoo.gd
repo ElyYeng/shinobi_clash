@@ -55,8 +55,25 @@ static func fire_noise() -> NoiseTexture2D:
 		_noise.noise = fn
 	return _noise
 
+## Fixed anime colours for other Mangekyo users (sent as colour index 100 + n):
+## 100 = Kakashi's blue, 101 = Shisui's green.
+const ANIME_COLORS := [Color(0.25, 0.62, 1.0), Color(0.22, 0.85, 0.42)]
+const ANIME_BASE := 100
+
 static func palette_color(i: int) -> Color:
+	if i >= ANIME_BASE and i < ANIME_BASE + ANIME_COLORS.size():
+		return ANIME_COLORS[i - ANIME_BASE]
 	return PALETTE[posmod(i, PALETTE.size())]
+
+## The Susanoo colour for a bloodline: Hatake = Kakashi's blue, Mangekyo = Shisui's green,
+## Uchiha = your own random colour.
+static func color_index_for(bloodline: String) -> int:
+	match bloodline:
+		"hatake": return ANIME_BASE
+		"mangekyo": return ANIME_BASE + 1
+	return my_color_index()
+
+const USERS := ["uchiha", "hatake", "mangekyo"]   # bloodlines with a Susanoo (hold C + 2)
 
 ## Your colour index - rolled randomly once and saved.
 static func my_color_index() -> int:
