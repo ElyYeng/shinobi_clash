@@ -35,6 +35,7 @@ var _mats: Array[ShaderMaterial] = []
 var _fade := 0.0
 var _dying := false
 var _hit_variant := 0
+var _aura: AuraShell
 
 static var _noise: NoiseTexture2D
 
@@ -109,11 +110,8 @@ func _ready() -> void:
 			idle.loop_mode = Animation.LOOP_LINEAR
 		ap.animation_finished.connect(func(_n: StringName) -> void: ap.play("idle", 0.35))
 		ap.play("idle")
-	# chakra flames licking up off the ribcage (on the model, so they move with it)
-	var flames := Node3D.new()
-	flames.position = Vector3(0, 1.6, 0)
-	m.add_child(flames)
-	Vfx.aura_flames(flames, Vector3.ZERO, 1.5, Color(color.r, color.g, color.b, 0.55), 20, true)
+	# chakra aura around the whole Susanoo (Aura 3D shell, follows its animation)
+	_aura = AuraShell.make(self, m, color, color.lightened(0.6), 0.45, 0.22)
 	var light := OmniLight3D.new()
 	light.light_color = color
 	light.light_energy = 2.0
@@ -185,6 +183,8 @@ func dismiss() -> void:
 		return
 	_dying = true
 	_sound("release.ogg", -1.0, 0.0, true)
+	if _aura != null and is_instance_valid(_aura):
+		_aura.fade_out(0.35)
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(self, "scale", Vector3.ONE * SCALE * 0.4, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	tw.tween_method(_set_fade, _fade, 0.0, 0.4)

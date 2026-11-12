@@ -498,14 +498,27 @@ func _physics_process(delta: float) -> void:
 			if Input.is_action_just_pressed("form_%d" % (n + 1)):
 				_c_form_used = true
 				_activate_form(n + 1)
-		if not powered and not _c_form_used and not _c_activated and _power_ready():
+		# hold C: power up, or release what's on (the Susanoo first, then the power-up)
+		var can := susanoo != null or powered or _power_ready()
+		if not can:
+			_c_power_hold = 0.0
+		elif not _c_form_used and not _c_activated:
+			_c_power_hold += delta
 			if _charge_fx != null and is_instance_valid(_charge_fx):   # aura builds up while you hold
-				_charge_fx.set_strength(1.0 + 0.8 * clampf(c_hold / POWER_HOLD, 0.0, 1.0))
-			if c_hold >= POWER_HOLD:
+				_charge_fx.set_strength(1.0 + 0.8 * clampf(_c_power_hold / POWER_HOLD, 0.0, 1.0))
+			if _c_power_hold >= POWER_HOLD:
 				_c_activated = true
-				_toggle_power()
+				if susanoo != null:
+					_susanoo_off()
+					_toast("Susanoo released")
+				elif powered:
+					_power_off()
+					_toast("Power-up released")
+				else:
+					_toggle_power()
 	else:
 		c_hold = 0.0
+		_c_power_hold = 0.0
 		_c_form_used = false
 		_c_activated = false
 
@@ -520,9 +533,10 @@ func _physics_process(delta: float) -> void:
 # ---------------------------------------------------------------- susanoo (Uchiha)
 ## Uchiha form 2: hold C and press 2 - the Susanoo forms around you (the Sharingan turns on with it). Left click = alternating left /
 ## right punches, right click = slam. Drains chakra; ends when chakra runs out, the Sharingan ends
-## (X) or you die. Each player has their own random Susanoo colour.
+## (hold C) or you die. Each player has their own random Susanoo colour.
 const SUS_MIN_CHAKRA := 25.0
-const POWER_HOLD := 1.2           # seconds of holding C to power up
+const POWER_HOLD := 1.2           # seconds of holding C to power up / release
+var _c_power_hold := 0.0          # how long C has been held while powering up / releasing is possible
 var _c_activated := false         # this C hold already powered you up
 var _c_form_used := false         # a form key was pressed during this C hold (so no tap toggle)
 const SUS_DRAIN := 4.0            # chakra per second while it's out
@@ -579,9 +593,12 @@ func _susanoo_on() -> void:
 	Sfx.play(self, "power")
 	Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 48, 11.0, 0.3, 0.8, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 7.0, 0.45)
-	VfxKit.chakra(self, 1.6, col, 2.4)
+	AuraShell.flare(self, model, col, 1.6)
+	var ma := AuraShell.find_in(pmode_fx)   # the Sharingan's aura takes the Susanoo's colour
+	if ma != null:
+		ma.set_colors(col, col.lightened(0.6))
 	Vfx.shake(cam, 0.35, 0.5)
-	_toast("SUSANOO!   left click: punch  -  right click: slam  -  X: release")
+	_toast("SUSANOO!   left click: punch  -  right click: slam  -  hold C: release")
 
 func _susanoo_off() -> void:
 	_susanoo_charge_stop()
@@ -590,6 +607,10 @@ func _susanoo_off() -> void:
 	if is_instance_valid(susanoo):
 		susanoo.dismiss()
 	susanoo = null
+	var ma := AuraShell.find_in(pmode_fx)   # back to the mode's own colour
+	if ma != null and powered:
+		var mc: Color = pmode.get("col", Color.WHITE)
+		ma.set_colors(mc, mc.lightened(0.6))
 	if _sus_zoom >= 0.0:
 		cam_zoom = _sus_zoom
 		_sus_zoom = -1.0
@@ -1218,8 +1239,16 @@ const CHARGE_RIM := Color(0.75, 0.92, 1.0)
 var _charge_fx: AuraShell
 func _charge_aura(on: bool) -> void:
 	if on and is_dead == false and model != null:
+		# in the Susanoo your chakra takes its colour
+		var col := CHARGE_AURA
+		var rim := CHARGE_RIM
+		if susanoo != null and is_instance_valid(susanoo):
+			col = susanoo.color
+			rim = susanoo.color.lightened(0.6)
 		if _charge_fx == null or not is_instance_valid(_charge_fx) or _charge_fx.has_meta("closing"):
-			_charge_fx = AuraShell.make(self, model, CHARGE_AURA, CHARGE_RIM)
+			_charge_fx = AuraShell.make(self, model, col, rim)
+		elif _charge_fx.aura_col != col:
+			_charge_fx.set_colors(col, rim)
 	elif _charge_fx != null:
 		if is_instance_valid(_charge_fx):
 			_charge_fx.fade_out()
@@ -1228,7 +1257,10 @@ func _charge_aura(on: bool) -> void:
 ## Could you power up right now? (quiet version of the checks in _toggle_power)
 func _power_ready() -> bool:
 	var id := GameData.equipped
-	return id != "none" and _bl_level() >= Bloodline.MODE_LEVEL and mode_meter >= POWER_MIN_MD
+	return id != "none" and _bl_level() >= Bloodline.MODE_LEVEL and mode_meter >= POWER_MIN_MD and _chakra_full()
+
+func _chakra_full() -> bool:
+	return chakra >= max_chakra - 0.5
 
 func _clear_buffs() -> void:
 	buffs.clear()
@@ -1253,6 +1285,9 @@ func _toggle_power() -> void:
 		return
 	if mode_meter < POWER_MIN_MD:
 		_toast("Not enough MD to power up  (%d / %d)" % [int(mode_meter), int(POWER_MIN_MD)])
+		return
+	if not _chakra_full():
+		_toast("Charge your chakra to full to transform  (%d / %d)" % [int(chakra), int(max_chakra)])
 		return
 	powered = true
 	pmode = m

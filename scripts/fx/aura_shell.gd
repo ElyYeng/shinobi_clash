@@ -12,11 +12,13 @@ static var _noise: NoiseTexture2D
 var model: Node3D
 var aura_col := Color(0.25, 0.6, 1.0)
 var rim_col := Color(0.75, 0.92, 1.0)
+var push := PUSH_WORLD    # shell thickness (m)
 var mat: ShaderMaterial
 var _shells: Array[MeshInstance3D] = []
 
-static func make(parent: Node, model_: Node3D, aura: Color, rim: Color, fade_in := 0.25) -> AuraShell:
+static func make(parent: Node, model_: Node3D, aura: Color, rim: Color, fade_in := 0.25, thickness := PUSH_WORLD) -> AuraShell:
 	var a := AuraShell.new()
+	a.push = thickness
 	a.model = model_
 	a.aura_col = aura
 	a.rim_col = rim
@@ -69,7 +71,33 @@ func _ready() -> void:
 		if mi.skeleton != NodePath(""):
 			sh.skeleton = mi.skeleton   # sibling: same relative path to the skeleton
 		_shells.append(sh)
-	mat.set_shader_parameter("_Push", PUSH_WORLD)
+	mat.set_shader_parameter("_Push", push)
+
+## A short burst of aura (forming a Susanoo, transforming ...): bright, then fades away.
+static func flare(parent: Node, model_: Node3D, col: Color, life := 1.2) -> void:
+	if parent == null or model_ == null or not parent.is_inside_tree():
+		return
+	var a := make(parent, model_, col, col.lightened(0.6), 0.0)
+	a.set_strength(2.0)
+	a.get_tree().create_timer(maxf(life - 0.5, 0.05)).timeout.connect(func() -> void:
+		if is_instance_valid(a):
+			a.fade_out(0.5))
+
+## First AuraShell under `n` (e.g. a power-up's fx node), or null.
+static func find_in(n: Node) -> AuraShell:
+	if n == null or not is_instance_valid(n):
+		return null
+	for c in n.get_children():
+		if c is AuraShell:
+			return c
+	return null
+
+func set_colors(aura: Color, rim: Color) -> void:
+	aura_col = aura
+	rim_col = rim
+	if mat != null:
+		mat.set_shader_parameter("_ColorAura", aura)
+		mat.set_shader_parameter("_ColorRim", rim)
 
 func set_strength(v: float) -> void:
 	if mat != null:

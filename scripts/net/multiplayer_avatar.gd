@@ -31,6 +31,7 @@ var model: Node3D
 var name_tag: Label3D
 var _last_position := Vector3.ZERO
 var power_fx: Node3D
+var _power_col := Color.WHITE   # the power-up aura colour (restored when the Susanoo goes)
 var ragdoll: Ragdoll
 var network_ragdoll_started := false
 
@@ -100,12 +101,18 @@ func _susanoo_event(ev: String, variant: int) -> void:
 			var col := Susanoo.palette_color(variant)
 			susanoo = Susanoo.create(col, model)
 			add_child(susanoo)
-			VfxKit.chakra(self, 1.6, col, 2.4)
+			AuraShell.flare(self, model, col, 1.6)
+			var ma := AuraShell.find_in(power_fx)
+			if ma != null:
+				ma.set_colors(col, col.lightened(0.6))
 			Vfx.burst(get_parent(), global_position + Vector3.UP * 2.0, col, 40, 10.0, 0.3, 0.8, 0.0)
 		"off":
 			if susanoo != null and is_instance_valid(susanoo):
 				susanoo.dismiss()
 			susanoo = null
+			var ma := AuraShell.find_in(power_fx)
+			if ma != null:
+				ma.set_colors(_power_col, _power_col.lightened(0.6))
 		_:
 			if susanoo != null and is_instance_valid(susanoo):
 				susanoo.attack(ev)
@@ -226,6 +233,7 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 			power_fx.queue_free()
 		power_fx = Node3D.new()
 		add_child(power_fx)
+		_power_col = color
 		var mode_aura := AuraShell.make(power_fx, model, color, color.lightened(0.6), 0.4)
 		if look.has("glow"):
 			mode_aura.set_strength(0.45)
