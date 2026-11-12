@@ -1114,6 +1114,12 @@ func _melee() -> void:
 			if combo == 3:   # combo finisher knocks them down
 				e.knockdown(facing * knock)
 			VfxKit.hit(get_parent(), e.global_position + Vector3.UP * 1.1 * e.k, null, 0.7 if combo < 3 else 1.1)
+	for v in Villager._all:   # villagers can be beaten up too
+		if is_instance_valid(v) and v.model != null and v.model.visible:
+			var tv: Vector3 = (v as Node3D).global_position - global_position
+			tv.y = 0.0
+			if tv.length() < 2.6 and (tv.length() < 0.8 or facing.dot(tv.normalized()) > 0.3):
+				v.get_hit(facing, combo == 3, dmg)
 	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
 		NetworkSession.try_hit_players(dmg, facing * knock, combo == 3)
 	if not _play_once("attack", attack_cd + 0.1, combo - 1):

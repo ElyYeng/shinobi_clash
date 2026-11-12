@@ -43,6 +43,32 @@ var index := 0
 var _marker: Label3D
 var held := false        # stands still (and looks at you) while you talk to them
 var _catch := 0.0        # after talking: seconds left easing back onto the shared route
+var _stun := 0.0         # beaten up: reeling / knocked down for this long
+var _hp := 100.0
+
+## Punched by the player: flinch (or get knocked down on a combo finisher), bruise up, then walk
+## it off back onto their route. Out of health: they stay down a while, then get up healed.
+func get_hit(dir: Vector3, finisher: bool, dmg: float) -> void:
+	if model == null or _far:
+		return
+	_hp = maxf(0.0, _hp - dmg)
+	Hero.set_damage(model, _hp / 100.0)
+	Sfx.play(self, "hit", -6.0)
+	VfxKit.hit(get_parent(), global_position + Vector3.UP * 1.1, null, 0.6)
+	Vfx.damage_number(get_parent(), global_position + Vector3.UP * 2.1, dmg)
+	model.rotation.y = atan2(dir.x, dir.z)   # face the attacker
+	if (finisher or _hp <= 0.0) and _stun < 1.0:
+		var down := 4.0 if _hp <= 0.0 else 1.6
+		var r := Ragdoll.knockdown(model, get_parent(), dir * 6.0 + Vector3.UP * 3.0, down)
+		_stun = down + Enemy.RISE_TIME + 0.4 if r != null else 0.8
+		if _hp <= 0.0:
+			get_tree().create_timer(_stun).timeout.connect(func() -> void:
+				_hp = 100.0
+				if is_instance_valid(model):
+					Hero.set_damage(model, 1.0))
+	else:
+		Hero.play(model, "hurt", true, 0, 0.3)
+		_stun = maxf(_stun, 0.5)
 
 static func name_for(i: int) -> String:
 	return "%s %s" % [ROLE[(i * 7 + 3) % ROLE.size()], FIRST[(i * 11 + 5) % FIRST.size()]]
@@ -173,6 +199,11 @@ func _process(delta: float) -> void:
 	var moving := t >= _t0 and t < _t1
 	var k := clampf(inverse_lerp(_t0, _t1, t), 0.0, 1.0) if _t1 > _t0 else 1.0
 	var route_pos := _leg_start.lerp(goal, k)
+	if _stun > 0.0:   # beaten up: stay put (the route keeps running - we catch up after)
+		_stun -= delta
+		_catch = 2.0
+		_update_marker()
+		return
 	if held:   # talking: stay put and look at you (the route keeps running - we catch up after)
 		moving = false
 		_catch = 1.5
