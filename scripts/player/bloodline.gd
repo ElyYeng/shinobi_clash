@@ -188,6 +188,27 @@ const DEFS := {
 			{"name": "Particle Cone", "kind": "cone", "r": 12.0, "dmg": 130.0, "dot": 0.45, "col": Color(0.95, 0.95, 0.85), "desc": "A cone of particles in front of you."}],
 		"mode": {"name": "Atomic Dismantling", "dmg": 1.55, "def": 0.75, "cd": 0.8, "desc": "+55% damage, take 25% less damage, cooldowns 20% faster."}},
 
+	"swift": {"name": "Swift Release", "rarity": "Epic", "weight": 2.5, "color": Color(0.55, 1.0, 0.75),
+		"desc": "Extreme speed: +10% damage, chakra regens 25% faster.", "stats": {"dmg": 1.1, "regen": 1.25},
+		"abilities": [
+			{"name": "Flash Step", "kind": "dash", "dist": 16.0, "dmg": 70.0, "desc": "Blur through enemies in a straight line, striking all of them."},
+			{"name": "Swift Barrage", "kind": "cone", "r": 7.0, "dmg": 65.0, "knock": 12.0, "dot": 0.3, "col": Color(0.55, 1.0, 0.75), "desc": "A flurry of blows too fast to see."},
+			{"name": "Afterimage", "kind": "buff", "t": 7.0, "speed": 1.5, "dmg": 1.2, "desc": "7s: +50% speed, +20% damage."}],
+		"mode": {"name": "Godspeed", "dmg": 1.3, "speed": 1.4, "cd": 0.75, "desc": "+30% damage, +40% speed, cooldowns 25% faster."}},
+	"steel": {"name": "Steel Release", "rarity": "Legendary", "weight": 1.5, "color": Color(0.7, 0.74, 0.8),
+		"desc": "Steel body: +60 max health, +10% damage.", "stats": {"hp": 60.0, "dmg": 1.1},
+		"abilities": [
+			{"name": "Steel Skin", "kind": "buff", "t": 8.0, "def": 0.5, "dmg": 1.15, "desc": "8s: your body turns to steel - take 50% less damage, +15% damage."},
+			{"name": "Steel Fist", "kind": "cone", "r": 7.0, "dmg": 85.0, "knock": 24.0, "dot": 0.3, "col": Color(0.7, 0.74, 0.8), "desc": "A steel punch that sends enemies flying."},
+			{"name": "Iron Quake", "kind": "burst", "r": 10.0, "dmg": 70.0, "stun": 1.5, "col": Color(0.7, 0.74, 0.8), "desc": "Slam the ground with a steel body - stuns everything within 10m."}],
+		"mode": {"name": "Full Steel Body", "dmg": 1.3, "def": 0.55, "speed": 0.9, "desc": "+30% damage, take 45% less damage, 10% slower."}},
+	"dark": {"name": "Dark Release", "rarity": "Legendary", "weight": 1.2, "color": Color(0.35, 0.1, 0.45),
+		"desc": "Devours chakra: +15% damage, +30 max chakra, slow regeneration.", "stats": {"dmg": 1.15, "chakra": 30.0, "hp_regen": 1.0},
+		"abilities": [
+			{"name": "Chakra Absorption", "kind": "aura", "t": 6.0, "r": 7.0, "dps": 14.0, "col": Color(0.35, 0.1, 0.45), "desc": "6s: drain the chakra of enemies within 7m."},
+			{"name": "Black Spear", "kind": "fan", "n": 1, "speed": 45.0, "dmg": 130.0, "aoe": 2.5, "size": 0.4, "long": true, "col": Color(0.2, 0.05, 0.25), "desc": "A spear of darkness that pierces the target."},
+			{"name": "Void Grasp", "kind": "burst", "r": 14.0, "dmg": 40.0, "knock": -12.0, "stun": 2.0, "col": Color(0.35, 0.1, 0.45), "desc": "The dark pulls enemies within 14m to you and holds them."}],
+		"mode": {"name": "Dark Absorption", "dmg": 1.35, "def": 0.8, "hp": 4.0, "ck": 15.0, "r": 5.0, "dps": 8.0, "desc": "+35% damage, take 20% less damage, heal 4/s, +15 chakra/s, drains enemies within 5m."}},
 	"uzumaki": {"name": "Uzumaki", "rarity": "Legendary", "weight": 2.5, "color": Color(1.0, 0.45, 0.15),
 		"desc": "Huge chakra: +50 max, 2x regen, 4 clones that last longer.",
 		"stats": {"chakra": 50.0, "regen": 2.0, "clone_count": 2, "clone_time": 6.0},
