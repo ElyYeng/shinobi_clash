@@ -12,35 +12,39 @@ const GREEN := GameMenu.GREEN
 const GREEN_DK := GameMenu.GREEN_DK
 const BODY_TEXT := GameMenu.BODY_TEXT
 const RED := Color(0.78, 0.1, 0.06)
+const UI := "res://assets/ui/"
+
+## A 9-slice box from one of the UI kit pieces (assets/ui, cut from ui_sheet_source.png).
+## m = texture margins [left, top, right, bottom] (kept unstretched), c = content margins.
+static func tex_box(name: String, m: Array, c: Array = [], tint := Color.WHITE) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	sb.texture = load(UI + name + ".png")
+	sb.texture_margin_left = m[0]
+	sb.texture_margin_top = m[1]
+	sb.texture_margin_right = m[2]
+	sb.texture_margin_bottom = m[3]
+	if c.is_empty():
+		c = m
+	sb.content_margin_left = c[0]
+	sb.content_margin_top = c[1]
+	sb.content_margin_right = c[2]
+	sb.content_margin_bottom = c[3]
+	sb.modulate_color = tint
+	return sb
 
 ## A parchment scroll panel (gold edge + green bands top and bottom). Put content in the
 ## returned MarginContainer.
 static func scroll(parent: Node, min_size: Vector2) -> MarginContainer:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = min_size
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = PARCH
-	sb.set_border_width_all(4)
-	sb.border_color = GOLD_DK
-	sb.set_corner_radius_all(2)
-	sb.shadow_color = Color(0, 0, 0, 0.55)
-	sb.shadow_size = 18
-	panel.add_theme_stylebox_override("panel", sb)
+	# parchment in a wooden frame with rope and a red swirl (UI kit: frame_tall)
+	panel.add_theme_stylebox_override("panel", tex_box("frame_tall", [60, 56, 56, 60], [0, 0, 0, 0]))
 	parent.add_child(panel)
-	var bands := Control.new()   # green bands drawn over the parchment, like the in-game scroll
-	bands.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bands.draw.connect(func() -> void:
-		var w := bands.size.x
-		bands.draw_rect(Rect2(0, 0, w, 14), GREEN)
-		bands.draw_rect(Rect2(0, 14, w, 3), GREEN_DK)
-		bands.draw_rect(Rect2(0, bands.size.y - 14, w, 14), GREEN)
-		bands.draw_rect(Rect2(0, bands.size.y - 17, w, 3), GREEN_DK))
-	panel.add_child(bands)
 	var m := MarginContainer.new()
-	for side in ["left", "right"]:
-		m.add_theme_constant_override("margin_" + side, 26)
-	m.add_theme_constant_override("margin_top", 30)
-	m.add_theme_constant_override("margin_bottom", 30)
+	m.add_theme_constant_override("margin_left", 58)
+	m.add_theme_constant_override("margin_right", 54)
+	m.add_theme_constant_override("margin_top", 46)
+	m.add_theme_constant_override("margin_bottom", 50)
 	panel.add_child(m)
 	return m
 
@@ -80,25 +84,17 @@ static func ribbon_button(parent: Node, text: String, size := 24) -> Button:
 	b.custom_minimum_size = Vector2(0, 50)
 	b.add_theme_font_override("font", GameMenu.font())
 	b.add_theme_font_size_override("font_size", size)
+	b.custom_minimum_size = Vector2(0, 56)
+	# ink brush stroke; hover / focus = the red ribbon with the Leaf emblem (UI kit)
+	var calm := tex_box("brush_black", [60, 0, 60, 0], [96, 4, 40, 4])
+	var hot := tex_box("ribbon_leaf_red", [96, 0, 70, 0], [96, 4, 40, 4])
+	var down := tex_box("ribbon_leaf_red", [96, 0, 70, 0], [96, 4, 40, 4], Color(0.8, 0.8, 0.8))
+	var off := tex_box("brush_black", [60, 0, 60, 0], [96, 4, 40, 4], Color(0.6, 0.6, 0.6, 0.8))
 	for st in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
-		var sb := StyleBoxFlat.new()
-		sb.skew = Vector2(0.18, 0)
-		sb.content_margin_left = 22
-		sb.content_margin_right = 16
-		match st:
-			"normal":
-				sb.bg_color = Color(0.03, 0.03, 0.03, 0.95)
-			"hover", "focus":
-				sb.bg_color = Color(0.36, 0.05, 0.04, 0.97)
-				sb.border_width_left = 8
-				sb.border_color = Color(1.0, 0.55, 0.15)
-			"pressed", "hover_pressed":
-				sb.bg_color = Color(0.55, 0.08, 0.06, 0.97)
-				sb.border_width_left = 8
-				sb.border_color = Color(1.0, 0.55, 0.15)
-			"disabled":
-				sb.bg_color = Color(0.2, 0.2, 0.2, 0.85)
+		var sb: StyleBox = {"normal": calm, "hover": hot, "focus": hot, "pressed": down, "hover_pressed": down, "disabled": off}[st]
 		b.add_theme_stylebox_override(st, sb)
+	b.add_theme_color_override("font_outline_color", Color.BLACK)
+	b.add_theme_constant_override("outline_size", 6)
 	b.add_theme_color_override("font_color", Color.WHITE)
 	b.add_theme_color_override("font_hover_color", Color(1.0, 0.86, 0.45))
 	b.add_theme_color_override("font_focus_color", Color(1.0, 0.86, 0.45))
@@ -114,20 +110,18 @@ static func green_button(parent: Node, text: String, size := 17) -> Button:
 	b.text = text
 	b.focus_mode = Control.FOCUS_ALL
 	b.custom_minimum_size = Vector2(0, 42)
+	# riveted red plate (UI kit: btn_red / btn_dark)
 	for st in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
-		var sb := StyleBoxFlat.new()
-		var col := GameMenu.BTN
-		if st == "hover" or st == "focus":
-			col = GameMenu.BTN.lightened(0.15)
-		elif st == "pressed" or st == "hover_pressed":
-			col = GameMenu.BTN.darkened(0.2)
-		elif st == "disabled":
-			col = Color(0.35, 0.4, 0.33)
-		sb.bg_color = col
-		sb.set_border_width_all(3)
-		sb.border_color = Color(0.06, 0.25, 0.05) if st != "focus" else Color(1.0, 0.86, 0.45)
-		sb.content_margin_left = 10
-		sb.content_margin_right = 10
+		var sb: StyleBoxTexture
+		match st:
+			"hover", "focus":
+				sb = tex_box("btn_red", [24, 0, 24, 0], [14, 4, 14, 4], Color(1.25, 1.1, 1.0))
+			"pressed", "hover_pressed":
+				sb = tex_box("btn_dark", [24, 0, 24, 0], [14, 4, 14, 4])
+			"disabled":
+				sb = tex_box("btn_dark", [24, 0, 24, 0], [14, 4, 14, 4], Color(0.7, 0.7, 0.7))
+			_:
+				sb = tex_box("btn_red", [24, 0, 24, 0], [14, 4, 14, 4])
 		b.add_theme_stylebox_override(st, sb)
 	b.add_theme_font_override("font", GameMenu.font())
 	b.add_theme_font_size_override("font_size", size)

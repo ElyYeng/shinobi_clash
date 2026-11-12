@@ -34,6 +34,8 @@ class KeySlot extends Control:
 	var not_ready := false
 	var icon: Texture2D = null
 	var empty := false
+	static var _frame: Texture2D
+	static var _frame_glow: Texture2D
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(50, 58)
@@ -59,14 +61,17 @@ class KeySlot extends Control:
 			edge = Color(0.45, 0.12, 0.12)
 		if active:
 			edge = Color(1.0, 0.85, 0.25)
-		draw_colored_polygon(pts, fill)
-		var loop: PackedVector2Array = pts.duplicate()
-		loop.append(pts[0])
-		if icon != null:   # ability image inside the octagon
+		# UI kit slot: iron-cornered square frame (glowing orange when the move is active)
+		draw_rect(Rect2(c - Vector2(19, 19), Vector2(38, 38)), fill)
+		if icon != null:
 			draw_texture_rect(icon, Rect2(c - Vector2(17, 17), Vector2(34, 34)), false,
 				Color(0.45, 0.45, 0.45) if locked or dim else Color.WHITE)
-		draw_polyline(loop, Color.BLACK, 5.0)
-		draw_polyline(loop, edge, 2.5)
+		if _frame == null:   # kept in static vars - a texture nothing holds is freed before it's drawn
+			_frame = load(UiStyle.UI + "slot.png")
+			_frame_glow = load(UiStyle.UI + "slot_glow.png")
+		var frame_tex: Texture2D = _frame_glow if active else _frame
+		var fr := Rect2(c - Vector2(25, 25), Vector2(50, 50))
+		draw_texture_rect(frame_tex, fr, false, Color(1.0, 0.55, 0.5) if dim and not locked else (Color(0.6, 0.6, 0.6) if locked else Color.WHITE))
 		if cd > 0.0 and not locked:      # cooldown pie
 			var frac := clampf(cd / maxf(cd_max, 0.01), 0.0, 1.0)
 			if frac > 0.03:
@@ -127,20 +132,26 @@ class StatBar extends Control:
 			ghost = value
 		queue_redraw()
 
+	static var _track: StyleBoxTexture
+	static var _fill: Texture2D
+
 	func _draw() -> void:
 		var m := maxf(max_value, 0.001)
 		var r := Rect2(Vector2.ZERO, size)
-		draw_rect(r, Color(0.02, 0.07, 0.04))
-		draw_rect(r.grow(-2.0), Color(0, 0, 0, 0.85))
-		var inner := r.grow(-3.0)
+		if _track == null:   # UI kit bar: iron frame + bevelled fill tinted with the bar's colour
+			_track = UiStyle.tex_box("bar_track", [18, 11, 24, 12])
+			_fill = load(UiStyle.UI + "bar_fill.png")
+		var frame := r.grow_individual(10, 6, 14, 6)
+		draw_style_box(_track, frame)
+		var inner := r.grow_individual(-1, -2, -1, -2)
 		var gw := inner
 		gw.size.x *= clampf(ghost / m, 0.0, 1.0)
-		draw_rect(gw, color.lightened(0.6))
+		if gw.size.x > 0.5:
+			draw_texture_rect(_fill, gw, false, Color(color.lightened(0.55), 0.7))
 		var fw := inner
 		fw.size.x *= clampf(value / m, 0.0, 1.0)
-		draw_rect(fw, color)
-		draw_rect(Rect2(fw.position, Vector2(fw.size.x, maxf(3.0, size.y * 0.18))), color.lightened(0.4))
-		draw_rect(r, Color(0.14, 0.38, 0.2), false, 2.0)
+		if fw.size.x > 0.5:
+			draw_texture_rect(_fill, fw, false, color.lightened(0.15))
 		var f := GameMenu.font()
 		var fs := 15
 		var pos := Vector2(0, size.y * 0.5 + fs * 0.36)
@@ -174,11 +185,7 @@ func _ready() -> void:
 	st.use_ghost = false
 	# bottom strip: MENU [M] | counters | [L] QUEST
 	var strip := Panel.new()
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.02, 0.05, 0.03, 0.78)
-	sb.set_border_width_all(2)
-	sb.border_color = Color(0.14, 0.38, 0.2)
-	strip.add_theme_stylebox_override("panel", sb)
+	strip.add_theme_stylebox_override("panel", UiStyle.tex_box("plate_dark", [22, 10, 22, 10]))
 	strip.position = Vector2(-352, -36)
 	strip.size = Vector2(704, 30)
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
