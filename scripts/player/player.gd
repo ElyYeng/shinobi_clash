@@ -454,6 +454,8 @@ func _physics_process(delta: float) -> void:
 	var surge := _bmul("speed")
 	if kurama:
 		surge *= 1.3
+	if klink != null:
+		surge *= 1.6   # riding Kurama: big strides
 
 	if dash_time > 0.0:
 		dash_time -= delta
