@@ -1295,9 +1295,9 @@ func _use_move(id: String) -> void:
 	if kind != "custom":
 		Sfx.play(self, "power", -3.0)
 	var vfx := str(a.get("vfx", ""))
-	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target" or kind == "buff"):   # Mythic signature effect
+	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target" or kind == "buff" or kind == "aura" or kind == "dash"):   # Mythic signature effect
 		var fb: Vector3 = target.global_position if kind == "target" and target != null else facing
-		_kokugan(vfx, global_position, fb, float(a["r"]), Callable())
+		_kokugan(vfx, global_position, fb, float(a.get("dist", a["r"])) if kind == "dash" else float(a["r"]), Callable())
 	match kind:
 		"custom":   # hand-made jutsu (original Fire Style, clones, substitution, armor)
 			call(str(a["fn"]), col)

@@ -29,6 +29,10 @@ func _ready() -> void:
 	if visual_kind == "rasenshuriken":
 		_build_rasenshuriken_visual()
 		Sfx.play(self, "rasenshuriken")   # (cut to ~2.8s) - also plays for remote copies
+	elif LegendFx.PROJ.has(visual_kind):   # Legendary bloodline projectiles
+		LegendFx.build_proj(self, visual_kind, size)
+		if velocity.length() > 0.01:
+			look_at(global_position + velocity)
 	elif MYTHIC.has(visual_kind):   # Dust cube / Truth-Seeking Orb / Ash Killing Bone
 		match visual_kind:
 			"dust": MythicFx.build_dust_cube(self, size)
@@ -65,7 +69,7 @@ func _ready() -> void:
 		mi.material_override = mat
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
-	if aoe > 0.0 and visual_kind != "rasenshuriken" and visual_kind != "fireball" and not MYTHIC.has(visual_kind):
+	if aoe > 0.0 and visual_kind != "rasenshuriken" and visual_kind != "fireball" and not MYTHIC.has(visual_kind) and not LegendFx.PROJ.has(visual_kind):
 		# fireball: bright core, flame trail and a light that flickers across the scenery
 		var halo := MeshInstance3D.new()
 		var hs := SphereMesh.new()
@@ -81,7 +85,7 @@ func _ready() -> void:
 		add_child(halo)
 		Vfx.trail(self, color, size * 2.2, 40, 0.5)
 		Vfx.glow_light(self, color, 3.0, 12.0)
-	elif visual_kind != "fireball" and not MYTHIC.has(visual_kind):   # (these bring their own look)
+	elif visual_kind != "fireball" and not MYTHIC.has(visual_kind) and not LegendFx.PROJ.has(visual_kind):   # (these bring their own look)
 		Vfx.trail(self, Color(0.85, 0.92, 1.0), 0.16, 22, 0.28)
 		Vfx.glow_light(self, Color(0.8, 0.9, 1.0), 0.6, 4.0)
 	body_entered.connect(_on_body)
@@ -99,7 +103,7 @@ func _physics_process(delta: float) -> void:
 		if long_shape and velocity.length() > 0.01:
 			look_at(global_position + velocity)
 	global_position += velocity * delta
-	if (visual_kind == "fireball" or MYTHIC.has(visual_kind)) and velocity.length() > 0.01:
+	if (visual_kind == "fireball" or MYTHIC.has(visual_kind) or LegendFx.PROJ.has(visual_kind)) and velocity.length() > 0.01:
 		look_at(global_position + velocity)
 	if visual_kind == "rasenshuriken" and visual_root != null:
 		if velocity.length() > 0.01:
@@ -197,6 +201,8 @@ func _explode() -> void:
 		VfxKit.hit(get_parent(), global_position, Color(1.0, 0.55, 0.15), 1.4)
 	elif visual_kind == "dust" and get_parent() != null:
 		MythicFx.dust_impact(get_parent(), global_position, maxf(aoe, 2.0))
+	elif LegendFx.PROJ.has(visual_kind) and get_parent() != null:
+		LegendFx.proj_impact(get_parent(), global_position, visual_kind, aoe)
 	elif visual_kind == "susanoo_arrow" and get_parent() != null:
 		Vfx.shockwave(get_parent(), global_position, Color(0.62, 0.35, 1.0), maxf(aoe * 1.5, 2.0), 0.35)
 		Fx.puff(get_parent(), global_position, Color(0.6, 0.4, 1.0, 0.8), maxf(aoe * 1.5, 1.5))

@@ -82,7 +82,7 @@ static func play(kind: String, world: Node3D, a: Vector3, b: Vector3, f: float) 
 			var body := nearest_body(world, b, 3.0)
 			if body != null:
 				AmaterasuBurn.ignite(body)
-		_: return false
+		_: return LegendFx.play(kind, world, a, b, f)   # Legendary bloodlines
 	return true
 
 ## The enemy / player / avatar closest to `p` (within `max_d`), to attach effects to remotely.
