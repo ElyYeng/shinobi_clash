@@ -89,6 +89,12 @@ func _send_mic() -> void:
 	var n := _capture.get_frames_available()
 	if n <= 0:
 		return
+	var mix := AudioServer.get_mix_rate()
+	var keep := int(mix * 0.06)   # Godot's mic input can fall behind and pile up: only send the newest 60 ms
+	if n > int(mix * 0.15):
+		_capture.get_buffer(n - keep)   # (thrown away)
+		n = keep
+		_pending.clear()
 	var frames := _capture.get_buffer(n)
 	var i := 0
 	while i + _step <= frames.size():
@@ -131,8 +137,10 @@ func _voice(pkt: PackedByteArray) -> void:
 	if v.is_empty():
 		return
 	var pb := v["pb"] as AudioStreamGeneratorPlayback
-	if pb.get_frames_available() < CHUNK:
-		return   # (behind: drop rather than build up delay)
+	# never let their voice queue up: if more than ~120 ms is waiting, skip to now
+	var queued := int(RATE * 0.5) - pb.get_frames_available()
+	if queued > int(RATE * 0.12) or pb.get_frames_available() < CHUNK:
+		pb.clear_buffer()
 	var rms := 0.0
 	for b in pkt:
 		var s := _unmulaw(b)
@@ -152,7 +160,7 @@ func _voice_for(peer: int) -> Dictionary:
 	var p := AudioStreamPlayer3D.new()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = RATE
-	gen.buffer_length = 0.3
+	gen.buffer_length = 0.5   # (room only - the queue is kept under ~120 ms in _voice)
 	p.stream = gen
 	p.max_distance = HEAR_DIST
 	p.unit_size = 8.0
