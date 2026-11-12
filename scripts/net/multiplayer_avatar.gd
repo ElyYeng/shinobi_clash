@@ -91,6 +91,9 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 		Hero.play(model, "sit" if sitting else "idle", sitting, 0, 0.0, 0.45 if sitting else 0.35)
 		return
 	sitting = false
+	if state.begins_with("klink_"):   # Uzumaki form 2: Kurama Link Mode
+		_klink_event(state.trim_prefix("klink_"))
+		return
 	if state.begins_with("susanoo_"):   # Susanoo (Uchiha): form / release / attacks
 		_susanoo_event(state.trim_prefix("susanoo_"), variant)
 		return
@@ -101,6 +104,24 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 		lock = 0.25
 	Hero.play(model, state, true, variant, lock)
 	animation_lock = lock
+
+var klink: KuramaLink
+func _klink_event(ev: String) -> void:
+	match ev:
+		"on":
+			if klink != null and is_instance_valid(klink):
+				klink.queue_free()
+			klink = KuramaLink.create(model)
+			add_child(klink)
+		"off":
+			if klink != null and is_instance_valid(klink):
+				klink.dismiss()
+			klink = null
+			if model != null:
+				model.position = Vector3.ZERO
+		_:
+			if klink != null and is_instance_valid(klink):
+				klink.attack(ev)
 
 func _susanoo_event(ev: String, variant: int) -> void:
 	match ev:
@@ -289,6 +310,9 @@ func _process(delta: float) -> void:
 			Hero.play_move(model, Hero.move_state(speed), speed)
 		if _kd_rag == null or not is_instance_valid(_kd_rag):
 			HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
+		if klink != null and is_instance_valid(klink):   # riding Kurama
+			model.global_position = klink.seat_position()
+			klink.set_moving(speed > 1.0)
 	_last_position = global_position
 
 

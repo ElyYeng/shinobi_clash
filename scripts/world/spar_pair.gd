@@ -47,20 +47,45 @@ func _place(delta: float) -> void:
 		if to.length() > 0.01:
 			me.rotation.y = atan2(-to.x, -to.z)
 
+var _home := Vector3.ZERO
+var _walk_t := 0.0          # > 0: walking to a new spot
+var _walk_from := Vector3.ZERO
+var _walk_to := Vector3.ZERO
+var _move_in := 5.0         # seconds until they wander somewhere else
+
 func _process(delta: float) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
 	if p == null or p.global_position.distance_to(global_position) > NEAR:
 		return
+	if _home == Vector3.ZERO:
+		_home = global_position
 	_t += delta
 	if _down > 0.0:
 		_down -= delta
 		return
-	# circle slowly (strafing) between exchanges
-	_angle += delta * 0.6
-	_place(delta)
-	var moving := fmod(_t, 4.0) < 1.5
+	if _walk_t > 0.0:   # walk side by side to the next spot, then square up again
+		_walk_t -= delta
+		var k := 1.0 - clampf(_walk_t / 2.2, 0.0, 1.0)
+		global_position = _walk_from.lerp(_walk_to, k)
+		var dir := (_walk_to - _walk_from) * Vector3(1, 0, 1)
+		for m in [a, b]:
+			if dir.length() > 0.01:
+				m.rotation.y = lerp_angle(m.rotation.y, atan2(-dir.x, -dir.z), 1.0 - exp(-10.0 * delta))
+			Hero.play_move(m, "walk", 2.6)
+		if _walk_t <= 0.0:
+			_angle = _rng.randf() * TAU
+			_next = 0.6
+		return
+	_place(delta)   # squared up, facing each other
 	for m in [a, b]:
-		Hero.play_move(m, "strafe_l" if moving else "idle", 2.0 if moving else 0.0)
+		Hero.play_move(m, "idle", 0.0)
+	_move_in -= delta
+	if _move_in <= 0.0:
+		_move_in = _rng.randf_range(6.0, 11.0)
+		_walk_from = global_position
+		_walk_to = _home + Vector3(_rng.randf_range(-5, 5), 0, _rng.randf_range(-5, 5))
+		_walk_t = 2.2
+		return
 	_next -= delta
 	if _next <= 0.0:
 		_exchange()
@@ -78,6 +103,11 @@ func _punch(atk: Node3D, def: Node3D, i: int, finisher: bool) -> void:
 	if not is_instance_valid(atk) or not is_instance_valid(def) or _down > 0.0:
 		return
 	Hero.play(atk, "attack", true, i, 0.4)
+	var lunge := (def.position - atk.position) * Vector3(1, 0, 1)
+	if lunge.length() > 0.01:   # step in with the punch
+		var tw := atk.create_tween()
+		tw.tween_property(atk, "position", atk.position + lunge.normalized() * 0.35, 0.12)
+		tw.tween_property(atk, "position", atk.position, 0.25)
 	var hit_at := def.global_position + Vector3.UP * 1.2
 	get_tree().create_timer(0.18).timeout.connect(func() -> void:
 		if not is_instance_valid(def) or _down > 0.0:

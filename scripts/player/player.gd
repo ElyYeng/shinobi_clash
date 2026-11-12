@@ -493,8 +493,12 @@ func _physics_process(delta: float) -> void:
 	model.rotation.y = lerp_angle(model.rotation.y, atan2(-facing.x, -facing.z), 14.0 * delta)
 
 	# Abilities (in Susanoo: left click = punches, right click = slam)
+	if klink != null and is_instance_valid(klink):   # ride on Kurama's head
+		model.global_position = klink.seat_position()
 	if susanoo != null:
 		_susanoo_update(delta)
+	elif klink != null:
+		_klink_update(delta, moving)   # Kurama Link: claw on left click, R / T / Y = its skills
 	else:
 		if Input.is_action_pressed("attack"):
 			_melee()
@@ -503,7 +507,7 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ability"):
 		_toggle_power()
 	for k in Moves.BIND_KEYS:   # hotbar keys run whatever move is bound to them (M > Bloodline / Element)
-		if Input.is_action_just_pressed("slot_" + k):
+		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and KL_KEYS.has(k)):
 			use_key(k)
 	if Input.is_action_just_pressed("biju"):
 		_kurama_mode()
@@ -577,6 +581,17 @@ func _susanoo_ready() -> bool:
 func _activate_form(n: int) -> void:
 	if is_dead:
 		return
+	if GameData.equipped == "uzumaki" and n == 2:
+		if klink != null:
+			_klink_off()
+			_toast("Kurama Link released")
+		elif _bl_level() < Bloodline.MODE_LEVEL:
+			_toast("Kurama Link Mode unlocks at Uzumaki LV %d  (you are LV %d)" % [Bloodline.MODE_LEVEL, _bl_level()])
+		elif chakra < KL_MIN_CHAKRA:
+			_toast("Not enough chakra for Kurama Link Mode  (%d / %d)" % [int(chakra), int(KL_MIN_CHAKRA)])
+		else:
+			_klink_on()
+		return
 	if GameData.equipped == "uchiha" and n == 2:
 		if susanoo != null:
 			_susanoo_off()
@@ -589,6 +604,118 @@ func _activate_form(n: int) -> void:
 			_susanoo_on()
 		return
 	_toast("Form %d - coming soon" % n)
+
+# ---------------------------------------------------------------- Kurama Link Mode (Uzumaki form 2)
+## Hold C + 2 as an Uzumaki (LV 1000): Kurama appears under you and you ride on its head.
+## Left click = claw, R = Tailed Beast Bomb, T = ground slam, Y = roar. Drains chakra; release
+## with hold C / C + 2 or when chakra runs out.
+const KL_MIN_CHAKRA := 60.0
+const KL_DRAIN := 4.0
+const KL_KEYS := {"R": "bomb", "T": "slam", "Y": "roar"}
+const KL_MOVES := {
+	"claw": {"cd": 1.1, "ck": 6.0, "dmg": 70.0, "ahead": 7.0, "r": 6.0, "knock": 14.0, "stun": 0.3},
+	"bomb": {"cd": 9.0, "ck": 35.0, "dmg": 190.0, "ahead": 0.0, "r": 9.0, "knock": 20.0, "stun": 1.0},
+	"slam": {"cd": 6.0, "ck": 22.0, "dmg": 120.0, "ahead": 5.0, "r": 9.0, "knock": 10.0, "stun": 2.0},
+	"roar": {"cd": 7.0, "ck": 18.0, "dmg": 60.0, "ahead": 0.0, "r": 16.0, "knock": 26.0, "stun": 1.0},
+}
+var klink: KuramaLink
+var _kl_cd := {}
+var _kl_zoom := -1.0
+
+func _klink_on() -> void:
+	if klink != null or susanoo != null:
+		return
+	if not powered:
+		_toggle_power()   # Ink Mode first (needs MD like a normal power-up)
+		if not powered:
+			return
+	klink = KuramaLink.create(model)
+	add_child(klink)
+	_kl_cd.clear()
+	_kl_zoom = cam_zoom
+	cam_zoom = maxf(cam_zoom, 15.0)
+	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, Color(1.0, 0.6, 0.15), 9.0, 0.5)
+	Vfx.shake(cam, 0.35, 0.5)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("klink_on", 0)
+	_toast("KURAMA LINK MODE!   left click: claw  -  R: Tailed Beast Bomb  -  T: slam  -  Y: roar")
+
+func _klink_off() -> void:
+	if klink == null:
+		return
+	if is_instance_valid(klink):
+		klink.dismiss()
+	klink = null
+	model.position = Vector3.ZERO   # off the fox's head
+	if _kl_zoom >= 0.0:
+		cam_zoom = _kl_zoom
+		_kl_zoom = -1.0
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("klink_off", 0)
+
+func _klink_update(delta: float, moving: bool) -> void:
+	if not is_instance_valid(klink):
+		klink = null
+		return
+	for k in _kl_cd.keys():
+		_kl_cd[k] = maxf(0.0, float(_kl_cd[k]) - delta)
+	if not inf_chakra:
+		chakra = maxf(0.0, chakra - KL_DRAIN * delta)
+	if chakra <= 0.0 or not powered or is_dead:
+		_toast("Kurama Link faded - out of chakra" if chakra <= 0.0 else "Kurama Link released")
+		_klink_off()
+		return
+	klink.set_moving(moving)
+	if Input.is_action_pressed("attack"):
+		_klink_move("claw")
+	for key in KL_KEYS:
+		if Input.is_action_just_pressed("slot_" + key):
+			_klink_move(KL_KEYS[key])
+
+func _klink_move(kind: String) -> void:
+	var d: Dictionary = KL_MOVES[kind]
+	if float(_kl_cd.get(kind, 0.0)) > 0.0 or float(_kl_cd.get("_any", 0.0)) > 0.0:
+		return
+	if chakra < float(d["ck"]):
+		_toast("Not enough chakra")
+		return
+	if not inf_chakra:
+		chakra -= float(d["ck"])
+	_kl_cd[kind] = float(d["cd"])
+	_kl_cd["_any"] = 0.8
+	var f := Basis(Vector3.UP, yaw) * Vector3.FORWARD   # face where the camera looks
+	facing = Vector3(f.x, 0, f.z).normalized()
+	model.rotation.y = atan2(-facing.x, -facing.z)
+	klink.attack(kind)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("klink_" + kind, 0)
+	var fwd := facing
+	get_tree().create_timer(KuramaLink.hit_delay(kind)).timeout.connect(func() -> void: _klink_impact(kind, fwd))
+
+func _klink_impact(kind: String, fwd: Vector3) -> void:
+	if klink == null or not is_instance_valid(klink):
+		return
+	var d: Dictionary = KL_MOVES[kind]
+	var r := float(d["r"])
+	var center := global_position + fwd * float(d["ahead"])
+	if kind == "bomb":   # the Tailed Beast Bomb lands where you're looking, 14m out
+		center = global_position + fwd * 14.0
+		VfxKit.cast(get_parent(), klink.seat_position() + fwd * 3.0, fwd, Color(0.45, 0.15, 0.85), 2.2)
+	var col := Color(0.6, 0.25, 1.0) if kind == "bomb" else Color(1.0, 0.6, 0.15)
+	Vfx.shockwave(get_parent(), center + Vector3.UP * 0.2, col, r, 0.5)
+	Vfx.burst(get_parent(), center + Vector3.UP, col, 40, 10.0, 0.3, 0.7, 0.0)
+	Sfx.play(self, "boom", 3.0)
+	Vfx.shake(cam, 0.35 if kind != "claw" else 0.15, 0.4)
+	var dmg := float(d["dmg"]) * _dmg()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		var en := e as Enemy
+		var to := en.global_position - center
+		to.y = 0.0
+		if to.length() <= r + en.k:
+			_stun(en, float(d["stun"]))
+			_hit_foe(en, dmg, (to.normalized() if to.length() > 0.1 else fwd) * float(d["knock"]))
+	if NetworkSession.is_active() and NetworkSession.session_mode == "pvp":
+		NetworkSession.try_hit_players(dmg * 0.5, fwd * float(d["knock"]))
 
 func _susanoo_charge_stop() -> void:
 	if _sus_charge_fx != null and is_instance_valid(_sus_charge_fx):
@@ -1508,6 +1635,7 @@ func _toggle_power() -> void:
 
 func _power_off() -> void:
 	_susanoo_off()   # the Susanoo needs the Sharingan
+	_klink_off()     # Kurama Link needs Ink Mode
 	if not powered:
 		return
 	if NetworkSession.is_active():
