@@ -3,25 +3,47 @@ extends RefCounted
 ## Shared helpers: input map, placeholder ninja model, effects.
 
 static func setup_inputs() -> void:
+	var modern := GameData.key_scheme == "modern"
+	# actions whose keys depend on the scheme are cleared first (so switching works mid-game)
+	for act in ["dash", "charge", "interact", "volley", "biju", "ability"]:
+		if InputMap.has_action(act):
+			InputMap.action_erase_events(act)
+	for k in Moves.BIND_KEYS + Moves.MODERN_EL + Moves.MODERN_JUTSU + Moves.MODERN_BUFF:
+		if InputMap.has_action("slot_" + k):
+			InputMap.action_erase_events("slot_" + k)
 	_key("forward", [KEY_W]); _key("back", [KEY_S])
 	_key("left", [KEY_A]); _key("right", [KEY_D])
 	_key("jump", [KEY_SPACE]); _key("sprint", [KEY_SHIFT])
-	_key("dash", [KEY_Q]); _key("charge", [KEY_C])
 	_key("lockon", []); _key("restart", [KEY_ENTER])   # lock on = middle mouse (Tab = leaderboard)
 	_key("leaderboard", [KEY_TAB])
 	_key("pause", [KEY_ESCAPE])
-	_key("ability", [KEY_X])
-	_key("to_menu", [KEY_M]); _key("interact", [KEY_E])
-	_key("biju", [KEY_Z]); _key("volley", [KEY_E]); _key("quest_log", [KEY_L]); _key("sit", [KEY_P])
-	for n in 4:   # hold C + 1..4 = bloodline forms (Uchiha: 2 = Susanoo)
+	_key("to_menu", [KEY_M]); _key("quest_log", [KEY_L]); _key("sit", [KEY_P])
+	# (K is voice chat mute in both schemes - never bound here)
+	if modern:   # Q E C Z X are hotbar keys now: their old jobs move
+		_key("dash", [KEY_CTRL]); _key("charge", [KEY_Y]); _key("interact", [KEY_H])
+		_key("volley", [KEY_I]); _key("biju", [KEY_J]); _key("ability", [KEY_U])
+	else:
+		_key("dash", [KEY_Q]); _key("charge", [KEY_C]); _key("interact", [KEY_E])
+		_key("volley", [KEY_E]); _key("biju", [KEY_Z]); _key("ability", [KEY_X])
+	for n in 4:   # hold charge (C / Y) + 1..4 = bloodline forms (Uchiha: 2 = Susanoo)
 		_key("form_%d" % (n + 1), [KEY_1 + n])
-	# hotbar keys: each runs the move bound to it (Moves.BIND_KEYS, set in M > Bloodline / Element)
-	var codes := {"R": KEY_R, "T": KEY_T, "Y": KEY_Y, "F": KEY_F, "G": KEY_G, "H": KEY_H, "V": KEY_V, "B": KEY_B, "N": KEY_N}
-	for k in Moves.BIND_KEYS:
+	# hotbar keys: each runs the move on it (classic: bound in M > Bloodline / Element)
+	var codes := {"R": KEY_R, "T": KEY_T, "Y": KEY_Y, "F": KEY_F, "G": KEY_G, "H": KEY_H, "V": KEY_V, "B": KEY_B, "N": KEY_N,
+		"1": KEY_1, "2": KEY_2, "3": KEY_3, "4": KEY_4, "5": KEY_5, "6": KEY_6, "Z": KEY_Z, "X": KEY_X, "C": KEY_C,
+		"Q": KEY_Q, "E": KEY_E}
+	for k in Moves.active_keys():
 		_key("slot_" + k, [codes[k]])
 	_mouse("attack", MOUSE_BUTTON_LEFT)
 	_mouse("kunai", MOUSE_BUTTON_RIGHT)
 	_mouse("lockon", MOUSE_BUTTON_MIDDLE)
+
+## On-screen key names follow the scheme: prompts written for classic keys ([E] talk, hold C,
+## C + 2 ...) are rewritten for the modern layout ([H], hold Y, Y + 2).
+static func keyfix(text: String) -> String:
+	if GameData.key_scheme != "modern":
+		return text
+	return text.replace("[E]", "[H]").replace("[ E ]", "[ H ]").replace("hold C", "hold Y") \
+		.replace("Hold C", "Hold Y").replace("C + ", "Y + ").replace("C+", "Y+")
 
 static func _key(action: String, keys: Array) -> void:
 	if not InputMap.has_action(action):

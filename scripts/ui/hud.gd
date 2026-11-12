@@ -247,6 +247,7 @@ func bind(player: Player) -> void:
 	p = player
 
 func toast(text: String) -> void:
+	text = Fx.keyfix(text)
 	toast_label.text = text
 	toast_label.modulate.a = 1.0
 	var t := toast_label.create_tween()
@@ -362,7 +363,7 @@ func _process(delta: float) -> void:
 		boss_ghost.value = maxf(boss_bar.value, move_toward(boss_ghost.value, boss_bar.value, boss.max_health * 0.12 * delta))
 	quest_label.visible = mode == "world" and quest_visible
 	quest_label.text = quest_text
-	prompt_label.text = prompt_text
+	prompt_label.text = Fx.keyfix(prompt_text)
 	if is_instance_valid(p.lock_target) and not p.cam.is_position_behind(p.lock_target.global_position):
 		lock_label.visible = true
 		lock_label.position = p.cam.unproject_position(p.lock_target.global_position + Vector3.UP * 1.2) - Vector2(14, 22)

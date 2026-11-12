@@ -15,8 +15,8 @@ var custom_btn: Button
 var hint: Label
 
 func _ready() -> void:
-	Fx.setup_inputs()
 	GameData.load_data()
+	Fx.setup_inputs()   # (after loading: the saved keybind scheme decides the keys)
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

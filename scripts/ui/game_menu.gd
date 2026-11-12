@@ -1449,6 +1449,14 @@ func _bag_place(slot: int, id: String) -> void:
 	_refresh_header()
 	_reload_page()
 
+## Classic <-> modern keybinds (saved; the input map and the hotbar switch right away).
+func _switch_scheme() -> void:
+	GameData.key_scheme = "classic" if GameData.key_scheme == "modern" else "modern"
+	GameData.save()
+	Fx.setup_inputs()
+	Sfx.play(self, "poof", -6.0)
+	_reload_page()
+
 ## Settings (camera / volume) - shown at the top of Controls.
 func _settings_items() -> Array:
 	var vol := db_to_linear(AudioServer.get_bus_volume_db(0)) * 100.0
@@ -1472,6 +1480,15 @@ func _settings_items() -> Array:
 	]
 
 func _page_controls() -> Array:
+	var modern := GameData.key_scheme == "modern"
+	extras = [_act("SWITCH", _switch_scheme, "[Keybinds: %s]" % ("Modern" if modern else "Classic"))]
+	if modern:
+		return _settings_items() + [
+			_item("Keybinds: Modern", "1-6  /  Z X C V B N  /  Q E R F T G", Color(0.85, 0.3, 0.2), "1",
+				"1-6: element skills\nZ X C V B N: jutsu (bloodline abilities, clones, substitution)\nQ E R F T G: buffs (bloodline buffs, armor)\nThese fill in automatically from what you have equipped.\n\nCtrl: dash   H: talk   Y: hold to power up (Y + 1-4: forms)\nJ: Tailed Beast   U: power-up on/off   Right mouse + I: kunai volley\nKurama Link: Z / X / C\nK: mute voice chat   Tab: leaderboard   M: menu   F2: photo mode"),
+			_item("Movement", "WASD, Shift, Space, Ctrl", Color(0.4, 0.7, 0.4), "W",
+				"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nCtrl: dash"),
+		]
 	return _settings_items() + [
 		_item("Movement", "WASD, Shift, Space, Q", Color(0.4, 0.7, 0.4), "W",
 			"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nQ: dash"),

@@ -518,8 +518,11 @@ func _physics_process(delta: float) -> void:
 			_throw_kunai()
 	if Input.is_action_just_pressed("ability"):
 		_toggle_power()
-	for k in Moves.BIND_KEYS:   # hotbar keys run whatever move is bound to them (M > Bloodline / Element)
-		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and KL_KEYS.has(k)):
+	var holding_charge := Input.is_action_pressed("charge")
+	for k in Moves.active_keys():   # hotbar keys run the move on them (scheme: classic / modern)
+		if holding_charge and k in ["1", "2", "3", "4"]:
+			continue   # (charge + 1-4 = forms, not element skills)
+		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and kl_keys().has(k)):
 			use_key(k)
 	if Input.is_action_just_pressed("biju"):
 		_kurama_mode()
@@ -624,6 +627,9 @@ func _activate_form(n: int) -> void:
 const KL_MIN_CHAKRA := 60.0
 const KL_DRAIN := 4.0
 const KL_KEYS := {"R": "bomb", "T": "slam", "Y": "roar"}
+const KL_KEYS_MODERN := {"Z": "bomb", "X": "slam", "C": "roar"}
+func kl_keys() -> Dictionary:
+	return KL_KEYS_MODERN if GameData.key_scheme == "modern" else KL_KEYS
 const KL_MOVES := {
 	"claw": {"cd": 1.1, "ck": 6.0, "dmg": 70.0, "ahead": 7.0, "r": 6.0, "knock": 14.0, "stun": 0.3},
 	"bomb": {"cd": 9.0, "ck": 35.0, "dmg": 190.0, "ahead": 0.0, "r": 9.0, "knock": 20.0, "stun": 1.0},
@@ -680,9 +686,9 @@ func _klink_update(delta: float, moving: bool) -> void:
 	klink.set_moving(moving, Vector2(velocity.x, velocity.z).length())
 	if Input.is_action_pressed("attack"):
 		_klink_move("claw")
-	for key in KL_KEYS:
+	for key in kl_keys():
 		if Input.is_action_just_pressed("slot_" + key):
-			_klink_move(KL_KEYS[key])
+			_klink_move(kl_keys()[key])
 
 func _klink_move(kind: String) -> void:
 	var d: Dictionary = KL_MOVES[kind]
@@ -1266,9 +1272,9 @@ func eye_overlay() -> bool:
 
 ## Runs the move on a hotbar key.
 func use_key(k: String) -> void:
-	var mv := str(GameData.keybinds.get(k, ""))
+	var mv := Moves.bound(k)
 	if mv == "":
-		_toast("Nothing on [%s] - assign a move in M > Bloodline or M > Element" % k)
+		_toast("Nothing on [%s] - %s" % [k, "equip more elements / bloodlines to fill it" if GameData.key_scheme == "modern" else "assign a move in M > Bloodline or M > Element"])
 		return
 	_use_move(mv)
 
@@ -2016,15 +2022,15 @@ func _end_mode() -> void:
 func slot_info(key: String) -> Dictionary:
 	var d := {"name": "", "cd": 0.0, "max": 1.0, "cost": 0.0, "locked": false, "active": false, "timer": 0.0,
 		"not_ready": false, "icon": null, "empty": false}
-	if klink != null and KL_KEYS.has(key):   # riding Kurama: its skills are on R / T / Y
-		var kind: String = KL_KEYS[key]
+	if klink != null and kl_keys().has(key):   # riding Kurama: its skills are on R / T / Y (modern: Z / X / C)
+		var kind: String = kl_keys()[key]
 		var kd: Dictionary = KL_MOVES[kind]
 		d.merge({"name": {"bomb": "Tailed Beast Bomb", "slam": "Kurama Slam", "roar": "Kurama Roar"}[kind],
 			"cd": float(_kl_cd.get(kind, 0.0)), "max": float(kd["cd"]), "cost": float(kd["ck"]),
 			"icon": Moves.tex("res://assets/icons/kl_%s.png" % kind)}, true)
 		return d
-	if Moves.BIND_KEYS.has(key):   # assignable key: shows the move bound to it
-		var mv := str(GameData.keybinds.get(key, ""))
+	if Moves.active_keys().has(key):   # hotbar key: shows the move on it
+		var mv := Moves.bound(key)
 		var a := Moves.spec(mv)
 		if a.is_empty():
 			d["empty"] = true
@@ -2040,16 +2046,16 @@ func slot_info(key: String) -> Dictionary:
 			"locked": Moves.block(mv) != "", "active": left > 0.0, "timer": left, "icon": Moves.icon(mv)}, true)
 		return d
 	match key:
-		"Q":
+		"Q", "CTRL":
 			d.merge({"name": "Dash", "cost": dash_cost}, true)
-		"RMB+E":
+		"RMB+E", "RMB+I":
 			d.merge({"name": "Kunai", "cd": volley_cd, "max": 4.0, "cost": 15.0}, true)
-		"E":
+		"E", "H":
 			d["name"] = "Talk"
-		"Z":
+		"Z", "J":
 			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated, "active": kurama,
 				"not_ready": mode_meter < KURAMA_MIN_MD and not kurama}, true)
-		"C":   # power-up: no timer, drains MD
+		"C", "Y":   # power-up: no timer, drains MD
 			var m := Bloodline.mode(GameData.equipped)
 			if powered:
 				d.merge({"name": pmode["name"], "active": true, "icon": Moves.mode_icon(GameData.equipped)}, true)

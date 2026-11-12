@@ -173,12 +173,7 @@ func _ready() -> void:
 	offset_bottom = 0.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scale = Vector2.ONE * HUD_SCALE   # everything hangs off this bottom-centre anchor
-	for i in LEFT.size():
-		_slot(LEFT[i], Vector2(-362.0 + i * PITCH, -160.0))
-	for i in RIGHT.size():
-		_slot(RIGHT[i], Vector2(50.0 + i * PITCH, -160.0))
-	_slot("Z", Vector2(-25.0, -176.0))
-	_slot("C", Vector2(-25.0, -118.0))
+	_build_slots()
 	hp = _bar(Vector2(-352, -90), 306.0, 22.0, Color(0.25, 0.8, 0.2))
 	md = _bar(Vector2(-330, -64), 290.0, 20.0, Color(0.55, 0.15, 0.85))
 	ck = _bar(Vector2(46, -90), 306.0, 22.0, Color(0.2, 0.5, 1.0))
@@ -199,6 +194,29 @@ func _ready() -> void:
 	strip_right.offset_right -= 14.0
 	xp_bar = _bar(Vector2(-352, -7), 704.0, 7.0, Color(0.95, 0.75, 0.2))
 	xp_bar.use_ghost = false
+
+var _scheme := ""
+
+## The key slots for the current keybind scheme (rebuilt when it changes).
+func _build_slots() -> void:
+	for k in slots:
+		(slots[k] as Node).queue_free()
+	slots.clear()
+	_scheme = GameData.key_scheme
+	if _scheme == "modern":   # element row + jutsu row on the left, buffs + specials on the right
+		for i in 6:
+			_slot(Moves.MODERN_EL[i], Vector2(-362.0 + i * PITCH, -218.0))
+			_slot(Moves.MODERN_JUTSU[i], Vector2(-362.0 + i * PITCH, -160.0))
+			_slot(Moves.MODERN_BUFF[i], Vector2(50.0 + i * PITCH, -160.0))
+		for spec in [["CTRL", 0], ["RMB+I", 1], ["H", 2], ["J", 3], ["Y", 5]]:
+			_slot(spec[0], Vector2(50.0 + int(spec[1]) * PITCH, -218.0))
+		return
+	for i in LEFT.size():
+		_slot(LEFT[i], Vector2(-362.0 + i * PITCH, -160.0))
+	for i in RIGHT.size():
+		_slot(RIGHT[i], Vector2(50.0 + i * PITCH, -160.0))
+	_slot("Z", Vector2(-25.0, -176.0))
+	_slot("C", Vector2(-25.0, -118.0))
 
 func _slot(key: String, pos: Vector2) -> void:
 	var s := KeySlot.new()
@@ -232,6 +250,8 @@ func _strip_label(text: String, pos: Vector2, w: float, align: int) -> Label:
 
 # ------------------------------------------------------------------ per-frame update
 func update_from(p: Player) -> void:
+	if _scheme != GameData.key_scheme:
+		_build_slots()
 	hp.max_value = p.max_health
 	hp.value = p.health
 	hp.label = "HP: %d" % int(ceil(p.health))

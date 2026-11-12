@@ -18,6 +18,53 @@ const DEFAULT_BINDS := {"R": "el:Fire:0", "T": "el:Fire:1", "Y": "el:Fire:2", "F
 	"G": "el:Fire:3", "H": "base:armor", "V": "base:sub", "B": "", "N": ""}
 const ICON_DIR := "res://assets/icons/"
 
+## Modern layout: 1-6 element skills, Z X C V B N jutsu, Q E R F T G buffs (all automatic).
+const MODERN_EL := ["1", "2", "3", "4", "5", "6"]
+const MODERN_JUTSU := ["Z", "X", "C", "V", "B", "N"]
+const MODERN_BUFF := ["Q", "E", "R", "F", "T", "G"]
+const BUFF_KINDS := ["buff", "aura"]
+
+## The hotbar keys of the current scheme.
+static func active_keys() -> Array:
+	if GameData.key_scheme == "modern":
+		return MODERN_EL + MODERN_JUTSU + MODERN_BUFF
+	return BIND_KEYS
+
+## The move on a hotbar key in the current scheme ("" = nothing).
+static func bound(key: String) -> String:
+	if GameData.key_scheme == "modern":
+		return str(modern_binds().get(key, ""))
+	return str(GameData.keybinds.get(key, ""))
+
+## Modern scheme: fills the three rows from your equipped elements / bloodlines.
+static func modern_binds() -> Dictionary:
+	var els: Array = []
+	for e in GameData.el_slots:
+		if str(e) != "none":
+			for i in 4:
+				var id := "el:%s:%d" % [e, i]
+				if not spec(id).is_empty():
+					els.append(id)
+	var jutsu: Array = []
+	var buffs: Array = []
+	for bl in GameData.slots:
+		if str(bl) == "none":
+			continue
+		for i in 3:
+			var id := "bl:%s:%d" % [bl, i]
+			var a := spec(id)
+			if a.is_empty():
+				continue
+			(buffs if BUFF_KINDS.has(str(a.get("kind", ""))) else jutsu).append(id)
+	jutsu.append_array(["base:clones", "base:sub"])
+	buffs.append("base:armor")
+	var out := {}
+	for i in 6:
+		out[MODERN_EL[i]] = els[i] if i < els.size() else ""
+		out[MODERN_JUTSU[i]] = jutsu[i] if i < jutsu.size() else ""
+		out[MODERN_BUFF[i]] = buffs[i] if i < buffs.size() else ""
+	return out
+
 const BASE := {
 	"clones": {"name": "Shadow Clones", "kind": "custom", "fn": "_fx_clones", "cost": 40.0, "cd": 6.0,
 		"col": Color(0.3, 0.6, 1.0), "desc": "Summons clones that fight for you (more with Uzumaki)."},
