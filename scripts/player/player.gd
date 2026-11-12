@@ -348,6 +348,14 @@ func _nearest_enemy(max_dist: float) -> Enemy:
 	return best
 
 func _physics_process(delta: float) -> void:
+	_genjutsu_tick(delta)
+	if in_genjutsu and not is_dead:   # paralysed in the genjutsu world: look around, can't move
+		global_position = _gen_world.victim_spot() if is_instance_valid(_gen_world) else global_position
+		velocity = Vector3.ZERO
+		pivot.global_position = global_position + Vector3.UP * 1.6
+		cam.global_position = pivot.global_position + Vector3(sin(yaw) * 3.5, 0.8, cos(yaw) * 3.5)
+		cam.look_at(pivot.global_position)
+		return
 	if is_dead:
 		if spectating and is_instance_valid(spectate_target):   # camera follows who you're watching
 			var tall := 3.0 if spectate_target is Kurama else 1.6
@@ -559,6 +567,10 @@ func _physics_process(delta: float) -> void:
 				else:
 					_toggle_power()
 	else:
+		# a quick tap of C while in the Uchiha form (no Susanoo): paralysis genjutsu on / off
+		if c_hold > 0.0 and c_hold < 0.3 and not _c_form_used and not _c_activated and powered \
+				and str(GameData.equipped) == "uchiha" and susanoo == null:
+			_genjutsu_toggle()
 		c_hold = 0.0
 		_c_power_hold = 0.0
 		_c_form_used = false
@@ -2083,6 +2095,127 @@ func slot_info(key: String) -> Dictionary:
 				d["name"] = "Charge"
 	return d
 
+# ---------------------------------------------------------------- paralysis genjutsu (Uchiha)
+## Tap C in the Uchiha form: the target is caught in your genjutsu. A player is pulled into the
+## genjutsu world (their body stays standing, paralysed, where it was - you can keep hitting it)
+## and loses 1-10 HP every half second until they die or you tap C again. An enemy is frozen in
+## place and takes the same damage. Breaks if you leave the form or get too far away.
+const GEN_TICK := 0.5
+const GEN_RANGE := 25.0
+var in_genjutsu := false          # (victim) you're in someone's genjutsu
+var gen_anchor := Vector3.INF     # (victim) where your body stands in the real world (others see it here)
+var gen_anchor_yaw := 0.0
+var _gen_world: GenjutsuWorld
+var _gen_tint: CanvasLayer
+var _gen_from := 0                # (victim) the caster's peer
+var _gen_t := 0.0
+var _gen_life := 0.0
+var _gen_target = null            # (caster) who's in your genjutsu (untyped: may be freed)
+
+func _genjutsu_toggle() -> void:
+	if _gen_target != null:
+		_genjutsu_release()
+		_toast("Genjutsu released")
+		return
+	var t = lock_target if _alive(lock_target) and lock_target.global_position.distance_to(global_position) <= GEN_RANGE else _nearest_foe(GEN_RANGE)
+	if t == null:
+		_toast("No one to catch in your genjutsu")
+		return
+	_gen_target = t
+	_gen_t = 0.0
+	SharinganFx.glare(get_parent() as Node3D, global_position, 4.0)
+	SharinganFx.glare(get_parent() as Node3D, (t as Node3D).global_position, 3.0)
+	Sfx.play(self, "power", -2.0)
+	var peer := _peer_of(t)
+	if peer > 0:
+		NetworkSession.send_genjutsu(peer, true)
+		_toast("Genjutsu! They're trapped - hit their body, tap C to release")
+	else:
+		_toast("Genjutsu! Tap C to release")
+
+func _genjutsu_release() -> void:
+	if _gen_target == null:
+		return
+	var peer := _peer_of(_gen_target) if is_instance_valid(_gen_target) else int(get_meta("gen_peer", 0))
+	if peer > 0:
+		NetworkSession.send_genjutsu(peer, false)
+	if is_instance_valid(_gen_target) and _gen_target is Enemy:
+		(_gen_target as Enemy).stun = 0.0
+	_gen_target = null
+
+## Caster upkeep (enemy victims) + victim damage over time.
+func _genjutsu_tick(delta: float) -> void:
+	if _gen_target != null:
+		var ok: bool = _alive(_gen_target) and powered and not is_dead \
+			and (_gen_target as Node3D).global_position.distance_to(global_position) < GEN_RANGE * 1.6
+		if not ok:
+			_genjutsu_release()
+		elif _gen_target is Enemy:   # enemies: frozen + the same 1-10 every half second
+			(_gen_target as Enemy).stun = maxf((_gen_target as Enemy).stun, 0.6)
+			_gen_t += delta
+			if _gen_t >= GEN_TICK:
+				_gen_t -= GEN_TICK
+				_hit_foe(_gen_target, float(randi_range(1, 10)), Vector3.ZERO)
+		if _gen_target != null and _peer_of(_gen_target) > 0:
+			set_meta("gen_peer", _peer_of(_gen_target))
+	if in_genjutsu and not is_dead:
+		_gen_t += delta
+		_gen_life += delta
+		if _gen_t >= GEN_TICK:
+			_gen_t -= GEN_TICK
+			var dmg := float(randi_range(1, 10))
+			invuln = 0.0
+			take_damage(dmg)
+		if _gen_life > 90.0 or not NetworkSession.is_active() or not NetworkSession._known_players.has(_gen_from):
+			_genjutsu_exit()   # (safety: caster left)
+
+## (victim) pulled into the genjutsu by `caster`.
+func genjutsu_enter(caster: int) -> void:
+	if in_genjutsu or is_dead:
+		return
+	in_genjutsu = true
+	_gen_from = caster
+	_gen_t = 0.0
+	_gen_life = 0.0
+	gen_anchor = global_position
+	gen_anchor_yaw = model.rotation.y if model != null else 0.0
+	if wall_walking:
+		_end_wall_walk(Vector3.ZERO)
+	_gen_world = GenjutsuWorld.build(get_parent() as Node3D, NetworkSession._known_appearances.get(caster, {}))
+	global_position = _gen_world.victim_spot()
+	if model != null:
+		model.rotation.y = 0.0   # facing the caster
+	Hero.play(model, "idle", true)
+	_gen_tint = CanvasLayer.new()   # red-tinted vision
+	_gen_tint.layer = 40
+	var r := ColorRect.new()
+	r.color = Color(0.6, 0.0, 0.0, 0.18)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_gen_tint.add_child(r)
+	add_child(_gen_tint)
+	Sfx.play(self, "power", 0.0)
+	_toast("You're caught in a genjutsu!")
+
+## (victim) back to your body in the real world.
+func genjutsu_exit_remote() -> void:
+	_genjutsu_exit()
+
+func _genjutsu_exit() -> void:
+	if not in_genjutsu:
+		return
+	in_genjutsu = false
+	if gen_anchor != Vector3.INF:
+		global_position = gen_anchor
+	gen_anchor = Vector3.INF
+	if is_instance_valid(_gen_world):
+		_gen_world.queue_free()
+	if is_instance_valid(_gen_tint):
+		_gen_tint.queue_free()
+	Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.8, 0.1, 0.1, 0.8), 1.5)
+	if not is_dead:
+		_toast("The genjutsu broke")
+
 var _since_hurt := 99.0   # seconds since you last took damage (natural healing speeds up)
 
 func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := false) -> void:
@@ -2105,6 +2238,7 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := fals
 	Vfx.shake(cam, clampf(amount / 120.0, 0.05, 0.3), 0.3)
 	if health <= 0.0:
 		health = 0.0
+		_genjutsu_exit()   # die in the genjutsu -> your body falls back in the real world
 		_susanoo_off()
 		if wall_walking:
 			_end_wall_walk(Vector3.ZERO)

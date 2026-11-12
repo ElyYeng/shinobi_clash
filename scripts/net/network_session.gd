@@ -192,6 +192,37 @@ func _villager_clock(host_time: float) -> void:
 		lag = enet.get_peer(1).get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME) / 2000.0
 	Villager.sync_clock(host_time + lag)
 
+## Paralysis genjutsu: tell `target` they're in (or out of) your genjutsu.
+func send_genjutsu(target: int, on: bool) -> void:
+	if not is_active():
+		return
+	if multiplayer.is_server():
+		_route_genjutsu(1, target, on)
+	else:
+		_request_genjutsu.rpc_id(1, target, on)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_genjutsu(target: int, on: bool) -> void:
+	if multiplayer.is_server():
+		_route_genjutsu(multiplayer.get_remote_sender_id(), target, on)
+
+func _route_genjutsu(caster: int, target: int, on: bool) -> void:
+	if not _known_players.has(caster) or not _known_players.has(target) or caster == target:
+		return
+	if target == 1:
+		_genjutsu.call(caster, on)
+	else:
+		_genjutsu.rpc_id(target, caster, on)
+
+@rpc("authority", "call_remote", "reliable")
+func _genjutsu(caster: int, on: bool) -> void:
+	if _local_player == null or not is_instance_valid(_local_player):
+		return
+	if on:
+		_local_player.genjutsu_enter(caster)
+	else:
+		_local_player.genjutsu_exit_remote()
+
 ## Villager events everyone sees: "hit" (beaten up), "hold" / "free" (someone is talking to them).
 func broadcast_villager(index: int, kind: String, dir := Vector3.ZERO, finisher := false, dmg := 0.0) -> void:
 	if not is_active():
@@ -254,6 +285,9 @@ func _process(delta: float) -> void:
 			_raid_snapshot.rpc(_raid_boss.global_position, _raid_boss.model.rotation.y, _raid_boss.health, _raid_boss.phase, int(_raid_boss.state), _raid_boss.atk, _raid_boss.atk_t, _raid_boss.atk_len, _raid_boss.slam_pos)
 	var pos := _local_player.global_position
 	var yaw := _local_player.model.rotation.y if _local_player.model != null else 0.0
+	if _local_player.get("in_genjutsu") == true and _local_player.gen_anchor != Vector3.INF:
+		pos = _local_player.gen_anchor   # in a genjutsu: your body stays standing where it was
+		yaw = _local_player.gen_anchor_yaw
 	var look: Vector2 = _local_player.get("look_angles") if _local_player.get("look_angles") != null else Vector2.ZERO
 	# chakra walk: the model's full rotation + where the feet are (zero offset = standing normally)
 	var stick := Vector4.ZERO
