@@ -159,6 +159,7 @@ var el_auto_pick: OptionButton
 var el_auto_btn: Button
 # appearance page
 var look_box: VBoxContainer
+var face_box: VBoxContainer
 var color_targets: HFlowContainer
 var texture_row: HFlowContainer
 var swatch_buttons: Array[Button] = []
@@ -501,6 +502,11 @@ func _build_look_page(page: VBoxContainer) -> void:
 	look_box = VBoxContainer.new()   # one row of choices per model part (filled in _build_look_options)
 	look_box.add_theme_constant_override("separation", 6)
 	page.add_child(look_box)
+	UiStyle.divider(page)
+	UiStyle.label(page, "FACE", 16, INK)
+	face_box = VBoxContainer.new()   # body type + one slider per face shape key (_build_face)
+	face_box.add_theme_constant_override("separation", 4)
+	page.add_child(face_box)
 	UiStyle.divider(page)
 	UiStyle.label(page, "COLOUR  -  pick what to colour", 16, INK)
 	color_targets = HFlowContainer.new()
@@ -1219,7 +1225,77 @@ func _build_look_options() -> void:
 		dd.item_selected.connect(func(n: int): _on_part_chosen(str(cat), str(dd.get_item_metadata(n))))
 	if options.is_empty():
 		UiStyle.label(look_box, "Character model not found - put it in res://assets/character/", 14, Color(0.6, 0.15, 0.1))
+	_build_face()
 	_rebuild_color_targets()
+
+## Face customisation: Male / Female, then a slider for every shape key on the face model.
+## (Placeholder sliders until the face model with shape keys is in.)
+func _build_face() -> void:
+	if face_box == null:
+		return
+	_clear(face_box)
+	var sex_row := HBoxContainer.new()
+	sex_row.add_theme_constant_override("separation", 6)
+	face_box.add_child(sex_row)
+	var group := ButtonGroup.new()
+	for sx in [["male", "Male"], ["female", "Female"]]:
+		var b := _chip(sex_row, str(sx[1]))
+		b.button_group = group
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.set_pressed_no_signal(str(_working.get("sex", "male")) == sx[0])
+		b.pressed.connect(func():
+			_working["sex"] = str(sx[0])
+			_apply_look())
+	var names: Array = Hero.face_shape_names(preview_model)
+	var placeholder := names.is_empty()
+	if placeholder:
+		names = Hero.FACE_PLACEHOLDER
+		UiStyle.label(face_box, "Preview - the face model with shape keys isn't in yet", 12, Color(0.55, 0.4, 0.25))
+	if not (_working.get("face") is Dictionary):
+		_working["face"] = {}
+	var face: Dictionary = _working["face"]
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 2)
+	face_box.add_child(grid)
+	for n in names:
+		var cell := HBoxContainer.new()
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(cell)
+		var l := UiStyle.label(cell, str(n).replace("_", " ").capitalize(), 12, UiStyle.BODY_TEXT)
+		l.custom_minimum_size = Vector2(100, 0)
+		var sl := HSlider.new()
+		sl.min_value = 0.0
+		sl.max_value = 1.0
+		sl.step = 0.01
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sl.value = float(face.get(n, 0.0))
+		sl.editable = not placeholder
+		sl.value_changed.connect(func(v: float):
+			(_working["face"] as Dictionary)[str(n)] = v
+			_apply_look())
+		cell.add_child(sl)
+	var acts := HBoxContainer.new()
+	acts.add_theme_constant_override("separation", 6)
+	face_box.add_child(acts)
+	var rnd := _chip(acts, "Random face")
+	rnd.toggle_mode = false
+	rnd.disabled = placeholder
+	rnd.pressed.connect(func():
+		var f := {}
+		for n in Hero.face_shape_names(preview_model):
+			f[n] = snappedf(randf() * 0.8, 0.01)
+		_working["face"] = f
+		_apply_look()
+		_build_face())
+	var rst := _chip(acts, "Reset face")
+	rst.toggle_mode = false
+	rst.pressed.connect(func():
+		_working["face"] = {}
+		_apply_look()
+		_build_face())
 
 func _rebuild_color_targets() -> void:
 	_clear(color_targets)

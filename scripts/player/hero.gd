@@ -206,7 +206,67 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 			var tname := str(raw.get(tkey, "")).strip_edges()
 			if tname == "" or (tname.get_file() == tname and tname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"]):
 				safe[tkey] = tname
+	# face customisation: body type + shape-key values {name: 0..1}
+	safe["sex"] = "female" if str(raw.get("sex", "male")) == "female" else "male"
+	var face := {}
+	var rf = raw.get("face", {})
+	if rf is Dictionary:
+		for k in rf:
+			if face.size() >= 64:
+				break
+			var n := str(k).strip_edges().left(48)
+			if n != "" and (rf[k] is float or rf[k] is int):
+				face[n] = clampf(float(rf[k]), 0.0, 1.0)
+	safe["face"] = face
 	return safe
+
+## ---------------------------------------------------------------- face customisation
+## The face is sculpted with shape keys (Blender -> glTF morph targets -> Godot blend shapes).
+## appearance["face"] = {shape key name: 0..1}; appearance["sex"] = "male" / "female".
+## The sliders list the model's own shape keys; until the face model is in, FACE_PLACEHOLDER
+## shows the planned ones (they do nothing yet). Keys named "female" / "male" (any case) are
+## driven by the sex choice instead of a slider.
+const FACE_PLACEHOLDER := ["Face Length", "Face Width", "Jaw Width", "Chin Length", "Cheekbones",
+	"Eye Size", "Eye Tilt", "Eye Distance", "Brow Height", "Nose Size", "Nose Length",
+	"Nose Bridge", "Mouth Width", "Lip Size", "Ear Size"]
+const SEX_KEYS := ["female", "male", "sex", "gender"]
+
+## Every shape key on the character's meshes (the face sculpt keys), sex keys left out.
+static func face_shape_names(model: Node3D) -> Array:
+	var out: Array = []
+	if model == null:
+		return out
+	for mi in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (mi as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		for i in mesh.get_blend_shape_count():
+			var n := str(mesh.get_blend_shape_name(i))
+			if not out.has(n) and not SEX_KEYS.has(n.to_lower()):
+				out.append(n)
+	return out
+
+## Applies the face shape keys and the sex key(s) to every mesh that has them.
+static func apply_face(model: Node3D, look: Dictionary) -> void:
+	if model == null:
+		return
+	var face: Dictionary = look.get("face", {})
+	var female := str(look.get("sex", "male")) == "female"
+	for node in model.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
+			continue
+		for i in mi.mesh.get_blend_shape_count():
+			var n := str(mi.mesh.get_blend_shape_name(i))
+			var low := n.to_lower()
+			var v := 0.0
+			if low == "female":
+				v = 1.0 if female else 0.0
+			elif low == "male":
+				v = 0.0 if female else 1.0
+			else:
+				v = float(face.get(n, 0.0))
+			mi.set_blend_shape_value(i, v)
 
 
 ## "Shirt_1", "shirt1", "shirts1", "spiky" ... -> canonical mesh id ("shirt1", "hair2").
@@ -293,6 +353,7 @@ static func _apply_appearance_impl(model: Node3D, appearance: Dictionary = {}) -
 	if model == null or not model.has_meta("hero_parts"):
 		return
 	var look := sanitize_appearance(appearance if not appearance.is_empty() else GameData.character_appearance)
+	apply_face(model, look)
 	var parts: Dictionary = model.get_meta("hero_parts")
 	for cat in CATEGORIES:
 		var entries: Array = parts.get(cat, [])
