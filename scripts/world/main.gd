@@ -458,7 +458,7 @@ func _talk_villager(i: int) -> void:
 	if Errands.offers(i):
 		var qid := Errands.id_for(i)
 		var q := Quests.def(qid)
-		var txt := "%s\n\n[Quest: %s   Reward: %s]" % [q["offer"], q["title"], Quests.reward_text(q)]
+		var txt := "%s\n\n[Quest: %s   Recommended Lv %d   Reward: %s]" % [q["offer"], q["title"], Quests.rec_level(q), Quests.reward_text(q)]
 		dialog.open(nm, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
 	else:
 		dialog.open(nm, VILLAGER_LINES[(i + GameData.errands_done) % VILLAGER_LINES.size()], [["Goodbye", none]])
@@ -486,7 +486,7 @@ func _talk(npc: Npc) -> void:
 	var qid := quests.available_for(id)
 	if qid != "":
 		var q: Dictionary = Quests.DEFS[qid]
-		var txt := "%s\n\n[Quest: %s   Reward: %s]" % [q["offer"], q["title"], Quests.reward_text(q)]
+		var txt := "%s\n\n[Quest: %s   Recommended Lv %d   Reward: %s]" % [q["offer"], q["title"], Quests.rec_level(q), Quests.reward_text(q)]
 		dialog.open(npc.display_name, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
 	else:
 		dialog.open(npc.display_name, npc.greeting + "\n\n(I have no more work for you right now.)", [["Goodbye", none]])

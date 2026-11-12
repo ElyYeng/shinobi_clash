@@ -98,6 +98,21 @@ static func _files(dir: String) -> Array[String]:
 	return out
 
 ## "+2 levels, +1 spin" for dialog buttons.
+## Recommended shinobi level: the quest's own minimum, else worked out from its enemies'
+## health (the level quests scale 16 HP per level), at least 1.
+static func rec_level(d: Dictionary) -> int:
+	var lv := int(d.get("min_level", 0))
+	if lv > 0:
+		return lv
+	var hp := 0.0
+	for st in d.get("steps", []):
+		var mult := 3.0 if str(st.get("type", "")) == "hunt" else 1.0
+		if str(st.get("type", "")) in ["kill", "hunt", "survive"]:
+			hp = maxf(hp, float(st.get("enemy_health", 0.0)) / mult)
+	if str(d.get("type", "")) == "kurama":
+		return 20
+	return maxi(1, int(round((hp - 45.0) / 16.0)))
+
 static func reward_text(d: Dictionary) -> String:
 	var parts: Array[String] = []
 	if int(d["levels"]) > 0:
@@ -474,7 +489,7 @@ func _refresh_hud() -> void:
 		hud.quest_text = "No active quest\nTalk to villagers with a  !"
 		return
 	var steps: Array = d["steps"]
-	var t := "QUEST: %s" % d["title"]
+	var t := "QUEST: %s  (Lv %d)" % [d["title"], rec_level(d)]
 	if steps.size() > 1 and GameData.quest_state == "active":
 		t += "  (%d/%d)" % [step_index() + 1, steps.size()]
 	t += "\n"

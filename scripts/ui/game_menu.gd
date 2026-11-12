@@ -16,7 +16,7 @@ const BTN := Color(0.22, 0.62, 0.12)
 const BODY_TEXT := Color(0.16, 0.1, 0.05)
 const SCROLL_SIZE := Vector2(900, 580)
 const TABS := ["Stats", "Ninja Tools", "Element", "Bloodline", "Sub-Ability", "Companions",
-	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party"]
+	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party", "Leaderboard"]
 const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight", "uchiha": "Uchiha Boss Fight"}
 const MODE_ORDER := ["fight", "world", "kurama", "uchiha"]
 
@@ -313,8 +313,8 @@ func _ready() -> void:
 	# tabs
 	for i in TABS.size():
 		var t := BrushTab.new()
-		t.setup(TABS[i], 205.0, 31.0, 0.0 if i % 2 == 0 else 26.0)
-		t.position = Vector2(34, 158 + i * 32)
+		t.setup(TABS[i], 205.0, 28.0, 0.0 if i % 2 == 0 else 26.0)
+		t.position = Vector2(34, 158 + i * 30)   # (13 tabs fit down to the frame)
 		t.pressed.connect(_select_tab.bind(i))
 		scroll.add_child(t)
 		tab_nodes.append(t)
@@ -815,6 +815,7 @@ func _build_items(i: int) -> Array:
 		"Customs": return _page_customs()
 		"Controls": return _page_controls()
 		"Party": return _page_party()
+		"Leaderboard": return _page_leaderboard()
 	return []
 
 const STAT_INFO := {
@@ -824,6 +825,28 @@ const STAT_INFO := {
 	"stamina": ["Stamina", "+%d max stamina per point", Color(0.95, 0.5, 0.1), "S"],
 	"bloodline": ["Bloodline", "+%d%% bloodline ability damage per point", Color(0.9, 0.1, 0.15), "B"],
 }
+
+## Everyone in the session ranked by level (single player: just you).
+func _page_leaderboard() -> Array:
+	var rows: Array = []
+	var my_id := multiplayer.get_unique_id() if NetworkSession.is_active() else 1
+	if NetworkSession.is_active():
+		for id in NetworkSession._known_players:
+			var lv := GameData.level if int(id) == my_id else int(NetworkSession._known_levels.get(id, 1))
+			rows.append({"id": int(id), "name": NetworkSession.name_with_clan(int(id)), "lv": lv})
+	else:
+		rows.append({"id": 1, "name": NetworkSession.player_name, "lv": GameData.level})
+	rows.sort_custom(func(a, b) -> bool:
+		return int(a["lv"]) > int(b["lv"]) if int(a["lv"]) != int(b["lv"]) else str(a["name"]) < str(b["name"]))
+	var out: Array = []
+	var medals := [Color(1.0, 0.8, 0.2), Color(0.78, 0.8, 0.85), Color(0.8, 0.5, 0.25)]
+	for i in rows.size():
+		var r: Dictionary = rows[i]
+		var me := int(r["id"]) == my_id
+		var col: Color = medals[i] if i < 3 else Color(0.35, 0.55, 0.8)
+		out.append(_item("#%d  %s%s" % [i + 1, r["name"], "  (you)" if me else ""], "Level %d" % int(r["lv"]), col,
+			str(i + 1), "%s is level %d.%s" % [r["name"], int(r["lv"]), "" if NetworkSession.is_active() else "\nHost or join a game to see other players here."]))
+	return out
 
 func _page_party() -> Array:
 	if not NetworkSession.is_active():
