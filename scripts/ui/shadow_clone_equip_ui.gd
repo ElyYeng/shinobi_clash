@@ -131,7 +131,7 @@ func _open_picker() -> void:
 	_refresh_current_binding()
 	_root.visible = true
 	_is_open = true
-	get_tree().paused = true
+	UiPause.set_open(self, true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _close_picker() -> void:
@@ -139,7 +139,7 @@ func _close_picker() -> void:
 		return
 	_root.visible = false
 	_is_open = false
-	get_tree().paused = false
+	UiPause.set_open(self, false)
 	var player := get_tree().get_first_node_in_group("player") as Player
 	if player != null and not player.is_dead:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED

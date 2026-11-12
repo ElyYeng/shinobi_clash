@@ -507,7 +507,7 @@ func open() -> void:
 		return
 	is_open = true
 	root.visible = true
-	get_tree().paused = true
+	UiPause.set_open(self, true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var vp := get_viewport().get_visible_rect().size
 	var s := minf(1.0, minf(vp.x / (SCROLL_SIZE.x + 20.0), vp.y / (SCROLL_SIZE.y + 20.0)))
@@ -520,7 +520,7 @@ func close() -> void:
 		return
 	is_open = false
 	root.visible = false
-	get_tree().paused = false
+	UiPause.set_open(self, false)
 	if p != null and not p.is_dead:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -1472,7 +1472,7 @@ func _page_controls() -> Array:
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
 			"Hold C: charge chakra - keep holding to power up or release a form (bloodline LV 1000, drains MD)\nX: power-up on / off\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
 		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
-			"M: this menu\nVoice chat (multiplayer): just talk - nearby players hear you. K: mute / unmute your mic\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
+			"M: this menu\nF2: photo mode (free camera, poses, Enter = take photo)\nVoice chat (multiplayer): just talk - nearby players hear you. K: mute / unmute your mic\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]
 
 # ------------------------------------------------------------------ actions
@@ -1523,7 +1523,7 @@ func _quest_target() -> Vector3:
 	return pos + Vector3(0, 1, 3)
 
 func _to_title() -> void:
-	get_tree().paused = false
+	UiPause.reset(self)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if NetworkSession.is_active():
 		NetworkSession.disconnect_session()
@@ -1531,7 +1531,7 @@ func _to_title() -> void:
 
 func _switch_mode(mode: String) -> void:
 	GameData.mode = mode
-	get_tree().paused = false
+	UiPause.reset(self)
 	get_tree().reload_current_scene()
 
 func _toggle_god() -> void:

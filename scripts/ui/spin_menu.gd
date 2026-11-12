@@ -988,7 +988,7 @@ func toggle() -> void:
 	if spinning or auto_running:
 		return
 	root.visible = not root.visible
-	get_tree().paused = root.visible
+	UiPause.set_open(self, root.visible)
 	odds_panel.visible = false
 	confirm_slot = -1
 	if root.visible:

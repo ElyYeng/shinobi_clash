@@ -47,6 +47,7 @@ var _pending_quest_enemy_identities: Dictionary = {}
 func _ready() -> void:
 	var vc := VoiceChat.new()   # proximity push-to-talk (hold K)
 	vc.name = "VoiceChat"
+	vc.process_mode = Node.PROCESS_MODE_ALWAYS   # keeps talking through menus / cutscenes
 	add_child(vc)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.connection_failed.connect(_on_connection_failed)

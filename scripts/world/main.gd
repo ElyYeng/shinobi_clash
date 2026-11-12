@@ -64,6 +64,13 @@ func _ready() -> void:
 	elif _is_pvp_arena():
 		_start_arena()
 
+## F2: photo mode (not while a menu has the mouse).
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_F2 \
+			and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and player != null:
+		PhotoMode.toggle(self, player, hud)
+		get_viewport().set_input_as_handled()
+
 func _process(delta: float) -> void:
 	var over := player.is_dead or (_boss_mode() and hud.victory)
 	if over and Input.is_action_just_pressed("restart"):

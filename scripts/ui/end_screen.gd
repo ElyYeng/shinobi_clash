@@ -122,7 +122,7 @@ func hide_end() -> void:
 	visible = false
 
 func _to_title() -> void:
-	get_tree().paused = false
+	UiPause.reset(self)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if NetworkSession.is_active():
 		NetworkSession.disconnect_session()

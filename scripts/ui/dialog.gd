@@ -64,7 +64,7 @@ func open(who: String, text: String, options: Array) -> void:
 		box.add_child(b)
 	root.visible = true
 	is_open = true
-	get_tree().paused = true
+	UiPause.set_open(self, true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if box.get_child_count() > 0:
 		(box.get_child(0) as Button).grab_focus()
@@ -77,7 +77,7 @@ func _choose(cb: Callable) -> void:
 func close() -> void:
 	root.visible = false
 	is_open = false
-	get_tree().paused = false
+	UiPause.set_open(self, false)
 	if p != null and not p.is_dead:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
