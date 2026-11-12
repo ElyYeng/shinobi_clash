@@ -183,7 +183,7 @@ func _toggle_board() -> void:
 		_board.add_theme_stylebox_override("panel", sb)
 		_board.custom_minimum_size = Vector2(300, 0)
 		_board.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		_board.position = Vector2(get_viewport().get_visible_rect().size.x - 320, 70)
+		_board.position = Vector2(get_viewport().get_visible_rect().size.x - 320, 220)   # (below the minimap)
 		add_child(_board)
 		var v := VBoxContainer.new()
 		v.add_theme_constant_override("separation", 4)
@@ -243,8 +243,23 @@ func _fill_board() -> void:
 		n.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
 		_board_list.add_child(n)
 
+var minimap: Minimap
+
 func bind(player: Player) -> void:
 	p = player
+	if minimap == null and player != null:   # round minimap, top-right
+		minimap = Minimap.new()
+		minimap.player = player
+		minimap.world = player.get_parent() as Node3D
+		var ph = player.get_parent().get("play_half")
+		if ph != null:
+			minimap.half = float(ph)
+		minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		minimap.position = Vector2(get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0, 16.0)
+		add_child(minimap)
+		get_viewport().size_changed.connect(func() -> void:
+			if is_instance_valid(minimap):
+				minimap.position.x = get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0)
 
 func toast(text: String) -> void:
 	text = Fx.keyfix(text)
