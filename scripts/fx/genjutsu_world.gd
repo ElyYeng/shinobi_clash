@@ -32,6 +32,15 @@ static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := V
 	if not is_master and not caster_look.is_empty():
 		g._add_caster(caster_look)
 	g._go_dark(world)
+	var gm := g.get_node_or_null("GenjutsuMap")   # (the Blender scene: mountains, dead trees, water)
+	if gm != null:
+		for mi: MeshInstance3D in gm.find_children("*", "MeshInstance3D", true, false):
+			if mi.mesh == null or str(mi.name).begins_with("Water"):
+				continue
+			for i in mi.mesh.get_surface_count():   # hard anime shading like everything else
+				var m := mi.get_active_material(i)
+				if m != null:
+					mi.set_surface_override_material(i, CharToon.material_for(m))
 	return g
 
 func _add_caster(look: Dictionary) -> void:
