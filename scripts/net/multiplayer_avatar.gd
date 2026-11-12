@@ -43,6 +43,7 @@ func _ready() -> void:
 		var hue := fposmod(float(peer_id) * 0.173, 1.0)
 		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
 	add_child(model)
+	EyeLook.attach(model, "camera")   # their eyes follow you when you're in front of them
 	name_tag = Label3D.new()
 	name_tag.text = _tag_text()
 	name_tag.position = Vector3(0, 2.4, 0)
@@ -194,6 +195,7 @@ func reset_network_ragdoll(position: Vector3, yaw: float) -> void:
 		var hue := fposmod(float(peer_id) * 0.173, 1.0)
 		model = Fx.make_ninja(Color.from_hsv(hue, 0.7, 0.95), Color(0.12, 0.16, 0.24))
 	add_child(model)
+	EyeLook.attach(model, "camera")   # their eyes follow you when you're in front of them
 	model.rotation.y = yaw
 	model.scale = Vector3.ONE
 

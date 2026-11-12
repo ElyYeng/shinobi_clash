@@ -98,7 +98,7 @@ func _ready() -> void:
 	if model == null:
 		model = Fx.make_ninja(Color(0.95, 0.5, 0.1), Color(0.15, 0.3, 0.8))
 	add_child(model)
-	EyeLook.attach(model, "aim")   # the irises follow where the camera points
+	EyeLook.attach(model, "camera")   # the irises follow the camera (you see it when you look at your face)
 	arm = model.get_node_or_null("Arm")
 	aura = OmniLight3D.new()
 	aura.position.y = 1.0

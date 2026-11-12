@@ -1,8 +1,8 @@
 class_name EyeLook
 extends Node
-## Moves the irises toward where the character is looking, by sliding the eye texture (the rig
-## has no eye bones). mode "aim": where the camera points (your own character), "camera": at the
-## camera (the Customize preview). Added as a child of a Hero model.
+## Moves the irises by sliding the eye texture (the rig has no eye bones). mode "camera": the
+## eyes follow the camera (your character, other players, the Customize preview) - only when the
+## camera is in front of the face; "aim": toward where the camera points. Added to a Hero model.
 
 const MAX_OFFSET := 0.11    # how far the iris can slide (UV units)
 
