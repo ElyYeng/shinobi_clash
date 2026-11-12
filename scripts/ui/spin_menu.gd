@@ -922,6 +922,7 @@ func _replace_preview_model() -> void:
 	preview_model.position = Vector3.ZERO
 	preview_model.rotation.y = _yaw
 	preview_viewport.add_child(preview_model)
+	EyeLook.attach(preview_model, "camera")   # the preview looks at you
 	if preview_model.has_meta("anim_player"):
 		Hero.play(preview_model, "idle", true)
 	if color_targets != null:

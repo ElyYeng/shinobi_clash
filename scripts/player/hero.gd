@@ -1041,6 +1041,45 @@ static func _set_eyes_impl(model: Node3D, eye_tex: Texture2D, side := "") -> voi
 			m.emission_energy_multiplier = EYE_GLOW if glow != null else EYE_GLOW_FULL
 			mi.set_surface_override_material(surface, m)
 
+## Slides both irises by `off` (UV) - EyeLook uses it to make the eyes follow the view.
+## Works on whatever eye material is on (normal, tinted, Sharingan...); the textures are clamped
+## so the white of the eye fills in at the edge.
+static func set_eye_offset(model: Node3D, off: Vector2) -> void:
+	if model == null or not model.has_meta("hero_extra"):
+		return
+	var face = (model.get_meta("hero_extra") as Dictionary).get("face")
+	if face == null or not is_instance_valid(face):
+		return
+	var mi := face as MeshInstance3D
+	for surface in mi.mesh.get_surface_count():
+		var base := mi.mesh.surface_get_material(surface)
+		if base == null:
+			continue
+		var nm := base.resource_name.to_lower()
+		var tp := ""
+		if base is BaseMaterial3D and (base as BaseMaterial3D).albedo_texture != null:
+			tp = (base as BaseMaterial3D).albedo_texture.resource_path.to_lower()
+		if nm.contains("brow") or not (nm.ends_with("eye") or tp.contains("eye_bc")):
+			continue
+		var m := mi.get_surface_override_material(surface) as BaseMaterial3D
+		if m == null:
+			if not (base is BaseMaterial3D):
+				continue
+			m = (base as BaseMaterial3D).duplicate() as BaseMaterial3D
+			mi.set_surface_override_material(surface, m)
+		m.texture_repeat = false
+		m.uv1_offset = Vector3(off.x, off.y, 0.0)
+
+## The head bone's world basis (for looking around), or the model's if there's no head bone.
+static func head_basis(model: Node3D) -> Basis:
+	var sks := model.find_children("*", "Skeleton3D", true, false)
+	if not sks.is_empty():
+		var sk := sks[0] as Skeleton3D
+		var hb := sk.find_bone("mixamorig_Head")
+		if hb >= 0:
+			return (sk.global_transform * sk.get_bone_global_pose(hb)).basis.orthonormalized()
+	return model.global_basis.orthonormalized()
+
 ## World position of the eyes (for close-ups): 30% of the way from the head bone to the head top.
 static func eyes_position(model: Node3D) -> Vector3:
 	var head := head_position(model)
