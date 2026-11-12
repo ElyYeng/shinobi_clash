@@ -18,7 +18,7 @@ var source_player: Player
 var visual_kind := ""
 var visual_root: Node3D
 var visual_model: Node3D
-const MYTHIC := ["dust", "orb", "bone"]
+const MYTHIC := ["dust", "orb", "bone", "susanoo_arrow"]
 
 func _ready() -> void:
 	var col := CollisionShape3D.new()
@@ -33,7 +33,8 @@ func _ready() -> void:
 			"dust": MythicFx.build_dust_cube(self, size)
 			"orb": MythicFx.build_orb(self, size)
 			"bone": MythicFx.build_bone(self, size)
-		if visual_kind != "dust":
+			"susanoo_arrow": SharinganFx.build_susanoo_arrow(self, size)
+		if visual_kind != "dust" and visual_kind != "susanoo_arrow":
 			Vfx.trail(self, Color(0.15, 0.12, 0.2) if visual_kind == "orb" else Color(0.95, 0.93, 0.85), size * (0.9 if visual_kind == "orb" else 0.3), 18, 0.25)
 		if velocity.length() > 0.01:
 			look_at(global_position + velocity)
@@ -195,6 +196,9 @@ func _explode() -> void:
 		VfxKit.hit(get_parent(), global_position, Color(1.0, 0.55, 0.15), 1.4)
 	elif visual_kind == "dust" and get_parent() != null:
 		MythicFx.dust_impact(get_parent(), global_position, maxf(aoe, 2.0))
+	elif visual_kind == "susanoo_arrow" and get_parent() != null:
+		Vfx.shockwave(get_parent(), global_position, Color(0.62, 0.35, 1.0), maxf(aoe * 1.5, 2.0), 0.35)
+		Fx.puff(get_parent(), global_position, Color(0.6, 0.4, 1.0, 0.8), maxf(aoe * 1.5, 1.5))
 	elif visual_kind == "orb" and get_parent() != null:
 		Fx.puff(get_parent(), global_position, Color(0.1, 0.08, 0.14, 0.9), maxf(aoe * 2.0, 1.0))
 		Vfx.shockwave(get_parent(), global_position, Color(0.35, 0.25, 0.5), maxf(aoe, 1.5), 0.3)

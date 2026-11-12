@@ -373,10 +373,16 @@ func _bl_release(a: Dictionary, dir: Vector3, dist: float, target_peer_id: int) 
 					to.y = 0.0
 					if to.length() <= float(a["r"]) and (kind != "cone" or to.normalized().dot(dir) > float(a["dot"])):
 						hurt_peer(int(peer_id), dmg, to.normalized() * float(a["knock"]))
-		"target", "shrink":
+		"target", "shrink", "amaterasu":
 			Vfx.burst(get_parent(), global_position + Vector3.UP, col, 30, 7.0, 0.3, 0.7)
 			if dist <= float(a["r"]) and dmg > 0.0:
 				hurt_peer(target_peer_id, dmg, dir * float(a["knock"]))
+				if kind == "amaterasu":   # the player burns for a while (AmaterasuBurn.PLAYER_TIME)
+					var body: Node3D = get_tree().get_first_node_in_group("player") if target_peer_id == 1 else NetworkSession._avatars.get(target_peer_id)
+					var tick := float(a["burn"]) * NPC_DMG * _bl_dmg_mult()
+					AmaterasuBurn.ignite(body, func(_t: Node3D) -> void:
+						if is_instance_valid(self):
+							hurt_peer(target_peer_id, tick, Vector3.ZERO))
 		"dash":
 			bl_dash_t = 0.25
 			bl_dash_dir = dir

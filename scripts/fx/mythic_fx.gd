@@ -81,8 +81,29 @@ static func play(kind: String, world: Node3D, a: Vector3, b: Vector3, f: float) 
 		"shinra": shinra_tensei(world, a, f)
 		"bansho": bansho_tenin(world, a, f)
 		"chibaku": chibaku_tensei(world, b)
+		"glare": SharinganFx.glare(world, a, f)
+		"amaterasu":   # (remote view) the flames on whoever stands at `b`
+			var body := nearest_body(world, b, 3.0)
+			if body != null:
+				AmaterasuBurn.ignite(body)
 		_: return false
 	return true
+
+## The enemy / player / avatar closest to `p` (within `max_d`), to attach effects to remotely.
+static func nearest_body(world: Node3D, p: Vector3, max_d: float) -> Node3D:
+	var best: Node3D = null
+	var bd := max_d
+	var pool: Array = world.get_tree().get_nodes_in_group("enemies")
+	pool.append_array(world.get_tree().get_nodes_in_group("player"))
+	for av in NetworkSession._avatars.values():
+		pool.append(av)
+	for n in pool:
+		if n is Node3D and is_instance_valid(n):
+			var d := (n as Node3D).global_position.distance_to(p)
+			if d < bd:
+				bd = d
+				best = n
+	return best
 
 # --- Dust Release -----------------------------------------------------------------------------
 

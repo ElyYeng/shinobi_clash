@@ -1276,7 +1276,7 @@ func _use_move(id: String) -> void:
 		return
 	var kind := str(a["kind"])
 	var target: Node3D = null
-	if kind == "target" or kind == "shrink":
+	if kind == "target" or kind == "shrink" or kind == "amaterasu":
 		target = lock_target if _alive(lock_target) \
 			and lock_target.global_position.distance_to(global_position) <= float(a["r"]) else _nearest_foe(float(a["r"]))
 		if target == null:
@@ -1294,7 +1294,7 @@ func _use_move(id: String) -> void:
 	if kind != "custom":
 		Sfx.play(self, "power", -3.0)
 	var vfx := str(a.get("vfx", ""))
-	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target"):   # Mythic signature effect
+	if vfx != "" and (kind == "burst" or kind == "cone" or kind == "target" or kind == "buff"):   # Mythic signature effect
 		var fb: Vector3 = target.global_position if kind == "target" and target != null else facing
 		_kokugan(vfx, global_position, fb, float(a["r"]), Callable())
 	match kind:
@@ -1327,6 +1327,14 @@ func _use_move(id: String) -> void:
 						pierced[e] = true
 						_stun(e, rstun)
 						_hit_foe(e, dmg, Vector3.UP * 6.0))
+		"amaterasu":   # black flames on the target, burning until it dies
+			_stun(target, float(a["stun"]))
+			_hit_foe(target, dmg, Vector3.ZERO)
+			var burn := float(a["burn"]) * _dmg() * mult
+			AmaterasuBurn.ignite(target, func(t: Node3D) -> void:
+				_hit_foe(t, burn, Vector3.ZERO))
+			if NetworkSession.is_active():
+				NetworkSession.broadcast_world_fx("amaterasu", global_position, target.global_position, 0.0)
 		"shrink":   # Sukunahikona: a tiny rod that grows huge inside the target
 			var sstun := float(a["stun"])
 			var to := target.global_position
