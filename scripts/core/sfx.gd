@@ -30,7 +30,7 @@ const FILES := {
 	"step_walk": ["step_walk", -10.0], "step_run": ["step_run", -8.0],
 	"rasenshuriken": ["rasenshuriken", -4.0],
 	"shinra": ["rinnegan_shinra", -2.0], "bansho": ["rinnegan_bansho", -2.0],
-	"chibaku": ["rinnegan_chibaku", -2.0], "rinnegan": ["rinnegan_eyes", -3.0],
+	"chibaku": ["rinnegan_chibaku", -2.0], "clones": ["clones", -2.0], "rinnegan": ["rinnegan_eyes", -3.0],
 }
 static var _variants := {}   # id -> Array[AudioStream]
 

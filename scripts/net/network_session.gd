@@ -1380,6 +1380,7 @@ func _broadcast_shadow_clones(peer_id: int, summon_id: int, spawn_positions: Arr
 func _spawn_remote_clones(peer_id: int, summon_id: int, spawn_positions: Array[Vector3], lifetime: float) -> void:
 	if peer_id == multiplayer.get_unique_id() or _game_root == null or not is_instance_valid(_game_root):
 		return
+	Sfx.play(_game_root, "clones")
 	for i in spawn_positions.size():
 		var key := "%d:%d:%d" % [peer_id, summon_id, i]
 		if _remote_clones.has(key) and is_instance_valid(_remote_clones[key]):

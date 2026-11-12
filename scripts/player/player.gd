@@ -1167,7 +1167,7 @@ func _fx_fireball(col: Color) -> void:
 		Fx.swing(arm)
 
 func _fx_clones(_col: Color) -> void:
-	Sfx.play(self, "poof")
+	Sfx.play(self, "clones")
 	var side := Basis(Vector3.UP, yaw) * Vector3.RIGHT
 	var spawned_clones: Array[Clone] = []
 	for i in clone_count:
