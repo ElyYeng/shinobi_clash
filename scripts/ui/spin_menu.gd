@@ -918,6 +918,8 @@ func _replace_preview_model() -> void:
 	preview_viewport.add_child(preview_model)
 	if preview_model.has_meta("anim_player"):
 		Hero.play(preview_model, "idle", true)
+	if color_targets != null:
+		_rebuild_color_targets()   # some targets depend on the model (e.g. the colourable cloak)
 
 func _update_camera(delta: float) -> void:
 	var want := 1.0 if _face_view else 0.0
@@ -1312,7 +1314,7 @@ func _apply_look() -> void:
 func _on_part_chosen(cat: String, id: String) -> void:
 	_working[Hero.CATEGORIES[cat]["key"]] = id
 	_apply_look()
-	if cat == "hair":
+	if cat == "hair" or cat == "shirt":   # headband / colourable cloak targets come and go
 		_rebuild_color_targets()
 
 func _apply_color(color: Color) -> void:
