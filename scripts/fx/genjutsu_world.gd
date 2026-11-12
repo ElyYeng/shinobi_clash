@@ -10,6 +10,8 @@ const SCENE := "res://maps/genjutsu_world.tscn"
 const ORIGIN := Vector3(0, -900, 0)
 
 @export var dark: Environment   ## the look while inside (the camera's environment)
+@export var silhouette_color := Color(0.085, 0.0, 0.01)   ## mountains, trees, cross
+@export var ground_color := Color(0.06, 0.0, 0.008)       ## the water / floor
 
 var caster_fig: Node3D          # (victim) the caster, walking around in here
 var caster_peer := 0
@@ -32,16 +34,29 @@ static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := V
 	if not is_master and not caster_look.is_empty():
 		g._add_caster(caster_look)
 	g._go_dark(world)
-	var gm := g.get_node_or_null("GenjutsuMap")   # (the Blender scene: mountains, dead trees, water)
-	if gm != null:
-		for mi: MeshInstance3D in gm.find_children("*", "MeshInstance3D", true, false):
-			if mi.mesh == null or str(mi.name).begins_with("Water"):
-				continue
-			for i in mi.mesh.get_surface_count():   # hard anime shading like everything else
-				var m := mi.get_active_material(i)
-				if m != null:
-					mi.set_surface_override_material(i, CharToon.material_for(m))
+	g._silhouettes()
 	return g
+
+## The whole place is flat silhouettes against the red sky (the fog gives the depth). Everything
+## except the sky, the moon and its glow - characters keep their own shading.
+func _silhouettes() -> void:
+	for mi: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null or mi.name in ["Sky", "BloodMoon", "MoonGlow"]:
+			continue
+		var col := ground_color if str(mi.name).begins_with("Water") or mi.get_parent().name == "Floor" else silhouette_color
+		for i in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(i) as BaseMaterial3D
+			var m := StandardMaterial3D.new()
+			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			m.albedo_color = col
+			m.cull_mode = BaseMaterial3D.CULL_DISABLED
+			if src != null and src.albedo_texture != null and src.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+				m.albedo_texture = src.albedo_texture   # (the trees: keep the cut-out shape)
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+				m.alpha_scissor_threshold = 0.4
+			mi.set_surface_override_material(i, m)
+		mi.material_override = null
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 func _add_caster(look: Dictionary) -> void:
 	var c := Hero.create(look)
@@ -61,7 +76,7 @@ func _add_caster(look: Dictionary) -> void:
 ## Inside, the camera uses the genjutsu's own dark environment and the real sun is switched off.
 func _go_dark(world: Node3D) -> void:
 	_world = world
-	for l in world.find_children("*", "DirectionalLight3D", true, false):
+	for l in world.get_tree().root.find_children("*", "DirectionalLight3D", true, false):
 		if not is_ancestor_of(l) and (l as Light3D).visible and not l.has_meta("gen_hidden"):
 			(l as Light3D).visible = false
 			l.set_meta("gen_hidden", true)   # (marked: whoever leaves last turns it back on)
@@ -85,15 +100,33 @@ static func restore_world(world: Node, leaving: Node = null) -> void:
 	for g in world.find_children("GenjutsuWorld*", "Node3D", true, false):
 		if g != leaving and g is GenjutsuWorld and not g.is_queued_for_deletion():
 			return   # still inside another one
-	for l in world.find_children("*", "DirectionalLight3D", true, false):
+	var root := world.get_tree().root
+	for l in root.find_children("*", "DirectionalLight3D", true, false):
 		if l.has_meta("gen_hidden"):
 			(l as Light3D).visible = true
 			l.remove_meta("gen_hidden")
-	for c in world.find_children("*", "Camera3D", true, false):
+	for c in root.find_children("*", "Camera3D", true, false):
 		if c.has_meta("gen_env"):
 			var e = c.get_meta("gen_env")
 			(c as Camera3D).environment = e if e is Environment else null
 			c.remove_meta("gen_env")
+
+## Bound to the cross: arms out in a T-pose, no animations until unbound (Hero.play skips it).
+static func bind(model: Node3D) -> void:
+	if model == null or not is_instance_valid(model):
+		return
+	model.set_meta("gen_bound", true)
+	var ap = model.get_meta("anim_player", null)
+	if ap is AnimationPlayer and is_instance_valid(ap):
+		(ap as AnimationPlayer).stop()
+	for sk: Skeleton3D in model.find_children("*", "Skeleton3D", true, false):
+		sk.reset_bone_poses()   # (the rest pose is the T-pose)
+
+static func unbind(model: Node3D) -> void:
+	if model == null or not is_instance_valid(model) or not model.has_meta("gen_bound"):
+		return
+	model.remove_meta("gen_bound")
+	Hero.play(model, "idle", true)
 
 ## Where the victim stands (in front of the cross, facing the caster).
 func victim_spot() -> Vector3:

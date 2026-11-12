@@ -2241,7 +2241,7 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 			Hero.set_damage(fig, (victim as Villager)._hp / 100.0)
 			fig.global_position = _gen_world.victim_spot()
 			fig.rotation = Vector3.ZERO   # (facing the caster)
-			Hero.play(fig, "idle", true)
+			GenjutsuWorld.bind(fig)
 			set_meta("gen_fig", fig)
 	elif victim is Enemy:   # the enemy itself is pulled in (and put back where it stood after)
 		victim.set_meta("gen_home", victim.global_position)
@@ -2250,10 +2250,15 @@ func _gen_master_enter(peer: int, victim: Node3D) -> void:
 		var em = (victim as Enemy).model
 		if em != null:
 			em.rotation.y = 0.0
+			GenjutsuWorld.bind(em)
 		set_meta("gen_victim", victim)
 	elif victim != null and is_instance_valid(victim):   # their body appears bound in here (for you)
 		victim.set_meta("gen_pos", _gen_world.victim_spot())
 		victim.global_position = _gen_world.victim_spot()
+		var am = victim.get("model")
+		if am is Node3D:
+			(am as Node3D).rotation.y = 0.0
+			GenjutsuWorld.bind(am)
 		set_meta("gen_victim", victim)
 
 func _gen_master_exit() -> void:
@@ -2263,6 +2268,9 @@ func _gen_master_exit() -> void:
 	var v = get_meta("gen_victim", null)
 	if v != null and is_instance_valid(v):
 		(v as Node).remove_meta("gen_pos")
+		var vm = (v as Node).get("model")
+		if vm is Node3D:
+			GenjutsuWorld.unbind(vm)
 		if (v as Node).has_meta("gen_home"):   # an enemy: back to where it stood
 			(v as Node3D).global_position = (v as Node).get_meta("gen_home")
 			(v as Node).remove_meta("gen_home")
@@ -2301,7 +2309,7 @@ func genjutsu_enter(caster: int) -> void:
 	global_position = _gen_world.victim_spot()
 	if model != null:
 		model.rotation.y = 0.0   # facing the caster
-	Hero.play(model, "idle", true)
+	GenjutsuWorld.bind(model)   # arms out on the cross
 	_gen_tint = CanvasLayer.new()   # red-tinted vision
 	_gen_tint.layer = 40
 	var r := ColorRect.new()
@@ -2321,6 +2329,7 @@ func _genjutsu_exit() -> void:
 	if not in_genjutsu:
 		return
 	in_genjutsu = false
+	GenjutsuWorld.unbind(model)
 	if gen_anchor != Vector3.INF:
 		global_position = gen_anchor
 	gen_anchor = Vector3.INF

@@ -1779,7 +1779,7 @@ static func stride_speed(model: Node3D, anim: String) -> float:
 
 
 static func play(model: Node3D, state: String, force := false, variant := 0, fit_time := 0.0, blend := 0.15) -> float:
-	if model == null or not model.has_meta("anim_player"):
+	if model == null or not model.has_meta("anim_player") or model.has_meta("gen_bound"):   # (bound to the genjutsu cross)
 		return 0.0
 	var ap := model.get_meta("anim_player") as AnimationPlayer
 	if not is_instance_valid(ap):

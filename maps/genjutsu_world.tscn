@@ -72,7 +72,7 @@ albedo_color = Color(0.12, 0.08, 0.06, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_npm8y"]
 material = SubResource("StandardMaterial3D_vow1u")
-size = Vector3(0.35, 4.2, 0.35)
+size = Vector3(0.35, 2.6, 0.35)
 
 [sub_resource type="BoxMesh" id="BoxMesh_6lvca"]
 material = SubResource("StandardMaterial3D_vow1u")
@@ -384,11 +384,11 @@ material_override = SubResource("StandardMaterial3D_bhbgo")
 mesh = SubResource("PlaneMesh_nt8ib")
 
 [node name="Cross" type="MeshInstance3D" parent="." unique_id=348259697]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 1.2)
 mesh = SubResource("BoxMesh_npm8y")
 
 [node name="Cross2" type="MeshInstance3D" parent="." unique_id=1094526910]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, 1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.72, 1.2)
 mesh = SubResource("BoxMesh_6lvca")
 
 [node name="MoonLight" type="DirectionalLight3D" parent="." unique_id=1363877040]
@@ -539,7 +539,7 @@ transform = Transform3D(-0.966626, 0, -0.2561916, 0, 1, 0, 0.2561916, 0, -0.9666
 mesh = SubResource("CylinderMesh_fkobx")
 
 [node name="VictimSpot" type="Marker3D" parent="." unique_id=715753178]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.88)
 
 [node name="CasterSpot" type="Marker3D" parent="." unique_id=118762816]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -4.5)
