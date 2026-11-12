@@ -440,7 +440,8 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 			om.set_surface_override_material(surface, nm)
 	if not look.has("glow"):
 		return
-	var glow := Color.html(str(look.get("glow", "#E3D79A")))
+	# hair / brows: "hair_glow" if the look has one (to match a power-up outfit), else "glow"
+	var glow := Color.html(str(look.get("hair_glow", look.get("glow", "#E3D79A"))))
 	var under := Color.html(str(look.get("under", "#2B261A")))
 	var energy := float(look.get("energy", 0.5))
 	var flat := bool(look.get("flat", true))
