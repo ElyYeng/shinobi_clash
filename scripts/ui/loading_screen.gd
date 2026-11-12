@@ -66,61 +66,81 @@ func _ready() -> void:
 	sm.shader = sh
 	bg.material = sm
 	_root.add_child(bg)
-	var band := TextureRect.new()   # red brush stroke behind the title
-	band.texture = load(UiStyle.UI + "brush_red.png") if ResourceLoader.exists(UiStyle.UI + "brush_red.png") else null
-	band.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	band.stretch_mode = TextureRect.STRETCH_SCALE
-	band.anchor_left = 0.18
-	band.anchor_right = 0.82
-	band.anchor_top = 0.4
-	band.anchor_bottom = 0.58
-	band.modulate = Color(1, 1, 1, 0.9)
-	_root.add_child(band)
-	var title := _label("SHINOBI CLASH", 60, Color(0.98, 0.94, 0.84))
-	title.anchor_top = 0.4
-	title.anchor_bottom = 0.58
+	# the UI kit's big framed parchment in the middle, ribbon title on top
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", UiStyle.tex_box("frame_big", [70, 60, 70, 64], [90, 80, 90, 70]))
+	frame.anchor_left = 0.5
+	frame.anchor_right = 0.5
+	frame.anchor_top = 0.5
+	frame.anchor_bottom = 0.5
+	frame.offset_left = -360
+	frame.offset_right = 360
+	frame.offset_top = -130
+	frame.offset_bottom = 150
+	_root.add_child(frame)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	frame.add_child(v)
+	_stage = _box_label(v, "Gathering chakra...", 22, Color(0.16, 0.1, 0.06))
+	_bar = ProgressBar.new()
+	_bar.show_percentage = false
+	_bar.custom_minimum_size = Vector2(0, 26)
+	_bar.add_theme_stylebox_override("background", UiStyle.tex_box("bar_track", [18, 11, 24, 12]))
+	var fill := StyleBoxTexture.new()
+	fill.texture = load(UiStyle.UI + "bar_fill.png")
+	fill.modulate_color = Color(1.0, 0.62, 0.18)
+	fill.content_margin_left = 17
+	_bar.add_theme_stylebox_override("fill", fill)
+	v.add_child(_bar)
+	_pct = _box_label(v, "0%", 15, Color(0.35, 0.22, 0.12))
+	var tip := _box_label(v, "TIP:  " + str(TIPS[randi() % TIPS.size()]), 16, Color(0.3, 0.2, 0.12))
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size.x = 500
+	var ribbon := PanelContainer.new()   # title on the red leaf ribbon, over the frame's top edge
+	ribbon.add_theme_stylebox_override("panel", UiStyle.tex_box("ribbon_leaf_red", [96, 0, 70, 0], [100, 6, 60, 6]))
+	ribbon.anchor_left = 0.5
+	ribbon.anchor_right = 0.5
+	ribbon.anchor_top = 0.5
+	ribbon.anchor_bottom = 0.5
+	ribbon.offset_left = -250
+	ribbon.offset_right = 250
+	ribbon.offset_top = -190
+	ribbon.offset_bottom = -126
+	_root.add_child(ribbon)
+	var title := Label.new()
+	title.text = "SHINOBI CLASH"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", GameMenu.font())
+	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_color_override("font_color", Color(0.98, 0.93, 0.8))
+	title.add_theme_color_override("font_outline_color", Color(0.1, 0.03, 0.02))
+	title.add_theme_constant_override("outline_size", 8)
+	ribbon.add_child(title)
 	var spin := Shuriken.new()
 	spin.anchor_left = 0.5
 	spin.anchor_right = 0.5
-	spin.anchor_top = 0.24
-	spin.anchor_bottom = 0.24
-	spin.offset_left = -40
-	spin.offset_right = 40
-	spin.offset_top = -40
-	spin.offset_bottom = 40
-	spin.pivot_offset = Vector2(40, 40)
+	spin.anchor_top = 0.5
+	spin.anchor_bottom = 0.5
+	spin.offset_left = -36
+	spin.offset_right = 36
+	spin.offset_top = -300
+	spin.offset_bottom = -228
+	spin.pivot_offset = Vector2(36, 36)
 	_root.add_child(spin)
 	_shuriken = spin
-	# progress: the HUD's iron bar frame + fill
-	_bar = ProgressBar.new()
-	_bar.show_percentage = false
-	_bar.anchor_left = 0.3
-	_bar.anchor_right = 0.7
-	_bar.anchor_top = 0.7
-	_bar.anchor_bottom = 0.7
-	_bar.offset_bottom = 16
-	if ResourceLoader.exists(UiStyle.UI + "bar_track.png"):
-		_bar.add_theme_stylebox_override("background", UiStyle.tex_box("bar_track", [18, 11, 24, 12]))
-		var fill := StyleBoxTexture.new()
-		fill.texture = load(UiStyle.UI + "bar_fill.png")
-		fill.modulate_color = Color(1.0, 0.65, 0.2)
-		_bar.add_theme_stylebox_override("fill", fill)
-	else:
-		var f2 := StyleBoxFlat.new()
-		f2.bg_color = Color(0.95, 0.6, 0.15)
-		_bar.add_theme_stylebox_override("fill", f2)
-	_root.add_child(_bar)
-	_stage = _label("Gathering chakra...", 19, Color(0.92, 0.82, 0.6))
-	_stage.anchor_top = 0.63
-	_stage.anchor_bottom = 0.68
-	_pct = _label("0%", 15, Color(0.85, 0.8, 0.72))
-	_pct.anchor_top = 0.75
-	_pct.anchor_bottom = 0.79
-	var tip := _label("TIP:  " + str(TIPS[randi() % TIPS.size()]), 17, Color(0.78, 0.75, 0.7))
-	tip.anchor_top = 0.83
-	tip.anchor_bottom = 0.93
-	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ResourceLoader.load_threaded_request(_path)
+
+func _box_label(parent: Node, text: String, size: int, col: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_override("font", GameMenu.font())
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", col)
+	parent.add_child(l)
+	return l
 
 func _label(text: String, size: int, col: Color) -> Label:
 	var l := Label.new()

@@ -37,7 +37,7 @@ void fragment() {
 			col = texture(map_tex, uv);
 		col.rgb = col.rgb * 0.85 + 0.05;
 	}
-	float rim = smoothstep(0.455, 0.47, r);   // ink ring
+	float rim = smoothstep(0.47, 0.48, r);   // thin ink ring (the parchment plate is the bezel)
 	col.rgb = mix(col.rgb, vec3(0.08, 0.06, 0.05), rim);
 	col.a *= 1.0 - smoothstep(0.49, 0.5, r);
 	COLOR = col;
@@ -48,6 +48,14 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(SIZE, SIZE)
 	size = Vector2(SIZE, SIZE)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rim := TextureRect.new()   # the UI kit's round parchment plate as the minimap's bezel
+	rim.texture = load(UiStyle.UI + "paper_round.png")
+	rim.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rim.stretch_mode = TextureRect.STRETCH_SCALE
+	rim.position = Vector2(-12, -12)
+	rim.size = size + Vector2(24, 24)
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rim)
 	_map = ColorRect.new()
 	_map.size = size
 	_map.mouse_filter = Control.MOUSE_FILTER_IGNORE

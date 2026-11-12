@@ -174,14 +174,8 @@ var _board_t := 0.0
 func _toggle_board() -> void:
 	if _board == null:
 		_board = PanelContainer.new()
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.05, 0.04, 0.03, 0.82)
-		sb.border_color = Color(0.75, 0.62, 0.3)
-		sb.set_border_width_all(2)
-		sb.set_corner_radius_all(6)
-		sb.set_content_margin_all(12)
-		_board.add_theme_stylebox_override("panel", sb)
-		_board.custom_minimum_size = Vector2(300, 0)
+		_board.add_theme_stylebox_override("panel", UiStyle.tex_box("frame_roped", [46, 44, 46, 44], [58, 52, 58, 56]))
+		_board.custom_minimum_size = Vector2(420, 220)
 		_board.position = (get_viewport().get_visible_rect().size - Vector2(300, 260)) * 0.5   # centre of the screen
 		add_child(_board)
 		var v := VBoxContainer.new()
@@ -191,7 +185,8 @@ func _toggle_board() -> void:
 		t.text = "LEADERBOARD"
 		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		t.add_theme_font_size_override("font_size", 18)
-		t.add_theme_color_override("font_color", Color(1.0, 0.85, 0.4))
+		t.add_theme_color_override("font_color", Color(0.62, 0.08, 0.05))
+		t.add_theme_font_override("font", GameMenu.font())
 		v.add_child(t)
 		_board_list = VBoxContainer.new()
 		_board_list.add_theme_constant_override("separation", 2)
@@ -216,13 +211,13 @@ func _fill_board() -> void:
 		rows.append({"id": 1, "name": NetworkSession.player_name, "lv": GameData.level})
 	rows.sort_custom(func(a, b) -> bool:
 		return int(a["lv"]) > int(b["lv"]) if int(a["lv"]) != int(b["lv"]) else str(a["name"]) < str(b["name"]))
-	var medals := [Color(1.0, 0.8, 0.2), Color(0.8, 0.82, 0.88), Color(0.85, 0.55, 0.3)]
+	var medals := [Color(0.72, 0.5, 0.02), Color(0.38, 0.4, 0.46), Color(0.6, 0.3, 0.1)]   # gold / silver / bronze ink
 	for i in rows.size():
 		var r: Dictionary = rows[i]
 		var row := HBoxContainer.new()
 		_board_list.add_child(row)
 		var me := int(r["id"]) == my_id
-		var col: Color = medals[i] if i < 3 else (Color(0.6, 1.0, 0.65) if me else Color(0.9, 0.88, 0.82))
+		var col: Color = medals[i] if i < 3 else (Color(0.1, 0.45, 0.12) if me else Color(0.16, 0.1, 0.06))
 		for spec in [["#%d" % (i + 1), 34.0, HORIZONTAL_ALIGNMENT_LEFT], [str(r["name"]) + ("  (you)" if me else ""), 0.0, HORIZONTAL_ALIGNMENT_LEFT], ["Lv %d" % int(r["lv"]), 56.0, HORIZONTAL_ALIGNMENT_RIGHT]]:
 			var l := Label.new()
 			l.text = spec[0]
@@ -272,8 +267,7 @@ func _update_quest_panel() -> void:
 		if not show:
 			return
 		_qpanel = PanelContainer.new()
-		_qpanel.add_theme_stylebox_override("panel", _panel_style(Color(1.0, 0.78, 0.25)))
-		_qpanel.custom_minimum_size = Vector2(Minimap.SIZE + 40.0, 0)
+		_qpanel.add_theme_stylebox_override("panel", UiStyle.tex_box("paper_card_wide", [26, 20, 26, 20], [32, 18, 30, 20]))
 		_qpanel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_qpanel)
 		var v := VBoxContainer.new()
@@ -282,13 +276,15 @@ func _update_quest_panel() -> void:
 		_qtitle = Label.new()
 		_qtitle.add_theme_font_override("font", GameMenu.font())
 		_qtitle.add_theme_font_size_override("font_size", 17)
-		_qtitle.add_theme_color_override("font_color", Color(1.0, 0.82, 0.35))
+		_qtitle.add_theme_color_override("font_color", Color(0.62, 0.08, 0.05))
 		_qtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_qtitle.custom_minimum_size.x = Minimap.SIZE + 2.0   # (width from the start: no tall wrap)
 		v.add_child(_qtitle)
 		_qbody = Label.new()
 		_qbody.add_theme_font_size_override("font_size", 14)
-		_qbody.add_theme_color_override("font_color", Color(0.92, 0.9, 0.85))
+		_qbody.add_theme_color_override("font_color", Color(0.16, 0.1, 0.06))
 		_qbody.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_qbody.custom_minimum_size.x = Minimap.SIZE + 2.0
 		v.add_child(_qbody)
 	_qpanel.visible = show
 	if not show:
@@ -299,8 +295,10 @@ func _update_quest_panel() -> void:
 	_qbody.text = "\n".join(lines.slice(1)) if lines.size() > 1 else ""
 	_qbody.visible = _qbody.text != ""
 	var w := Minimap.SIZE + 40.0
-	_qpanel.size.x = w
-	_qpanel.position = Vector2(get_viewport().get_visible_rect().size.x - w - 16.0, 16.0 + Minimap.SIZE + 10.0)
+	_qpanel.reset_size()   # shrink to the text
+	var mm_x := get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0   # centred under the minimap
+	_qpanel.position = Vector2(mm_x + Minimap.SIZE * 0.5 - _qpanel.size.x * 0.5, 16.0 + Minimap.SIZE + 18.0)
+	_qpanel.position.x = minf(_qpanel.position.x, get_viewport().get_visible_rect().size.x - _qpanel.size.x - 8.0)
 
 # ---------------------------------------------------------------- party frames (top-left)
 var _party: VBoxContainer
@@ -339,7 +337,7 @@ func _update_party_frames(delta: float) -> void:
 	_party.add_child(head)
 	for id in members:
 		var card := PanelContainer.new()
-		card.add_theme_stylebox_override("panel", _panel_style(Color(0.35, 0.8, 0.45)))
+		card.add_theme_stylebox_override("panel", UiStyle.tex_box("plate_dark", [22, 10, 22, 10], [16, 7, 16, 8]))
 		card.custom_minimum_size = Vector2(210, 0)
 		_party.add_child(card)
 		var v := VBoxContainer.new()
