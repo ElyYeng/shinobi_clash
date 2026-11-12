@@ -18,7 +18,6 @@ var master := false             # built for the caster (who walks around freely 
 var master_off := Vector3(0, 0, -5.1)   # (victim) where the caster is, relative to you
 var master_yaw := PI
 var _cams: Array = []           # cameras we darkened (restored on exit)
-var _suns: Array = []           # the real world's sun(s), switched off while inside
 
 ## caster_look: the caster's appearance (the victim sees them in here; master = built for the caster).
 static func build(world: Node3D, caster_look: Dictionary, caster := 0, body := Vector3.ZERO, is_master := false) -> GenjutsuWorld:
@@ -52,22 +51,40 @@ func _add_caster(look: Dictionary) -> void:
 
 ## Inside, the camera uses the genjutsu's own dark environment and the real sun is switched off.
 func _go_dark(world: Node3D) -> void:
+	_world = world
 	for l in world.find_children("*", "DirectionalLight3D", true, false):
-		if not is_ancestor_of(l) and (l as Light3D).visible:
+		if not is_ancestor_of(l) and (l as Light3D).visible and not l.has_meta("gen_hidden"):
 			(l as Light3D).visible = false
-			_suns.append(l)
+			l.set_meta("gen_hidden", true)   # (marked: whoever leaves last turns it back on)
 	var cam := get_viewport().get_camera_3d()
 	if cam != null and dark != null:
-		_cams.append([cam, cam.environment])
+		if not cam.has_meta("gen_env"):
+			cam.set_meta("gen_env", cam.environment if cam.environment != null else false)
 		cam.environment = dark
+		_cams.append(cam)
 
+var _world: Node3D
+
+## Leaving: put the real world's light and the camera back exactly as they were - unless another
+## genjutsu world is still open here.
 func _exit_tree() -> void:
-	for l in _suns:
-		if is_instance_valid(l):
+	restore_world(_world, self)
+
+static func restore_world(world: Node, leaving: Node = null) -> void:
+	if world == null or not is_instance_valid(world):
+		return
+	for g in world.find_children("GenjutsuWorld*", "Node3D", true, false):
+		if g != leaving and g is GenjutsuWorld and not g.is_queued_for_deletion():
+			return   # still inside another one
+	for l in world.find_children("*", "DirectionalLight3D", true, false):
+		if l.has_meta("gen_hidden"):
 			(l as Light3D).visible = true
-	for e in _cams:
-		if is_instance_valid(e[0]):
-			(e[0] as Camera3D).environment = e[1]
+			l.remove_meta("gen_hidden")
+	for c in world.find_children("*", "Camera3D", true, false):
+		if c.has_meta("gen_env"):
+			var e = c.get_meta("gen_env")
+			(c as Camera3D).environment = e if e is Environment else null
+			c.remove_meta("gen_env")
 
 ## Where the victim stands (in front of the cross, facing the caster).
 func victim_spot() -> Vector3:

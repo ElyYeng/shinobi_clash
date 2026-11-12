@@ -2204,6 +2204,7 @@ func _gen_master_exit() -> void:
 	remove_meta("gen_victim")
 	if is_instance_valid(_gen_world):
 		_gen_world.queue_free()
+		GenjutsuWorld.restore_world(get_parent(), _gen_world)   # light + camera back to normal
 	if gen_anchor != Vector3.INF:
 		global_position = gen_anchor
 	gen_anchor = Vector3.INF
@@ -2257,6 +2258,7 @@ func _genjutsu_exit() -> void:
 	gen_anchor = Vector3.INF
 	if is_instance_valid(_gen_world):
 		_gen_world.queue_free()
+		GenjutsuWorld.restore_world(get_parent(), _gen_world)   # light + camera back to normal
 	if is_instance_valid(_gen_tint):
 		_gen_tint.queue_free()
 	Fx.puff(get_parent(), global_position + Vector3.UP, Color(0.8, 0.1, 0.1, 0.8), 1.5)
