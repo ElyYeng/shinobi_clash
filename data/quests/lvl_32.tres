@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_32"
+title = "Patrol: Market Road"
+giver = "kakashi"
+order = 132
+min_level = 32
+type = "kill"
+pos = Vector3(80, 0, 142)
+enemy_name = "Rain Infiltrator"
+enemy_health = 557.0
+enemy_damage = 28.4
+enemy_speed = 5.48
+enemy_color = Color(0.22, 0.25, 0.3, 1)
+count = 8
+reward_spins = 0
+reward_xp = 2440
+offer = "Rain Infiltrators have been spotted around the market road. Defeat 8 of them before they cause real trouble."
+remind = "The Rain Infiltrators are near the market road - follow the golden beam."
+turn = "Impressive work, shinobi. Take this."

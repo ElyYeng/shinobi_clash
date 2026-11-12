@@ -23,6 +23,7 @@ extends Resource
 @export var requires := ""           ## quest id that must be finished first ("" = none)
 @export var repeatable := false   ## repeatable quests can be accepted again after turning them in
 @export var order := 0               ## if one NPC offers several quests, lower order comes first
+@export var min_level := 0           ## shinobi level needed before the giver offers it
 @export_enum("goto", "deliver", "kill", "hunt", "collect", "survive", "kurama") var type := "goto"
 ## Multi-step quest: the objectives in order. Leave empty for a single-objective quest.
 @export var steps: Array[QuestStep] = []
@@ -58,7 +59,7 @@ extends Resource
 
 ## The dictionary shape the rest of the game uses (Quests.DEFS[id]).
 func to_dict() -> Dictionary:
-	return {"id": id, "title": title, "giver": giver, "req": requires, "repeatable": repeatable, "order": order, "type": type,
+	return {"id": id, "title": title, "giver": giver, "req": requires, "repeatable": repeatable, "order": order, "min_level": min_level, "type": type,
 		"pos": pos, "place": place, "radius": radius, "target": target, "count": count,
 		"enemy_name": enemy_name, "enemy_health": enemy_health, "enemy_damage": enemy_damage,
 		"enemy_speed": enemy_speed, "enemy_color": enemy_color, "enemy_band": enemy_band,

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_36"
+title = "Sealed Orders for Courier"
+giver = "elder"
+order = 136
+min_level = 36
+type = "deliver"
+target = "courier"
+deliver_text = "This is from the Elder? Good - tell them it arrived safely."
+count = 1
+reward_spins = 1
+reward_xp = 2720
+offer = "Take this to the Courier. It's important - and don't read it."
+remind = "Bring the message to the Courier."
+turn = "Not bad at all. Keep this up and you'll make Jonin."

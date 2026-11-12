@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_31"
+title = "Ambush at West District"
+giver = "hermit"
+order = 131
+min_level = 31
+type = "survive"
+pos = Vector3(-98, 0, 76)
+time = 45.0
+radius = 12.0
+enemy_name = "Rain Infiltrator"
+enemy_health = 541.0
+enemy_damage = 27.7
+enemy_speed = 5.44
+enemy_color = Color(0.22, 0.25, 0.3, 1)
+count = 1
+reward_spins = 0
+reward_xp = 2370
+offer = "We expect an ambush at the west district. Hold your ground until reinforcements arrive."
+remind = "Hold out at the west district until help arrives."
+turn = "Exactly what we needed. Thank you!"

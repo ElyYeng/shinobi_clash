@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_12"
+title = "Wanted: Bandit Captain"
+giver = "elder"
+order = 112
+min_level = 12
+type = "hunt"
+pos = Vector3(0, 0, -76)
+enemy_name = "Bandit Leader"
+enemy_health = 711.0
+enemy_damage = 21.6
+enemy_speed = 4.68
+enemy_color = Color(0.35, 0.25, 0.2, 1)
+count = 1
+reward_spins = 1
+reward_xp = 1040
+offer = "The leader of the Bandits is hiding near the Hokage Tower plaza. He's much tougher than the rest - take him down."
+remind = "Their leader is near the Hokage Tower plaza. Follow the beam."
+turn = "Impressive work, shinobi. Take this."

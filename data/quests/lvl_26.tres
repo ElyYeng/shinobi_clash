@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_26"
+title = "Ambush at River Bridge"
+giver = "kakashi"
+order = 126
+min_level = 26
+type = "survive"
+pos = Vector3(70, 0, 118)
+time = 43.0
+radius = 12.0
+enemy_name = "Mist Deserter"
+enemy_health = 461.0
+enemy_damage = 24.2
+enemy_speed = 5.24
+enemy_color = Color(0.2, 0.3, 0.38, 1)
+count = 1
+reward_spins = 0
+reward_xp = 2020
+offer = "We expect an ambush at the river bridge. Hold your ground until reinforcements arrive."
+remind = "Hold out at the river bridge until help arrives."
+turn = "Impressive work, shinobi. Take this."

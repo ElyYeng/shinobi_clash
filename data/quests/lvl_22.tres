@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_22"
+title = "Wanted: Mist Deserter Captain"
+giver = "scout"
+order = 122
+min_level = 22
+type = "hunt"
+pos = Vector3(0, 0, -76)
+enemy_name = "Mist Deserter Leader"
+enemy_health = 1191.0
+enemy_damage = 32.1
+enemy_speed = 5.08
+enemy_color = Color(0.2, 0.3, 0.38, 1)
+count = 1
+reward_spins = 0
+reward_xp = 1740
+offer = "The leader of the Mist Deserters is hiding near the Hokage Tower plaza. He's much tougher than the rest - take him down."
+remind = "Their leader is near the Hokage Tower plaza. Follow the beam."
+turn = "Impressive work, shinobi. Take this."

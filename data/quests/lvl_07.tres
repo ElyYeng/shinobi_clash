@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_07"
+title = "Patrol: Main Gate"
+giver = "hermit"
+order = 107
+min_level = 7
+type = "kill"
+pos = Vector3(-14, 0, 162)
+enemy_name = "Rogue Genin"
+enemy_health = 157.0
+enemy_damage = 10.9
+enemy_speed = 4.48
+enemy_color = Color(0.3, 0.3, 0.35, 1)
+count = 4
+reward_spins = 0
+reward_xp = 690
+offer = "Rogue Genin have been spotted around the main gate. Defeat 4 of them before they cause real trouble."
+remind = "The Rogue Genin are near the main gate - follow the golden beam."
+turn = "You're getting stronger every day. Here's your reward."

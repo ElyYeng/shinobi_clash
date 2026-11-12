@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_18"
+title = "Hunt the Sound Ninja Leader"
+giver = "elder"
+order = 118
+min_level = 18
+type = "hunt"
+pos = Vector3(-62, 0, -58)
+enemy_name = "Sound Ninja Leader"
+enemy_health = 999.0
+enemy_damage = 27.9
+enemy_speed = 4.92
+enemy_color = Color(0.25, 0.2, 0.35, 1)
+count = 1
+reward_spins = 1
+reward_xp = 1460
+offer = "The leader of the Sound Ninja is hiding near the training grounds. He's much tougher than the rest - take him down."
+remind = "Their leader is near the training grounds. Follow the beam."
+turn = "Well done. The village is safer thanks to you."

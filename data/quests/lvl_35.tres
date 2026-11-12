@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_35"
+title = "Gather Spy Reports"
+giver = "trainer"
+order = 135
+min_level = 35
+type = "collect"
+pos = Vector3(70, 0, 118)
+place = "Spy Reports"
+radius = 9.0
+item_name = "Spy Report"
+count = 6
+reward_spins = 4
+reward_xp = 2650
+offer = "6 Spy Reports went missing around the river bridge. Bring them back - they glow faintly."
+remind = "The Spy Reports are around the river bridge, under the golden beam."
+turn = "You're getting stronger every day. Here's your reward."

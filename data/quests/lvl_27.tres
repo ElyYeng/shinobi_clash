@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_27"
+title = "Head of the Mist Deserters"
+giver = "courier"
+order = 127
+min_level = 27
+type = "hunt"
+pos = Vector3(45, 0, 205)
+enemy_name = "Mist Deserter Leader"
+enemy_health = 1431.0
+enemy_damage = 37.3
+enemy_speed = 5.28
+enemy_color = Color(0.2, 0.3, 0.38, 1)
+count = 1
+reward_spins = 1
+reward_xp = 2090
+offer = "The leader of the Mist Deserters is hiding near the south-east clearing. He's much tougher than the rest - take him down."
+remind = "Their leader is near the south-east clearing. Follow the beam."
+turn = "Not bad at all. Keep this up and you'll make Jonin."

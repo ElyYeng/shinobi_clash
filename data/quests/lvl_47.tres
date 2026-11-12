@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_47"
+title = "Missing-nin at South-East Clearing"
+giver = "trainer"
+order = 147
+min_level = 47
+type = "kill"
+pos = Vector3(45, 0, 205)
+enemy_name = "Missing-nin"
+enemy_health = 797.0
+enemy_damage = 38.9
+enemy_speed = 6.08
+enemy_color = Color(0.2, 0.2, 0.24, 1)
+count = 10
+reward_spins = 0
+reward_xp = 3490
+offer = "Missing-nin have been spotted around the south-east clearing. Defeat 10 of them before they cause real trouble."
+remind = "The Missing-nin are near the south-east clearing - follow the golden beam."
+turn = "Exactly what we needed. Thank you!"

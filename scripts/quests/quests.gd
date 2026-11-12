@@ -173,6 +173,8 @@ func available_for(npc_id: String) -> String:
 		var req: String = d["req"]
 		if req != "" and not GameData.quests_done.has(req):
 			continue
+		if GameData.level < int(d.get("min_level", 0)):
+			continue
 		return id
 	return ""
 

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_10"
+title = "Clear Market Road"
+giver = "scout"
+order = 110
+min_level = 10
+type = "kill"
+pos = Vector3(80, 0, 142)
+enemy_name = "Bandit"
+enemy_health = 205.0
+enemy_damage = 13.0
+enemy_speed = 4.6
+enemy_color = Color(0.35, 0.25, 0.2, 1)
+count = 4
+reward_spins = 2
+reward_xp = 900
+reward_levels = 1
+offer = "Bandits have been spotted around the market road. Defeat 4 of them before they cause real trouble."
+remind = "The Bandits are near the market road - follow the golden beam."
+turn = "Not bad at all. Keep this up and you'll make Jonin."

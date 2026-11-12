@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_29"
+title = "Drive Out the Rain Infiltrators"
+giver = "trainer"
+order = 129
+min_level = 29
+type = "kill"
+pos = Vector3(-60, 0, 210)
+enemy_name = "Rain Infiltrator"
+enemy_health = 509.0
+enemy_damage = 26.3
+enemy_speed = 5.36
+enemy_color = Color(0.22, 0.25, 0.3, 1)
+count = 7
+reward_spins = 0
+reward_xp = 2230
+offer = "Rain Infiltrators have been spotted around the bandit woods. Defeat 7 of them before they cause real trouble."
+remind = "The Rain Infiltrators are near the bandit woods - follow the golden beam."
+turn = "Exactly what we needed. Thank you!"

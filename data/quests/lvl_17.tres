@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_17"
+title = "Head of the Sound Ninja"
+giver = "trainer"
+order = 117
+min_level = 17
+type = "hunt"
+pos = Vector3(80, 0, 142)
+enemy_name = "Sound Ninja Leader"
+enemy_health = 951.0
+enemy_damage = 26.8
+enemy_speed = 4.88
+enemy_color = Color(0.25, 0.2, 0.35, 1)
+count = 1
+reward_spins = 0
+reward_xp = 1390
+offer = "The leader of the Sound Ninja is hiding near the market road. He's much tougher than the rest - take him down."
+remind = "Their leader is near the market road. Follow the beam."
+turn = "Exactly what we needed. Thank you!"

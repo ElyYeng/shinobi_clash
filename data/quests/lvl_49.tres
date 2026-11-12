@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_49"
+title = "Hunt the Missing-nin Leader"
+giver = "hermit"
+order = 149
+min_level = 49
+type = "hunt"
+pos = Vector3(-45, 0, 205)
+enemy_name = "Missing-nin Leader"
+enemy_health = 2487.0
+enemy_damage = 60.4
+enemy_speed = 6.16
+enemy_color = Color(0.2, 0.2, 0.24, 1)
+count = 1
+reward_spins = 0
+reward_xp = 3630
+offer = "The leader of the Missing-nin is hiding near the south-west clearing. He's much tougher than the rest - take him down."
+remind = "Their leader is near the south-west clearing. Follow the beam."
+turn = "You're getting stronger every day. Here's your reward."

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_23"
+title = "The Mist Deserter Boss"
+giver = "trainer"
+order = 123
+min_level = 23
+type = "hunt"
+pos = Vector3(-14, 0, 162)
+enemy_name = "Mist Deserter Leader"
+enemy_health = 1239.0
+enemy_damage = 33.2
+enemy_speed = 5.12
+enemy_color = Color(0.2, 0.3, 0.38, 1)
+count = 1
+reward_spins = 0
+reward_xp = 1810
+offer = "The leader of the Mist Deserters is hiding near the main gate. He's much tougher than the rest - take him down."
+remind = "Their leader is near the main gate. Follow the beam."
+turn = "You're getting stronger every day. Here's your reward."

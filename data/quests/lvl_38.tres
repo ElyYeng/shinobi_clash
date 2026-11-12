@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_38"
+title = "Strange Signs at Bandit Woods"
+giver = "kakashi"
+order = 138
+min_level = 38
+type = "goto"
+pos = Vector3(-60, 0, 210)
+place = "The Bandit Woods"
+radius = 6.0
+count = 1
+reward_spins = 0
+reward_xp = 2860
+offer = "Something strange was reported at the bandit woods. Go take a look for me."
+remind = "Head to the bandit woods - the golden beam marks it."
+turn = "Well done. The village is safer thanks to you."

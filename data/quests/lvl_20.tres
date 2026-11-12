@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_20"
+title = "Recover the Lost Kunai"
+giver = "kakashi"
+order = 120
+min_level = 20
+type = "collect"
+pos = Vector3(0, 0, -76)
+place = "Lost Kunai"
+radius = 9.0
+item_name = "Lost Kunai"
+count = 5
+reward_spins = 3
+reward_xp = 1600
+reward_levels = 1
+offer = "5 Lost Kunai went missing around the Hokage Tower plaza. Bring them back - they glow faintly."
+remind = "The Lost Kunai are around the Hokage Tower plaza, under the golden beam."
+turn = "Impressive work, shinobi. Take this."

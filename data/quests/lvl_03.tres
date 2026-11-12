@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_03"
+title = "Gather Sealed Scrolls"
+giver = "courier"
+order = 103
+min_level = 3
+type = "collect"
+pos = Vector3(70, 0, 118)
+place = "Sealed Scrolls"
+radius = 9.0
+item_name = "Sealed Scroll"
+count = 3
+reward_spins = 1
+reward_xp = 410
+offer = "3 Sealed Scrolls went missing around the river bridge. Bring them back - they glow faintly."
+remind = "The Sealed Scrolls are around the river bridge, under the golden beam."
+turn = "Not bad at all. Keep this up and you'll make Jonin."

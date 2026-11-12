@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_15"
+title = "Clear West District"
+giver = "courier"
+order = 115
+min_level = 15
+type = "kill"
+pos = Vector3(-98, 0, 76)
+enemy_name = "Sound Ninja"
+enemy_health = 285.0
+enemy_damage = 16.5
+enemy_speed = 4.8
+enemy_color = Color(0.25, 0.2, 0.35, 1)
+count = 5
+reward_spins = 2
+reward_xp = 1250
+offer = "Sound Ninja have been spotted around the west district. Defeat 5 of them before they cause real trouble."
+remind = "The Sound Ninja are near the west district - follow the golden beam."
+turn = "Well done. The village is safer thanks to you."

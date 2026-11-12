@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_13"
+title = "The Bandit Boss"
+giver = "hermit"
+order = 113
+min_level = 13
+type = "hunt"
+pos = Vector3(-14, 0, 162)
+enemy_name = "Bandit Leader"
+enemy_health = 759.0
+enemy_damage = 22.6
+enemy_speed = 4.72
+enemy_color = Color(0.35, 0.25, 0.2, 1)
+count = 1
+reward_spins = 0
+reward_xp = 1110
+offer = "The leader of the Bandits is hiding near the main gate. He's much tougher than the rest - take him down."
+remind = "Their leader is near the main gate. Follow the beam."
+turn = "Well done. The village is safer thanks to you."

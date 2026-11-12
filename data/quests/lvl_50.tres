@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_50"
+title = "Hunt the Akatsuki Spy Leader"
+giver = "kakashi"
+order = 150
+min_level = 50
+type = "hunt"
+pos = Vector3(-45, 0, 205)
+enemy_name = "Akatsuki Spy Leader"
+enemy_health = 2535.0
+enemy_damage = 61.5
+enemy_speed = 6.2
+enemy_color = Color(0.1, 0.1, 0.14, 1)
+count = 1
+reward_spins = 6
+reward_xp = 3700
+reward_levels = 1
+offer = "The leader of the Akatsuki Spies is hiding near the south-west clearing. He's much tougher than the rest - take him down."
+remind = "Their leader is near the south-west clearing. Follow the beam."
+turn = "You're getting stronger every day. Here's your reward."

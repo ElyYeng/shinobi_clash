@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_08"
+title = "Head of the Bandits"
+giver = "kakashi"
+order = 108
+min_level = 8
+type = "hunt"
+pos = Vector3(-122, 0, -48)
+enemy_name = "Bandit Leader"
+enemy_health = 519.0
+enemy_damage = 17.4
+enemy_speed = 4.52
+enemy_color = Color(0.35, 0.25, 0.2, 1)
+count = 1
+reward_spins = 0
+reward_xp = 760
+offer = "The leader of the Bandits is hiding near the north-west ruins. He's much tougher than the rest - take him down."
+remind = "Their leader is near the north-west ruins. Follow the beam."
+turn = "You're getting stronger every day. Here's your reward."

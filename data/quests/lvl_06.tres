@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_06"
+title = "Recon: Main Gate"
+giver = "elder"
+order = 106
+min_level = 6
+type = "goto"
+pos = Vector3(-14, 0, 162)
+place = "The Main Gate"
+radius = 6.0
+count = 1
+reward_spins = 1
+reward_xp = 620
+offer = "Something strange was reported at the main gate. Go take a look for me."
+remind = "Head to the main gate - the golden beam marks it."
+turn = "Exactly what we needed. Thank you!"

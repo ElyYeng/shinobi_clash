@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_16"
+title = "Ambush at North-West Ruins"
+giver = "scout"
+order = 116
+min_level = 16
+type = "survive"
+pos = Vector3(-122, 0, -48)
+time = 38.0
+radius = 12.0
+enemy_name = "Sound Ninja"
+enemy_health = 301.0
+enemy_damage = 17.2
+enemy_speed = 4.84
+enemy_color = Color(0.25, 0.2, 0.35, 1)
+count = 1
+reward_spins = 0
+reward_xp = 1320
+offer = "We expect an ambush at the north-west ruins. Hold your ground until reinforcements arrive."
+remind = "Hold out at the north-west ruins until help arrives."
+turn = "Exactly what we needed. Thank you!"

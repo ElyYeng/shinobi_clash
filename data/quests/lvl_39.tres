@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_39"
+title = "Patrol: South-East Clearing"
+giver = "courier"
+order = 139
+min_level = 39
+type = "kill"
+pos = Vector3(45, 0, 205)
+enemy_name = "Rogue Chunin"
+enemy_health = 669.0
+enemy_damage = 33.3
+enemy_speed = 5.76
+enemy_color = Color(0.28, 0.3, 0.25, 1)
+count = 9
+reward_spins = 1
+reward_xp = 2930
+offer = "Rogue Chunin have been spotted around the south-east clearing. Defeat 9 of them before they cause real trouble."
+remind = "The Rogue Chunin are near the south-east clearing - follow the golden beam."
+turn = "Well done. The village is safer thanks to you."

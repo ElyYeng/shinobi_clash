@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "lvl_37"
+title = "Rogue Chunin Sighting"
+giver = "hermit"
+order = 137
+min_level = 37
+type = "kill"
+pos = Vector3(-60, 0, 210)
+enemy_name = "Rogue Chunin"
+enemy_health = 637.0
+enemy_damage = 31.9
+enemy_speed = 5.68
+enemy_color = Color(0.28, 0.3, 0.25, 1)
+count = 9
+reward_spins = 0
+reward_xp = 2790
+offer = "Rogue Chunin have been spotted around the bandit woods. Defeat 9 of them before they cause real trouble."
+remind = "The Rogue Chunin are near the bandit woods - follow the golden beam."
+turn = "You're getting stronger every day. Here's your reward."
