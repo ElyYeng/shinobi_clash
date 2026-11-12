@@ -16,6 +16,7 @@ uniform float cloud_scale : hint_range(0.2, 4.0) = 1.0;     // bigger = smaller 
 uniform float cloud_speed : hint_range(0.0, 0.2) = 0.012;   // drift
 uniform float wisps : hint_range(0.0, 1.0) = 0.35;           // thin high cloud layer
 uniform float star_amount = 0.0;
+uniform vec2 cloud_offset = vec2(0.0);                      // where the cloud layer sits
 
 vec2 hash2(vec2 p) {
 	p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
@@ -77,7 +78,9 @@ void sky() {
 	if (h > 0.0) {
 		// Project onto a curved cloud layer (less stretching near the horizon than a flat plane).
 		vec2 uv = d.xz / (h * 0.85 + 0.18) * 1.3 * cloud_scale;
-		vec2 wind = vec2(1.0, 0.35) * TIME * cloud_speed;
+		// (no TIME: an animated sky gets its lighting rebuilt every frame, which hung AMD RX 5700
+		// GPUs - "Vulkan device lost" in SKY_PASS. cloud_offset moves the clouds by hand instead.)
+		vec2 wind = cloud_offset;
 		float n = cloud_density(uv + wind);
 		float cov = smoothstep(1.0 - cloud_cover, 1.0 - cloud_cover + cloud_softness, n);
 		// Light: compare with the density a little toward the sun - thicker toward the sun = shaded.

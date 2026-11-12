@@ -16,8 +16,6 @@ shader_parameter/cloud_cover = 0.7
 shader_parameter/star_amount = 0.0
 
 [sub_resource type="Sky" id="Sky_4p4mc"]
-process_mode = 3
-radiance_size = 2
 sky_material = SubResource("ShaderMaterial_ruk6i")
 
 [sub_resource type="Environment" id="Environment_4ghrd"]

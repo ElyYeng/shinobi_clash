@@ -23,8 +23,6 @@ shader_parameter/cloud_cover = 0.67
 shader_parameter/star_amount = -1.185
 
 [sub_resource type="Sky" id="Sky_0btfk"]
-process_mode = 3
-radiance_size = 2
 sky_material = SubResource("ShaderMaterial_dnl03")
 
 [sub_resource type="Environment" id="Environment_la0qa"]

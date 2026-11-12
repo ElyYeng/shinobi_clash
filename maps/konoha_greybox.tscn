@@ -29,8 +29,6 @@ shader_parameter/star_amount = -1.185
 
 [sub_resource type="Sky" id="Sky_0btfk"]
 sky_material = SubResource("ShaderMaterial_dnl03")
-process_mode = 3
-radiance_size = 2
 
 [sub_resource type="Environment" id="Environment_la0qa"]
 background_mode = 2
