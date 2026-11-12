@@ -206,93 +206,114 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 			var tname := str(raw.get(tkey, "")).strip_edges()
 			if tname == "" or (tname.get_file() == tname and tname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"]):
 				safe[tkey] = tname
-	# face customisation: body type + shape-key values {name: 0..1}
+	# face customisation: body type + one variant per feature {"eyes": "naruto", ...}
 	safe["sex"] = "female" if str(raw.get("sex", "male")) == "female" else "male"
 	var face := {}
 	var rf = raw.get("face", {})
 	if rf is Dictionary:
-		for k in rf:
-			if face.size() >= 64:
-				break
-			var n := str(k).strip_edges().left(48)
-			if n != "" and (rf[k] is float or rf[k] is int):
-				face[n] = 1.0 if float(rf[k]) >= 0.5 else 0.0   # shape keys are on / off, no in-betweens
+		for cat in FACE_PARTS:
+			var v := str(rf.get(cat, "")).strip_edges().left(40)
+			if v != "" and v.is_valid_identifier():
+				face[cat] = v
 	safe["face"] = face
 	return safe
 
 ## ---------------------------------------------------------------- face customisation
-## The face is sculpted with shape keys (Blender -> glTF morph targets -> Godot blend shapes).
-## appearance["face"] = {shape key name: 0 or 1 - each key fully on or off}; appearance["sex"] = "male" / "female".
-## The sliders list the model's own shape keys; until the face model is in, FACE_PLACEHOLDER
-## shows the planned ones (they do nothing yet). Keys named "female" / "male" (any case) are
-## driven by the sex choice instead of a slider.
-const FACE_PLACEHOLDER := ["Face Length", "Face Width", "Jaw Width", "Chin Length", "Cheekbones",
-	"Eye Size", "Eye Tilt", "Eye Distance", "Brow Height", "Nose Size", "Nose Length",
-	"Nose Bridge", "Mouth Width", "Lip Size", "Ear Size"]
-const SEX_KEYS := ["female", "male", "sex", "gender"]
+## The face model's shape keys are "<part>_<variant>[L|R][_<expression>]", e.g. eyebrows_gaara,
+## eyes_narutoL, eyes_narutoL_blink, mouth_hinata_next_scream. appearance["face"] picks ONE
+## variant per part ({"eyes": "naruto", "mouth": "lee"}); both eyes always use the same one.
+## Expressions (blink, scream, tension, down) aren't choices - blink is played automatically.
+## Missing part = the sex's default ("Moriginal01" for male, "Woriginal01" for female).
+const FACE_PARTS := ["eyebrows", "eyes", "nose", "mouth"]
+const FACE_EXPR := ["blink", "blank", "blind", "scream", "screaml", "screamr", "tension", "down"]
 
-## Every shape key on the character's meshes (the face sculpt keys), sex keys left out.
-static func face_shape_names(model: Node3D) -> Array:
-	var out: Array = []
+## Splits a shape key name into [part, variant, side, expression] (part "" = not a face key).
+static func face_key(n: String) -> Array:
+	var cut := n.find("_")
+	if cut < 0:
+		return ["", "", "", ""]
+	var part := n.left(cut).to_lower()
+	if not FACE_PARTS.has(part):
+		return ["", "", "", ""]
+	var rest := n.substr(cut + 1)
+	var expr := ""
+	var bits := rest.split("_")
+	if bits.size() > 1 and FACE_EXPR.has(bits[-1].to_lower()):
+		expr = bits[-1].to_lower().trim_suffix("l").trim_suffix("r") if bits[-1].to_lower().begins_with("scream") else bits[-1].to_lower()
+		if expr == "blank" or expr == "blind":
+			expr = "blink"   # (typos in a few key names)
+		bits.remove_at(bits.size() - 1)
+		rest = "_".join(bits)
+	var side := ""
+	if part == "eyes" and (rest.ends_with("L") or rest.ends_with("R")):
+		side = rest.right(1)
+		rest = rest.left(rest.length() - 1)
+	return [part, rest, side, expr]
+
+## {part: [variants...]} found on the model (sorted, originals first).
+static func face_options(model: Node3D) -> Dictionary:
+	var out := {}
 	if model == null:
 		return out
-	for mi in model.find_children("*", "MeshInstance3D", true, false):
-		var mesh := (mi as MeshInstance3D).mesh
+	for node in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (node as MeshInstance3D).mesh
 		if mesh == null:
 			continue
 		for i in mesh.get_blend_shape_count():
-			var n := str(mesh.get_blend_shape_name(i))
-			if not out.has(n) and not SEX_KEYS.has(n.to_lower()):
-				out.append(n)
+			var k := face_key(str(mesh.get_blend_shape_name(i)))
+			if k[0] == "" or k[3] != "":
+				continue
+			if not out.has(k[0]):
+				out[k[0]] = []
+			if not (out[k[0]] as Array).has(k[1]):
+				(out[k[0]] as Array).append(k[1])
+	for part in out:
+		(out[part] as Array).sort_custom(func(a, b) -> bool:
+			var oa := str(a).contains("original")
+			var ob := str(b).contains("original")
+			return oa if oa != ob else str(a) < str(b))
 	return out
 
-## Left / right versions of a key ("Eye_Big_L" / "Eye_Big_R", "Brow.Left" ...) are one choice:
-## the face stays symmetric. Returns the key's name without the side ("Eye_Big").
-static var _side_re: RegEx
-static func face_base(n: String) -> String:
-	if _side_re == null:
-		_side_re = RegEx.new()
-		_side_re.compile("(?i)[._\\- ]?(left|right)$|[._\\- ](l|r)$|(?-i)(L|R)$")
-	return _side_re.sub(n, "").strip_edges()
+## "Moriginal01" -> "Original 1 (M)", "hinata_next" -> "Hinata Next".
+static func face_label(v: String) -> String:
+	if v.contains("original"):
+		return "Original %d (%s)" % [int(v.right(2)), "F" if v.begins_with("W") else "M"]
+	return v.replace("_", " ").capitalize()
 
-## The face toggles: {display base name: [every shape key it switches, both sides]}.
-static func face_groups(names: Array) -> Dictionary:
-	var out := {}
-	for n in names:
-		var b := face_base(str(n))
-		if b == "":
-			b = str(n)
-		if not out.has(b):
-			out[b] = []
-		(out[b] as Array).append(str(n))
-	return out
+## The variant used for `part` (the chosen one, else the sex's default original).
+static func face_choice(look: Dictionary, part: String) -> String:
+	var face: Dictionary = look.get("face", {})
+	if face.has(part):
+		return str(face[part])
+	return ("Woriginal01" if str(look.get("sex", "male")) == "female" else "Moriginal01")
 
-## Applies the face shape keys and the sex key(s) to every mesh that has them.
+## Applies the face: the chosen variant of each part fully on, everything else off.
+## Expression keys stay as the blinker / expressions set them.
 static func apply_face(model: Node3D, look: Dictionary) -> void:
 	if model == null:
 		return
-	var face: Dictionary = look.get("face", {})
-	var female := str(look.get("sex", "male")) == "female"
+	var chosen := {}
+	for part in FACE_PARTS:
+		chosen[part] = face_choice(look, part)
+	var has_face := false
 	for node in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
 			continue
 		for i in mi.mesh.get_blend_shape_count():
-			var n := str(mi.mesh.get_blend_shape_name(i))
-			var low := n.to_lower()
-			var v := 0.0
-			if low == "female":
-				v = 1.0 if female else 0.0
-			elif low == "male":
-				v = 0.0 if female else 1.0
+			var k := face_key(str(mi.mesh.get_blend_shape_name(i)))
+			if k[0] == "":
+				continue
+			has_face = true
+			if k[3] == "":
+				mi.set_blend_shape_value(i, 1.0 if k[1] == chosen[k[0]] else 0.0)
 			else:
-				v = float(face.get(n, 0.0))
-				if v < 0.5:   # symmetric: if the other side's key is on, this one is too
-					for k in face:
-						if float(face[k]) >= 0.5 and str(k) != n and face_base(str(k)) == face_base(n) and face_base(n) != n:
-							v = 1.0
-							break
-			mi.set_blend_shape_value(i, v)
+				mi.set_blend_shape_value(i, 0.0)
+	model.set_meta("face_choice", chosen)
+	if has_face and model.get_node_or_null("FaceBlink") == null:
+		var fb := FaceBlink.new()
+		fb.name = "FaceBlink"
+		model.add_child(fb)
 
 
 ## "Shirt_1", "shirt1", "shirts1", "spiky" ... -> canonical mesh id ("shirt1", "hair2").
@@ -353,6 +374,14 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 		else:
 			var choices: Array = [""] + list_slot_textures(slot)
 			look[tkey] = str(choices[rng.randi() % choices.size()])
+	var fo := face_options(model)   # a random face too
+	var face := {}
+	for part in fo:
+		var vs: Array = fo[part]
+		if not vs.is_empty():
+			face[part] = str(vs[(rng.randi() if rng != null else randi()) % vs.size()])
+	look["face"] = face
+	look["sex"] = "female" if (rng.randf() if rng != null else randf()) < 0.4 else "male"
 	apply_appearance(model, look)
 	return look
 

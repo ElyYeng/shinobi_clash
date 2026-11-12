@@ -1228,8 +1228,8 @@ func _build_look_options() -> void:
 	_build_face()
 	_rebuild_color_targets()
 
-## Face customisation: Male / Female, then a slider for every shape key on the face model.
-## (Placeholder sliders until the face model with shape keys is in.)
+## Face customisation: Male / Female, then ONE choice per feature (eyebrows, eyes, nose, mouth)
+## from the face model's shape keys (Hero.face_options).
 func _build_face() -> void:
 	if face_box == null:
 		return
@@ -1245,48 +1245,53 @@ func _build_face() -> void:
 		b.set_pressed_no_signal(str(_working.get("sex", "male")) == sx[0])
 		b.pressed.connect(func():
 			_working["sex"] = str(sx[0])
-			_apply_look())
-	var names: Array = Hero.face_shape_names(preview_model)
-	var placeholder := names.is_empty()
-	if placeholder:
-		names = Hero.FACE_PLACEHOLDER
-		UiStyle.label(face_box, "Preview - the face model with shape keys isn't in yet", 12, Color(0.55, 0.4, 0.25))
+			_apply_look()
+			_build_face())   # (the defaults follow the body type)
+	var opts := Hero.face_options(preview_model)
+	if opts.is_empty():
+		UiStyle.label(face_box, "This character model has no face shape keys", 12, Color(0.55, 0.4, 0.25))
+		return
 	if not (_working.get("face") is Dictionary):
 		_working["face"] = {}
-	var face: Dictionary = _working["face"]
-	# each shape key is either fully on or off (0 / 1): a toggle per key
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 5)
-	flow.add_theme_constant_override("v_separation", 5)
-	face_box.add_child(flow)
-	var groups := Hero.face_groups(names)   # _L / _R keys share one toggle (symmetric face)
-	for g in groups:
-		var keys: Array = groups[g]
-		var b := _chip(flow, str(g).replace("_", " ").replace(".", " ").capitalize())
-		b.set_pressed_no_signal(keys.any(func(k): return float(face.get(k, 0.0)) >= 0.5))
-		b.disabled = placeholder
-		b.toggled.connect(func(on: bool):
-			for k in keys:
-				(_working["face"] as Dictionary)[str(k)] = 1.0 if on else 0.0
+	var grid := GridContainer.new()   # two columns: label + dropdown, label + dropdown
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 4)
+	face_box.add_child(grid)
+	for part in Hero.FACE_PARTS:
+		var vs: Array = opts.get(part, [])
+		if vs.is_empty():
+			continue
+		var l := UiStyle.label(grid, str(part).capitalize(), 13, UiStyle.BODY_TEXT)
+		l.custom_minimum_size = Vector2(70, 0)
+		var dd := _dropdown(grid)
+		dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var cur := Hero.face_choice(_working, part)
+		for n in vs.size():
+			dd.add_item(Hero.face_label(str(vs[n])), n)
+			dd.set_item_metadata(n, str(vs[n]))
+			if str(vs[n]) == cur:
+				dd.select(n)
+		dd.item_selected.connect(func(n: int):
+			(_working["face"] as Dictionary)[str(part)] = str(dd.get_item_metadata(n))
 			_apply_look())
 	var acts := HBoxContainer.new()
 	acts.add_theme_constant_override("separation", 6)
 	face_box.add_child(acts)
 	var rnd := _chip(acts, "Random face")
 	rnd.toggle_mode = false
-	rnd.disabled = placeholder
+	rnd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rnd.pressed.connect(func():
 		var f := {}
-		var gr := Hero.face_groups(Hero.face_shape_names(preview_model))
-		for g in gr:
-			var on := 1.0 if randf() < 0.35 else 0.0
-			for k in gr[g]:
-				f[k] = on
+		for part in opts:
+			var vs: Array = opts[part]
+			f[part] = str(vs[randi() % vs.size()])
 		_working["face"] = f
 		_apply_look()
 		_build_face())
-	var rst := _chip(acts, "Reset face")
+	var rst := _chip(acts, "Default face")
 	rst.toggle_mode = false
+	rst.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rst.pressed.connect(func():
 		_working["face"] = {}
 		_apply_look()
