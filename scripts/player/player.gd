@@ -1711,10 +1711,11 @@ func _toggle_power() -> void:
 		aura.visible = true
 		aura.light_color = col
 		aura.light_energy = 1.8
-	Sfx.play(self, "power")
-	Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
-	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
-	Vfx.shake(cam, 0.2, 0.35)
+	if str(m.get("cutscene", "")) != "hatake":
+		Sfx.play(self, "power")
+		Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
+		Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
+		Vfx.shake(cam, 0.2, 0.35)
 	_toast("KURAMA MODE + %s!" % str(m["name"]).to_upper() if kurama else "%s!" % str(m["name"]).to_upper())
 	_play_once("jutsu", 0.6)
 
@@ -2404,3 +2405,4 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := fals
 		if knockdown:
 			_knockdown(knock)
 		_play_once("hurt", 0.3)
+
