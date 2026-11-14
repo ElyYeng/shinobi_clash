@@ -524,6 +524,8 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 			look[k] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.8), rng.randf_range(0.15, 0.9)).to_html(false)
 	look["skin_color"] = SKIN_TONES[rng.rand_weighted(PackedFloat32Array(SKIN_WEIGHTS))]
 	look["eye_color"] = EYE_TONES[rng.randi() % 6]
+	var iris_designs: Array = [""] + list_eye_styles()   # every PNG in eye_styles/ (or the default iris)
+	look["eye_style"] = str(iris_designs[rng.randi() % iris_designs.size()])
 	for slot in COLOR_SLOTS:
 		var info: Dictionary = COLOR_SLOTS[slot]
 		var tkey := str(info.get("texture_key", ""))
