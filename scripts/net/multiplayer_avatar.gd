@@ -356,5 +356,7 @@ func set_level(value: int) -> void:
 
 func set_clan(value: String) -> void:
 	clan = value
+	if model != null and is_instance_valid(model) and power_fx == null:   # Hatake: left eye shut until the mode
+		Hero.set_left_eye_idle_closed(model, value == "hatake")
 	if name_tag != null:
 		name_tag.text = _tag_text()

@@ -39,5 +39,5 @@ func _eyes(v: float) -> void:
 				# (the left) swollen almost shut.
 				var c := v
 				if k[2] == "L":
-					c = maxf(v, float(model.get_meta("eye_hurt", 0.0)))
+					c = maxf(maxf(v, float(model.get_meta("eye_hurt", 0.0))), float(model.get_meta("eye_closed", 0.0)))
 				mi.set_blend_shape_value(i, c if k[3] == "blink" else 1.0 - c)

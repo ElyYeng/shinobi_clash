@@ -445,6 +445,22 @@ static func apply_face(model: Node3D, look: Dictionary) -> void:
 		var fb := FaceBlink.new()
 		fb.name = "FaceBlink"
 		model.add_child(fb)
+	if has_face:
+		(model.get_node("FaceBlink") as FaceBlink).refresh()   # keeps a held-shut eye shut after re-applying the look
+
+## Kakashi style (Hatake): the left eye stays shut until the mode opens it (its look has
+## "eye_side": "left"). `on` = this character has that bloodline equipped.
+static func set_left_eye_idle_closed(model: Node3D, on: bool) -> void:
+	if model == null or not is_instance_valid(model):
+		return
+	model.set_meta("left_eye_idle_closed", on)
+	set_eye_closed(model, on)
+
+static func set_eye_closed(model: Node3D, closed: bool) -> void:
+	model.set_meta("eye_closed", 1.0 if closed else 0.0)
+	var fb := model.get_node_or_null("FaceBlink") as FaceBlink
+	if fb != null:
+		fb.refresh()
 
 
 ## "Shirt_1", "shirt1", "shirts1", "spiky" ... -> canonical mesh id ("shirt1", "hair2").
@@ -684,6 +700,8 @@ static func _apply_mode_look_impl(model: Node3D, look: Dictionary, appearance: D
 	if eye_tex != null and look.has("eye_col"):   # personal colour (Ink Mode): recolour the iris
 		eye_tex = recolor_iris(eye_tex, Color.html(str(look["eye_col"])))
 	set_eyes(model, eye_tex, str(look.get("eye_side", "")))
+	# Hatake: the left eye is shut in the normal look and opens when the mode shows the Sharingan there
+	set_eye_closed(model, bool(model.get_meta("left_eye_idle_closed", false)) and str(look.get("eye_side", "")) != "left")
 	set_chrome(model, bool(look.get("chrome", false)))
 	_set_orbs(model, int(look.get("orbs", 0)))
 	var outfit: Dictionary = (model.get_meta("hero_outfits", {}) as Dictionary).get(str(look.get("outfit", "")), {})

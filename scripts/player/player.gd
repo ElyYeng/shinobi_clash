@@ -157,6 +157,7 @@ func apply_bloodline() -> void:
 	refresh_stats()
 	_clear_buffs()
 	_power_off()
+	Hero.set_left_eye_idle_closed(model, GameData.equipped == "hatake")   # Kakashi: left eye shut until the mode
 	aura.visible = false   # no idle glow - the aura only lights up for forms, buffs and jutsu
 	aura.light_color = def["color"]
 	aura.light_energy = 1.2
