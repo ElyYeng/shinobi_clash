@@ -44,6 +44,7 @@ const DEFAULT_APPEARANCE := {
 	"boar_color1": "#1A1A2B", "boar_color2": "#996E49",     # colourable boar pants
 	"pants_color1": "#E3804F",          # colourable Naruto pants
 	"pants_color2": "#32354C",
+	"jacket_color1": "#541D1E", "jacket_color2": "#372C54", "jacket_trim": "#000000",   # colourable jacket (shirt8)
 }
 ## Iris colours offered in Customize (villagers roll natural ones from the first six).
 const EYE_TONES := ["#3B7BD4", "#3E9A5A", "#6B4423", "#8E7A3A", "#7C8A96", "#2C2C2C", "#8A4FD8", "#C0303A", "#E0A92E"]
@@ -192,6 +193,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 			safe[key] = id
 	var color_keys: Array = ["hair_color", "shirt_color", "pants_color", "cloak_color1", "cloak_color2", "vest_color1", "vest_color2", "pants_color1", "pants_color2",
 		"top_color1", "top_color2", "bpants_color1", "bpants_color2", "boar_color1", "boar_color2"]
+	for sname in SURFACE_COLORS:
+		color_keys.append_array(SURFACE_COLORS[sname]["keys"])
 	for slot in COLOR_SLOTS:
 		color_keys.append(COLOR_SLOTS[slot]["key"])
 	for color_key in color_keys:
@@ -492,6 +495,9 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 		var k: Array = COLOR_COPIES[n]["keys"]
 		look[k[0]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.75), rng.randf_range(0.15, 0.85)).to_html(false)
 		look[k[1]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.2, 0.9), rng.randf_range(0.25, 0.95)).to_html(false)
+	for n in SURFACE_COLORS:   # per-surface colourable clothes: one random colour per surface
+		for k in SURFACE_COLORS[n]["keys"]:
+			look[k] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.1, 0.8), rng.randf_range(0.15, 0.9)).to_html(false)
 	look["skin_color"] = SKIN_TONES[rng.rand_weighted(PackedFloat32Array(SKIN_WEIGHTS))]
 	look["eye_color"] = EYE_TONES[rng.randi() % 6]
 	for slot in COLOR_SLOTS:
@@ -564,6 +570,7 @@ static func _apply_appearance_impl(model: Node3D, appearance: Dictionary = {}) -
 			for surface in mi.mesh.get_surface_count():
 				_tint_surface(mi, surface, tint, false, null, true)
 	_apply_cloak_colors(model, look)
+	_apply_surface_colors(model, look)
 	_apply_skin(model, str(look.get("skin_color", "")))   # after the clothes, so a shirt tint never tints the arms
 	_apply_eye_color(model, str(look.get("eye_color", "")))
 
@@ -932,6 +939,52 @@ static func _apply_cloak_colors(model: Node3D, look: Dictionary) -> void:   # (a
 				Color.html(sk) if sk != "" and Color.html_is_valid(sk) else skin_original(model))
 			m.albedo_color = Color.WHITE
 			mi.set_surface_override_material(0, m)
+
+# ---------------------------------------------------------------- per-surface colourable clothes
+## Clothes whose GLB already splits the colourable areas into separate materials (Blender material
+## names "Color1" / "Color2" / "Trim"): no texture masks needed - each surface just gets its colour
+## from the look. "id" = the mesh's option id (node name in the GLB), "materials" = the material
+## name of each surface, matching "keys" / "labels" / "defaults" by index. Add a new jacket by
+## adding an entry here plus its keys to DEFAULT_APPEARANCE.
+const SURFACE_COLORS := {
+	"jacket": {"cat": "shirt", "id": "shirt8",
+		"keys": ["jacket_color1", "jacket_color2", "jacket_trim"],
+		"labels": ["Jacket", "Panels", "Trim"],
+		"materials": ["Color1", "Color2", "Trim"],
+		"defaults": ["#541D1E", "#372C54", "#000000"]},
+}
+
+## The SURFACE_COLORS name whose mesh has option id `id` ("" = that option isn't colourable this way).
+static func surface_color_for(id: String) -> String:
+	for n in SURFACE_COLORS:
+		if id != "" and SURFACE_COLORS[n]["id"] == id:
+			return n
+	return ""
+
+## Blender adds ".001" when a material name is reused; "Color1.001" still means "Color1".
+static func _material_role(mat_name: String) -> String:
+	var re := RegEx.create_from_string("\\.\\d+$")
+	return re.sub(mat_name, "")
+
+static func _apply_surface_colors(model: Node3D, look: Dictionary) -> void:
+	var parts: Dictionary = model.get_meta("hero_parts")
+	for name in SURFACE_COLORS:
+		var d: Dictionary = SURFACE_COLORS[name]
+		for e in parts.get(str(d["cat"]), []):
+			if e["id"] != d["id"]:
+				continue
+			var mi := e["node"] as MeshInstance3D
+			if mi == null or mi.mesh == null:
+				continue
+			for surface in mi.mesh.get_surface_count():
+				var src := mi.mesh.surface_get_material(surface)
+				if src == null:
+					continue
+				var idx: int = (d["materials"] as Array).find(_material_role(src.resource_name))
+				if idx < 0:
+					continue   # e.g. the "Skin Color" surface: handled by _apply_skin
+				var hex := str(look.get(d["keys"][idx], d["defaults"][idx]))
+				_tint_surface(mi, surface, Color.html(hex) if Color.html_is_valid(hex) else Color.html(str(d["defaults"][idx])), true)
 
 ## Truth-Seeking Orbs (look "orbs": n): a ring of black orbs floating behind the shoulders,
 ## bobbing gently. 0 removes them.

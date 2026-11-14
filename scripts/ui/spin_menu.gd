@@ -1234,7 +1234,7 @@ func _build_look_options() -> void:
 		var dd := _dropdown(row)
 		dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		for n in ids.size():
-			var colourable := Hero.color_copy_for(preview_model, str(ids[n])) != ""
+			var colourable := Hero.color_copy_for(preview_model, str(ids[n])) != "" or Hero.surface_color_for(str(ids[n])) != ""
 			dd.add_item(Hero.display_name(str(ids[n])) + ("  (C)" if colourable else ""), n)   # (C) = colourable
 			dd.set_item_metadata(n, str(ids[n]))
 			if str(_working.get(key, "")) == str(ids[n]):
@@ -1334,6 +1334,11 @@ func _rebuild_color_targets() -> void:
 				var d: Dictionary = Hero.COLOR_COPIES[copy]
 				targets.append([d["keys"][0], d["labels"][0]])
 				targets.append([d["keys"][1], d["labels"][1]])
+			var surf := Hero.surface_color_for(str(_working.get(key, "")))
+			if surf != "":   # per-surface colourable clothes (jacket): one chip per colour
+				var sd: Dictionary = Hero.SURFACE_COLORS[surf]
+				for i in (sd["keys"] as Array).size():
+					targets.append([sd["keys"][i], sd["labels"][i]])
 			# other clothes aren't colourable: no colour button for them
 	if not targets.any(func(t): return t[0] == _color_target):
 		_color_target = "hair_color"
