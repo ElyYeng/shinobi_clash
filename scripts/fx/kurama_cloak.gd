@@ -1,9 +1,9 @@
 class_name KuramaCloak
 extends Node3D
-## Boss-unlocked Z form: translucent vermilion chakra, two ears, exactly one tail.
+## Boss-unlocked Z form: vermilion chakra aura, two small ears, exactly one tail (ears and tail use
+## the same aura material as the body, so they flicker and fade with it).
 ## Shared by Player and multiplayer avatars. Never changes the character's scale.
 
-const CLOAK_SHADER := preload("res://shaders/kurama_cloak.gdshader")
 const CHAKRA := Color(0.95, 0.095, 0.025)
 const RIM := Color(1.0, 0.32, 0.06)
 const RINGS := 32
@@ -13,8 +13,6 @@ var model: Node3D
 var _aura: AuraShell
 var _tail: MeshInstance3D
 var _ears: Node3D
-var _material: ShaderMaterial
-var _ear_material: ShaderMaterial
 var _head_skeleton: Skeleton3D
 var _head_bone := -1
 var _age := 0.0
@@ -37,25 +35,20 @@ func _ready() -> void:
 	_aura.mat.set_shader_parameter("_Opacity", 3.0)
 	_aura.mat.set_shader_parameter("_OutlineFixed", 0.8)
 	_aura.mat.set_shader_parameter("_SpeedY", 4.0)
-	_material = ShaderMaterial.new()
-	_material.shader = CLOAK_SHADER
-	_material.set_shader_parameter("chakra_noise", AuraShell.noise())
-	_material.set_shader_parameter("strength", 0.0)
-	_ear_material = _material.duplicate() as ShaderMaterial
-	_ear_material.set_shader_parameter("sway", 0.018)
-	# One thick, tapered S-curve rises behind the body and curls above the shoulder.
+	# One tapered curve rises behind the body and curls up to head height (aura material, so the
+	# shell adds ~0.045 m to every radius below).
 	_tail = _tube(
-		Vector3(0.0, 0.88, 0.12), Vector3(-0.55, 1.15, 1.6),
-		Vector3(-0.65, 3.35, 1.15), Vector3(0.65, 2.80, 0.65),
-		0.24, _material)
+		Vector3(0.0, 0.90, 0.12), Vector3(-0.25, 1.00, 0.80),
+		Vector3(-0.35, 2.00, 0.70), Vector3(0.20, 1.80, 0.35),
+		0.12, _aura.mat)
 	add_child(_tail)
 	_ears = Node3D.new()
 	add_child(_ears)
 	for side in [-1.0, 1.0]:
 		var ear := _tube(
-			Vector3(side * 0.12, 0.10, 0.0), Vector3(side * 0.20, 0.20, 0.015),
-			Vector3(side * 0.25, 0.43, 0.03), Vector3(side * 0.29, 0.52, 0.015),
-			0.105, _ear_material)
+			Vector3(side * 0.12, 0.12, 0.0), Vector3(side * 0.17, 0.20, 0.01),
+			Vector3(side * 0.20, 0.32, 0.02), Vector3(side * 0.23, 0.38, 0.01),
+			0.05, _aura.mat)
 		_ears.add_child(ear)
 	# Cache the head bone once rather than traversing the model every frame.
 	for node in model.find_children("*", "Skeleton3D", true, false):
@@ -76,8 +69,6 @@ func _process(delta: float) -> void:
 		return
 	_age += delta
 	var strength := smoothstep(0.0, 0.45, _age)
-	_material.set_shader_parameter("strength", strength)
-	_ear_material.set_shader_parameter("strength", strength)
 	_aura.set_strength(strength * (0.70 + sin(_age * 3.0) * 0.045))
 	_follow_model()
 
@@ -92,7 +83,7 @@ func _follow_model() -> void:
 	_ears.global_basis = (_head_skeleton.global_transform * _head_skeleton.get_bone_global_pose(_head_bone)).basis.orthonormalized() if is_instance_valid(_head_skeleton) and _head_bone >= 0 else global_basis
 
 ## Closed tapered tube with analytic curve tangents and a stable radial frame.
-## Only built on activation; sway and flowing chakra are animated in the shader.
+## Only built on activation; the flowing chakra is animated by the aura shader.
 static func _tube(a: Vector3, b: Vector3, c: Vector3, d: Vector3, radius: float, material: Material) -> MeshInstance3D:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
