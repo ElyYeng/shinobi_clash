@@ -35,6 +35,7 @@ const DEFAULT_APPEARANCE := {
 	"pants_color": "#FFFFFF",
 	"skin_color": "",                   # "" = the model's own skin colour
 	"eye_color": "",                    # "" = the eye texture as painted (grey iris)
+	"eye_style": "",                    # "" = the model's own eye texture, else a file in EYE_STYLES_DIR
 	"cloak_color1": "#1C1B24",          # colourable Akatsuki cloak: the coat ...
 	"cloak_color2": "#B8161F",          # ... and the clouds
 	"vest_color1": "#848D7B",           # colourable jonin vest (Shirt 1 copy)
@@ -46,6 +47,9 @@ const DEFAULT_APPEARANCE := {
 	"pants_color2": "#32354C",
 	"jacket_color1": "#541D1E", "jacket_color2": "#372C54", "jacket_trim": "#000000",   # colourable jacket (shirt8)
 }
+## Extra iris designs: drop PNGs (same layout as character_main_T_CHR_Eye_BC.png: grey iris so the
+## colour picker still works) in this folder and they appear in Customize > Eyes. Nothing to register.
+const EYE_STYLES_DIR := "res://assets/character/eye_styles/"
 ## Iris colours offered in Customize (villagers roll natural ones from the first six).
 const EYE_TONES := ["#3B7BD4", "#3E9A5A", "#6B4423", "#8E7A3A", "#7C8A96", "#2C2C2C", "#8A4FD8", "#C0303A", "#E0A92E"]
 ## Skin: every surface using the GLB material with this name (face, arms on the shirts, legs on the
@@ -201,6 +205,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var hex := str(raw.get(color_key, "")).strip_edges()
 		if Color.html_is_valid(hex):
 			safe[color_key] = "#" + Color.html(hex).to_html(false)
+	var style := str(raw.get("eye_style", "")).strip_edges()   # a file name inside EYE_STYLES_DIR (or "")
+	safe["eye_style"] = style if style.get_file() == style and style.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"] else ""
 	for opt_key in ["skin_color", "eye_color"]:   # optional colours: "" = the model's own
 		var v := str(raw.get(opt_key, "")).strip_edges()
 		safe[opt_key] = "#" + Color.html(v).to_html(false) if v != "" and Color.html_is_valid(v) else ""
@@ -588,7 +594,7 @@ static func _apply_appearance_impl(model: Node3D, appearance: Dictionary = {}) -
 	_apply_cloak_colors(model, look)
 	_apply_surface_colors(model, look)
 	_apply_skin(model, str(look.get("skin_color", "")))   # after the clothes, so a shirt tint never tints the arms
-	_apply_eye_color(model, str(look.get("eye_color", "")))
+	_apply_eye_color(model, str(look.get("eye_color", "")), str(look.get("eye_style", "")))
 
 ## Eye colour: a recoloured copy of the eye texture - the grey iris takes the colour (its darker
 ## rings darker), the white of the eye, highlights, pupil and outline stay. Cached per colour.
@@ -635,10 +641,28 @@ static func eye_tint_texture(src: Texture2D, col: Color) -> Texture2D:
 	_eye_cache[key] = tex
 	return tex
 
-static func _apply_eye_color(model: Node3D, hex: String) -> void:
+## Image files in EYE_STYLES_DIR, sorted (the iris designs offered in Customize).
+static func list_eye_styles() -> Array:
+	var found: Array = []
+	if not DirAccess.dir_exists_absolute(EYE_STYLES_DIR):
+		return found
+	for f in DirAccess.get_files_at(EYE_STYLES_DIR):
+		var fname := str(f).trim_suffix(".import").trim_suffix(".remap")
+		if fname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"] and not found.has(fname):
+			found.append(fname)
+	found.sort()
+	return found
+
+static func _apply_eye_color(model: Node3D, hex: String, style := "") -> void:
 	var tint: Texture2D = null
+	var base: Texture2D = null
+	var style_path := EYE_STYLES_DIR.path_join(style)
+	if style != "" and ResourceLoader.exists(style_path):
+		base = load(style_path) as Texture2D   # a chosen iris design replaces the model's eye texture
 	if hex != "" and Color.html_is_valid(hex):
-		tint = eye_tint_texture(_eye_base_texture(model), Color.html(hex))
+		tint = eye_tint_texture(base if base != null else _eye_base_texture(model), Color.html(hex))
+	else:
+		tint = base   # design as painted
 	model.set_meta("eye_tint", tint)
 	set_eyes(model, null)   # shows the tint (a power-up's eyes go on top of this afterwards)
 

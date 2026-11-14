@@ -1370,6 +1370,16 @@ func _rebuild_textures() -> void:
 			var sw := _swatch(Color.html(tone))
 			sw.custom_minimum_size = Vector2(34, 28)
 			texture_row.add_child(sw)
+		var styles: Array = Hero.list_eye_styles() if key == "eye_color" else []
+		if not styles.is_empty():   # iris designs: PNGs in assets/character/eye_styles/
+			var sgroup := ButtonGroup.new()
+			for f in [""] + styles:
+				var sb := _chip(texture_row, "Default iris" if f == "" else str(f).get_basename().replace("_", " ").capitalize())
+				sb.button_group = sgroup
+				sb.set_pressed_no_signal(str(_working.get("eye_style", "")) == str(f))
+				sb.pressed.connect(func():
+					_working["eye_style"] = str(f)
+					_apply_look())
 		return
 	if Hero.CLOTH_COLORS.values().has(_color_target):   # clothes: a way back to the model's own colours
 		texture_row.visible = true
