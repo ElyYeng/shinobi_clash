@@ -2049,23 +2049,17 @@ func _kurama_mode() -> void:
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_kurama_state(true)
 	Sfx.play(self, "power")
-	model.scale = Vector3.ONE * 1.3
-	cloak_fx = Node3D.new()
-	add_child(cloak_fx)
-	Vfx.aura_flames(cloak_fx, Vector3(0, 1.0, 0), 0.65, Color(1.0, 0.5, 0.1), 26, true)
-	VfxKit.chakra(self, 1.4, Color(1.0, 0.5, 0.1), 1.6)
+	cloak_fx = KuramaCloak.attach(self, model)
 	health = minf(max_health, health + max_health * 0.25)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	Vfx.shake(cam, 0.25, 0.4)
-	_toast("KURAMA MODE + %s!" % str(pmode["name"]).to_upper() if powered else "KURAMA MODE!")
+	_toast("KURAMA • ONE TAIL + %s!" % str(pmode["name"]).to_upper() if powered else "KURAMA • ONE TAIL!")
 	_play_once("jutsu", 0.6)
 
 func _end_mode() -> void:
 	if kurama and NetworkSession.is_active():
 		NetworkSession.broadcast_kurama_state(false)
 	kurama = false
-	if model:
-		model.scale = Vector3.ONE
 	if cloak_fx != null and is_instance_valid(cloak_fx):
 		cloak_fx.queue_free()
 	cloak_fx = null
@@ -2405,4 +2399,5 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := fals
 		if knockdown:
 			_knockdown(knock)
 		_play_once("hurt", 0.3)
+
 

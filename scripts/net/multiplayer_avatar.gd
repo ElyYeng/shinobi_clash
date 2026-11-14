@@ -58,19 +58,17 @@ var kurama_fx: Node3D
 var animation_lock := 0.0
 
 func set_kurama_visual(enabled: bool) -> void:
+	if enabled and (network_ragdoll_started or not is_instance_valid(model)):
+		return
 	if enabled:
 		if kurama_fx != null and is_instance_valid(kurama_fx):
-			kurama_fx.queue_free()
-		kurama_fx = Node3D.new()
-		add_child(kurama_fx)
-		model.scale = Vector3.ONE * 1.3
-		Vfx.aura_flames(kurama_fx, Vector3(0, 1.0, 0), 0.65, Color(1.0, 0.5, 0.1), 26, true)
+			return
+		kurama_fx = KuramaCloak.attach(self, model)
 		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	else:
 		if kurama_fx != null and is_instance_valid(kurama_fx):
 			kurama_fx.queue_free()
 		kurama_fx = null
-		model.scale = Vector3.ONE
 
 var susanoo: Susanoo
 
@@ -176,6 +174,7 @@ func _susanoo_event(ev: String, variant: int) -> void:
 func start_network_ragdoll(position: Vector3, yaw: float, launch_velocity: Vector3) -> void:
 	if network_ragdoll_started:
 		return
+	set_kurama_visual(false)
 	network_ragdoll_started = true
 	global_position = position
 	target_position = position
@@ -360,3 +359,4 @@ func set_clan(value: String) -> void:
 		Hero.set_left_eye_idle_closed(model, value == "hatake")
 	if name_tag != null:
 		name_tag.text = _tag_text()
+
