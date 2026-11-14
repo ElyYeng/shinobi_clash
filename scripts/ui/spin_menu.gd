@@ -162,6 +162,7 @@ var look_box: VBoxContainer
 var face_box: VBoxContainer
 var color_targets: HFlowContainer
 var texture_row: HFlowContainer
+var extras_box: VBoxContainer   # texture dropdowns under the look options (eye style, headband ...)
 var swatch_buttons: Array[Button] = []
 var hex_edit: LineEdit
 var hsv := {}                    # "h"/"s"/"v" -> HSlider
@@ -1242,8 +1243,46 @@ func _build_look_options() -> void:
 		dd.item_selected.connect(func(n: int): _on_part_chosen(str(cat), str(dd.get_item_metadata(n))))
 	if options.is_empty():
 		UiStyle.label(look_box, "Character model not found - put it in res://assets/character/", 14, Color(0.6, 0.15, 0.1))
+	extras_box = VBoxContainer.new()
+	extras_box.add_theme_constant_override("separation", 6)
+	look_box.add_child(extras_box)
+	_build_look_extras()
 	_build_face()
 	_rebuild_color_targets()
+
+## Texture dropdowns: "Eye style" (PNGs in assets/character/eye_styles) and one per headband slot of
+## the current hairstyle that has a textures folder. Drop images in the folder and they appear.
+func _build_look_extras() -> void:
+	if extras_box == null or not is_instance_valid(extras_box):
+		return
+	_clear(extras_box)
+	var styles: Array = Hero.list_eye_styles()
+	if not styles.is_empty():
+		_texture_dropdown("Eye style", "eye_style", styles)
+	if preview_model != null and preview_model.has_meta("anim_player"):
+		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
+			var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", ""))
+			var files: Array = Hero.list_slot_textures(slot)
+			if tkey != "" and not files.is_empty():
+				_texture_dropdown(str(Hero.COLOR_SLOTS[slot]["label"]), tkey, files)
+
+## "<label>  [Default | file ...]" - stores the chosen file name (or "") under look key `key`.
+func _texture_dropdown(label: String, key: String, files: Array) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	extras_box.add_child(row)
+	UiStyle.label(row, label, 16, INK)
+	var dd := _dropdown(row)
+	dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var choices: Array = [""] + files
+	for n in choices.size():
+		dd.add_item("Default" if choices[n] == "" else str(choices[n]).get_basename().replace("_", " ").capitalize(), n)
+		dd.set_item_metadata(n, str(choices[n]))
+		if str(_working.get(key, "")) == str(choices[n]):
+			dd.select(n)
+	dd.item_selected.connect(func(n: int):
+		_working[key] = str(dd.get_item_metadata(n))
+		_apply_look())
 
 ## Face customisation: Male / Female, then ONE choice per feature (eyebrows, eyes, nose, mouth)
 ## from the face model's shape keys (Hero.face_options).
@@ -1370,16 +1409,6 @@ func _rebuild_textures() -> void:
 			var sw := _swatch(Color.html(tone))
 			sw.custom_minimum_size = Vector2(34, 28)
 			texture_row.add_child(sw)
-		var styles: Array = Hero.list_eye_styles() if key == "eye_color" else []
-		if not styles.is_empty():   # iris designs: PNGs in assets/character/eye_styles/
-			var sgroup := ButtonGroup.new()
-			for f in [""] + styles:
-				var sb := _chip(texture_row, "Default iris" if f == "" else str(f).get_basename().replace("_", " ").capitalize())
-				sb.button_group = sgroup
-				sb.set_pressed_no_signal(str(_working.get("eye_style", "")) == str(f))
-				sb.pressed.connect(func():
-					_working["eye_style"] = str(f)
-					_apply_look())
 		return
 	if Hero.CLOTH_COLORS.values().has(_color_target):   # clothes: a way back to the model's own colours
 		texture_row.visible = true
@@ -1387,22 +1416,7 @@ func _rebuild_textures() -> void:
 		orig.toggle_mode = false
 		orig.pressed.connect(func(): _apply_color(Color.WHITE))
 		return
-	var slot := Hero.slot_for_key(_color_target)
-	var files: Array = Hero.list_slot_textures(slot) if slot != "" else []
-	var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", "")) if slot != "" else ""
-	texture_row.visible = tkey != "" and not files.is_empty()
-	if not texture_row.visible:
-		return
-	var group := ButtonGroup.new()
-	var choices: Array = [""]
-	choices.append_array(files)
-	for f in choices:
-		var b := _chip(texture_row, "Default" if f == "" else str(f).get_basename().replace("_", " ").capitalize())
-		b.button_group = group
-		b.set_pressed_no_signal(str(_working.get(tkey, "")) == str(f))
-		b.pressed.connect(func():
-			_working[tkey] = str(f)
-			_apply_look())
+	texture_row.visible = false   # (texture choices are dropdowns under the look options)
 
 func _current_color() -> Color:
 	if _color_target == "skin_color" and str(_working.get("skin_color", "")) == "":
@@ -1433,6 +1447,8 @@ func _on_part_chosen(cat: String, id: String) -> void:
 	_apply_look()
 	if cat == "hair" or cat == "shirt" or cat == "pants":   # headband / colourable copy targets come and go
 		_rebuild_color_targets()
+	if cat == "hair":
+		_build_look_extras()   # the headband dropdowns depend on the hairstyle
 
 func _apply_color(color: Color) -> void:
 	_working[_color_target] = "#" + color.to_html(false)

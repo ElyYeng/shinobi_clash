@@ -31,6 +31,7 @@ const DEFAULT_APPEARANCE := {
 	"headband_color": "#2B3A67",
 	"headbandmetal_color": "#FFFFFF",   # white = show the texture untinted
 	"headbandmetal_texture": "",        # "" = the texture embedded in the GLB
+	"headband_texture": "",             # "" = plain cloth in headband_color, else a file in headband_cloth_textures
 	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
 	"pants_color": "#FFFFFF",
 	"skin_color": "",                   # "" = the model's own skin colour
@@ -66,7 +67,8 @@ const CLOTH_COLORS := {"shirt": "shirt_color", "pants": "pants_color"}
 ## MATERIAL NAME matches ("headband", "headbandmetal"), so hairs without a headband show
 ## nothing extra. To add another (e.g. a scarf) add an entry here + a default above.
 const COLOR_SLOTS := {
-	"headband": {"key": "headband_color", "label": "Headband", "material": "headband"},
+	"headband": {"key": "headband_color", "label": "Headband", "material": "headband",
+		"texture_key": "headband_texture", "textures_dir": "res://assets/character/headband_cloth_textures", "random_color": true},
 	## "textures_dir": every png/jpg/webp in that folder becomes a selectable texture for the slot
 	## (stored under "texture_key"). Drop a new image in the folder and it shows up in the creator.
 	"headbandmetal": {"key": "headbandmetal_color", "label": "Headband plate", "material": "headbandmetal",
@@ -525,9 +527,9 @@ static func randomize_look(model: Node3D, rng: RandomNumberGenerator = null, exc
 	for slot in COLOR_SLOTS:
 		var info: Dictionary = COLOR_SLOTS[slot]
 		var tkey := str(info.get("texture_key", ""))
-		if tkey == "":
+		if tkey == "" or bool(info.get("random_color", false)):
 			look[info["key"]] = "#" + Color.from_hsv(rng.randf(), rng.randf_range(0.3, 0.9), rng.randf_range(0.3, 0.9)).to_html(false)
-		else:
+		if tkey != "":
 			var choices: Array = [""] + list_slot_textures(slot)
 			look[tkey] = str(choices[rng.randi() % choices.size()])
 	var fo := face_options(model)   # a random face too
