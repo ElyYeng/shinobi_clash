@@ -22,6 +22,8 @@ func _process(_delta: float) -> void:
 		if pm is Dictionary and not (pm as Dictionary).is_empty():
 			mode = pm   # the player's own version (e.g. Ink Mode in their colour)
 		match str(mode.get("cutscene", "")):
+			"hatake":
+				HatakeCutscene.play(_tracked_player as Player)
 			"eyes":
 				_stop_old_procedural_power_sound()
 				SHARINGAN_EFFECT_SCRIPT.play_cutscene(_tracked_player, str(GameData.equipped))
@@ -40,3 +42,4 @@ func _stop_old_procedural_power_sound() -> void:
 			if child.name.begins_with("AudioStreamPlayer") and stream_length >= 0.7 and stream_length <= 0.9:
 				child.stop()
 				child.queue_free()
+
