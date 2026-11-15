@@ -487,6 +487,11 @@ func _talk(npc: Npc) -> void:
 	if ARENA_NPCS.has(npc.npc_id):
 		_talk_arena(npc)
 		return
+	if _is_pvp_arena():
+		# Normal NPCs placed in the multiplayer arena are for dialogue only; the
+		# arena has no quest manager, so do not enter the open-world quest flow.
+		dialog.open(npc.display_name, npc.next_dialogue_line(), [[npc.goodbye_label, Callable()]])
+		return
 	var id := npc.npc_id
 	var act := quests.active_def()
 	var none := Callable()
@@ -524,26 +529,27 @@ func _start_arena() -> void:
 	dialog = DialogBox.new()
 	add_child(dialog)
 	dialog.bind(player)
-	var placed := {}
+	var placed: Dictionary = {}
+	var regular_placed: Dictionary = {}
 	for s in map.find_children("*", "NpcSpawn", true, false):
 		var sp := s as NpcSpawn
-		if ARENA_NPCS.has(sp.npc_id()):
-			placed[sp.npc_id()] = sp
+		var id := sp.npc_id()
+		if id == "":
+			continue
+		if ARENA_NPCS.has(id):
+			placed[id] = sp
+		elif sp.npc != null:
+			# Any normal data/npcs/*.tres assigned to a marker is also spawned in the
+			# multiplayer arena, not just the two arena opt-in characters.
+			regular_placed[id] = sp
+
+	# The two special NPCs control Ninja Battle / PvP Battle participation.
 	for id in ARENA_NPCS:
 		var def := load(ARENA_NPC_DIR.path_join(id + ".tres")) as NpcDef
 		if def == null:
 			continue
 		var d := def.to_dict(id)
-		var n := Npc.new()
-		n.npc_id = id
-		n.display_name = d["name"]
-		n.body_color = d["color"]
-		n.band_color = d["band"]
-		n.greeting = d["greet"]
-		for line in d.get("dialogue_lines", []):
-			n.dialogue_lines.append(str(line))
-		n.goodbye_label = str(d.get("goodbye", "Goodbye"))
-		n.appearance = d["appearance"]
+		var n := _make_arena_npc(id, d)
 		var map_position: Vector3 = d["pos"]
 		if placed.has(id):
 			map_position = map.to_local((placed[id] as Node3D).global_position)
@@ -552,8 +558,38 @@ func _start_arena() -> void:
 		if placed.has(id):
 			n.global_rotation.y = (placed[id] as Node3D).global_rotation.y
 		npcs[id] = n
+
+	# Additional characters (e.g. Itachi.tres) use the same NpcDef and shared Hero model
+	# as the open world. Spawn them locally on every peer from the same map markers.
+	for id in regular_placed:
+		if npcs.has(id):
+			continue
+		var sp := regular_placed[id] as NpcSpawn
+		var def := sp.npc
+		if def == null:
+			continue
+		var n := _make_arena_npc(id, def.to_dict(id))
+		n.position = map.to_local(sp.global_position)
+		map.add_child(n)
+		n.global_rotation.y = sp.global_rotation.y
+		npcs[id] = n
+
 	NetworkSession.arena_flags_changed.connect(_on_arena_flags_changed)
 	_on_arena_flags_changed()
+
+## Creates a normal, fully customizable NPC from the same resource format used in the world.
+func _make_arena_npc(id: String, d: Dictionary) -> Npc:
+	var n := Npc.new()
+	n.npc_id = id
+	n.display_name = str(d.get("name", id))
+	n.body_color = d.get("color", Color(0.3, 0.5, 0.7))
+	n.band_color = d.get("band", Color(0.9, 0.9, 0.9))
+	n.greeting = str(d.get("greet", "Hello."))
+	for line in d.get("dialogue_lines", []):
+		n.dialogue_lines.append(str(line))
+	n.goodbye_label = str(d.get("goodbye", "Goodbye"))
+	n.appearance = d.get("appearance", {})
+	return n
 
 func _talk_arena(npc: Npc) -> void:
 	var kind: String = ARENA_NPCS[npc.npc_id]
