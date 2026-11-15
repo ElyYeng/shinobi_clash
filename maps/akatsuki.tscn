@@ -137,7 +137,7 @@ hair_color = Color(0.1098, 0.1059, 0.1412, 1)
 wander_radius = 14.0
 
 [node name="Walker2" type="Marker3D" parent="Members" unique_id=1200262602]
-transform = Transform3D(-0.89191, 0, -0.4522129, 0, 1, 0, 0.4522129, 0, -0.89191, -39.667698, 23.493454, 106.65418)
+transform = Transform3D(-0.89191, 0, -0.4522129, 0, 1, 0, 0.4522129, 0, -0.89191, -39.667698, 23.762709, 106.65418)
 script = ExtResource("mem")
 display_name = "Akatsuki Guard"
 hair_style = "hair2"
@@ -145,7 +145,7 @@ hair_color = Color(0.4196, 0.2667, 0.1373, 1)
 wander_radius = 10.0
 
 [node name="Walker3" type="Marker3D" parent="Members" unique_id=1377879073]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.382877, 25.103971, 103.92959)
+transform = Transform3D(-0.99598503, 0, -0.08952023, 0, 1, 0, 0.08952023, 0, -0.99598503, 15.382877, 25.103971, 103.92959)
 script = ExtResource("mem")
 display_name = "Akatsuki Courier"
 hair_style = "hair3"
