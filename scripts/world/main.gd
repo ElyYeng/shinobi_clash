@@ -566,7 +566,7 @@ func _talk_arena(npc: Npc) -> void:
 	var status := "\n\n[You are %s.  Players in it: %d]" % ["IN" if on else "not in it", who]
 	var action := ("Leave the %s" if on else "Join the %s") % npc.display_name
 	dialog.open(npc.display_name, npc.next_dialogue_line() + status,
-		[[action, NetworkSession.request_arena_toggle.bind(kind)], [npc.goodbye_label, Callable()]])
+		[[action, NetworkSession.request_arena_toggle.bind(kind)], ["Not now", Callable()]])
 
 ## Updates the NPC markers ("ON" when you're in that battle) and tells you when your status changes.
 var _arena_mine := {}
