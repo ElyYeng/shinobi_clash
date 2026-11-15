@@ -1582,6 +1582,20 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])), true, _slot_texture(slot, tex_name))
 				if slot == "headbandmetal":
 					_apply_headband_plate_state(hair, surface, str(look.get("headband_state", "")))
+	# The scalp mesh uses the same material as the hair.
+	if extras.has("backhead"):
+		var back := extras["backhead"] as MeshInstance3D
+		for surface in back.mesh.get_surface_count():
+			_tint_surface(back, surface, color)
+	# Eyebrows are one surface of the face mesh, found by material name.
+	if extras.has("face"):
+		var face := extras["face"] as MeshInstance3D
+		for surface in face.mesh.get_surface_count():
+			var source := face.mesh.surface_get_material(surface)
+			if source != null and source.resource_name.to_lower().contains("eyebrow"):
+				_tint_surface(face, surface, color)
+
+
 ## The headband emblem maps are two-state atlases: scratched is the left half,
 ## clean is the right half. Remap the plate UVs so both sides of the physical plate use
 ## the selected half of the same source image. The original/default state leaves UVs untouched.
@@ -1597,20 +1611,6 @@ static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, stat
 	var offset := material.uv1_offset
 	offset.x += 0.0 if state == "scratched" else 0.5
 	material.uv1_offset = offset
-
-
-	# The scalp mesh uses the same material as the hair.
-	if extras.has("backhead"):
-		var back := extras["backhead"] as MeshInstance3D
-		for surface in back.mesh.get_surface_count():
-			_tint_surface(back, surface, color)
-	# Eyebrows are one surface of the face mesh, found by material name.
-	if extras.has("face"):
-		var face := extras["face"] as MeshInstance3D
-		for surface in face.mesh.get_surface_count():
-			var source := face.mesh.surface_get_material(surface)
-			if source != null and source.resource_name.to_lower().contains("eyebrow"):
-				_tint_surface(face, surface, color)
 
 
 ## Each Hero gets its own copy of the (cached, shared) toon material, so one player's
