@@ -358,6 +358,7 @@ static func _face_variant_label(variant: String) -> String:
 		if model == value:
 			return
 		model = value
+		notify_property_list_changed()
 		emit_changed()
 @export var model_height := 1.85:
 	set(value):
