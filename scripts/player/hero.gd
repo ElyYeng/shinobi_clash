@@ -1596,20 +1596,17 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 				_tint_surface(face, surface, color)
 
 
-## The headband emblem maps are two-state atlases: scratched is the left half,
-## clean is the right half. Remap the plate UVs so both sides of the physical plate use
-## the selected half of the same source image. The original/default state leaves UVs untouched.
+## The headband atlas has the scratched emblem on the left and clean emblem on the right.
+## The mesh UVs already frame one emblem at its original size, so preserve UV scale and shift
+## the existing region left by half an atlas for the scratched option. Clean keeps the GLB UVs.
 static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, state: String) -> void:
-	if state != "scratched" and state != "clean":
+	if state != "scratched":
 		return
 	var material := hair.get_surface_override_material(surface) as BaseMaterial3D
 	if material == null:
 		return
-	var scale := material.uv1_scale
-	scale.x *= 0.5
-	material.uv1_scale = scale
 	var offset := material.uv1_offset
-	offset.x += 0.0 if state == "scratched" else 0.5
+	offset.x -= 0.5
 	material.uv1_offset = offset
 
 
