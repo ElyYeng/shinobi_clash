@@ -2066,7 +2066,7 @@ func _kurama_mode(tails := 1) -> void:
 		return
 	kurama = true
 	kurama_beast = GameData.tailed_beast
-	kurama_tails = 2 if kurama_beast == "matatabi" else clampi(tails, 1, 3)
+	kurama_tails = clampi(tails, 1, 2 if kurama_beast == "matatabi" else 3)   # Matatabi has two forms
 	if NetworkSession.is_active():
 		NetworkSession.broadcast_kurama_state(true, kurama_tails, kurama_beast)
 	Sfx.play(self, "power")
@@ -2090,7 +2090,7 @@ func _set_kurama_tails(n: int) -> void:
 	if is_dead:
 		return
 	if (kurama_beast if kurama else GameData.tailed_beast) == "matatabi":
-		n = 2   # the two-tailed beast has only its own cloak
+		n = mini(n, 2)   # the two-tailed beast has only a one-tail and a two-tail form
 	if not kurama:
 		_kurama_mode(n)
 		return

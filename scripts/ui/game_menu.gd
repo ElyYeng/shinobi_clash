@@ -1691,7 +1691,7 @@ func _build_spirit_page() -> void:
 		_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT" if beast == "kurama" else "TEST BEAST  /  UNLOCKED FOR TESTING", Rect2(20, 230, 560, 28), 18, Color(0.48, 0.16, 0.07), bl_page)
 		var hold_key := "J" if GameData.key_scheme == "modern" else "Z"
 		_bl_label("Hold %s for 2 seconds to awaken %s.\nTap %s to release an active cloak." % [hold_key, "Cloak 1" if beast == "kurama" else def["name"], hold_key], Rect2(25, 263, 550, 49), 17, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
-	_bl_label("Z + 1: ONE TAIL     Z + 2: TWO TAILS     Z + 3: THREE TAILS" if beast == "kurama" else "Z + 1 / 2 / 3: TWO TAILS  (its only cloak)", Rect2(5, 313, 590, 23), 15, INK, bl_page)
+	_bl_label("Z + 1: ONE TAIL     Z + 2: TWO TAILS     Z + 3: THREE TAILS" if beast == "kurama" else "Z + 1: ONE TAIL     Z + 2: TWO TAILS", Rect2(5, 313, 590, 23), 15, INK, bl_page)
 	var status := "EQUIPPED" if GameData.kurama_equipped else "UNEQUIPPED"
 	if not GameData.beast_unlocked(beast):
 		status = "LOCKED  •  DEFEAT KURAMA"

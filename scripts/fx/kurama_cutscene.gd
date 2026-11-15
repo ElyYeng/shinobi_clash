@@ -63,7 +63,7 @@ func _ready() -> void:
 	title = Label.new()
 	var beast: Dictionary = GameData.BEASTS[player.kurama_beast]
 	title.text = "CLOAK %d\n%s" % [form, ["ONE TAIL • AWAKENING", "TWO TAILS • SURGING CHAKRA", "THREE TAILS • UNLEASHED"][form - 1]] if player.kurama_beast == "kurama" \
-		else "%s\nTWO TAILS • BLUE FLAME" % str(beast["name"]).to_upper()
+		else "%s\n%s • BLUE FLAME" % [str(beast["name"]).to_upper(), "ONE TAIL" if form == 1 else "TWO TAILS"]
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 34)
 	title.add_theme_color_override("font_color", beast["title"])
