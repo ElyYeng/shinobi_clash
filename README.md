@@ -103,7 +103,7 @@ MD = mode meter (fills 1/s and +10 per kill, +25 for Kurama); Kurama Mode (Z) ne
 New jutsu live in player.gd (_phoenix, _flame_wave, _dragon_flame, _flame_armor, _substitute, _kunai_volley, _kurama_mode).
 
 ## Lower-left bloodline and tailed-beast level announcements
-Whenever a bloodline or tailed beast levels up, a brief **bottom-left** popup shows its actual saved mastery level: `Hatake Level 100`, `Kurama Cloak Level 100`, or `Matatabi Cloak Level 100`. Rewards queue so simultaneous levels are shown one after another. Combat hits, kills, bosses, and mastery cheat rewards all trigger this automatically. Solo and party quests also award their **base quest XP** to the equipped bloodline and the selected, unlocked and equipped tailed beast; extra quest rewards of whole shinobi levels do not multiply mastery.
+Whenever a bloodline, element or tailed beast levels up, a brief popup slides in from the **bottom-right** corner (Shindo Life style) and shows its actual saved mastery level: `Hatake Level 100`, `Fire Level 25`, `Kurama Cloak Level 100`, or `Matatabi Cloak Level 100`. Rewards queue so simultaneous levels are shown one after another. Combat hits, kills, bosses, and mastery cheat rewards all trigger this automatically. Solo and party quests also award their **base quest XP** to the equipped bloodline and the selected, unlocked and equipped tailed beast; extra quest rewards of whole shinobi levels do not multiply mastery.
 
 ## Levels, stats and bloodline mastery (Shindo Life style)
 - **Shinobi level** (max 500): XP from kills (100), bosses (1000) and quests (300). Each level gives 3 stat points.

@@ -389,18 +389,20 @@ func bind(player: Player) -> void:
 			if is_instance_valid(minimap):
 				minimap.position.x = get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0)
 
-## Bottom-left mastery notification, outside the bottom-centre combat hotbar.
+## Mastery notification in the bottom-right corner (Shindo Life style: slides in from the right edge),
+## outside the bottom-centre combat hotbar.
 func _build_mastery_popup() -> void:
 	mastery_popup = PanelContainer.new()
 	mastery_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mastery_popup.visible = false
 	add_child(mastery_popup)
-	mastery_popup.anchor_left = 0.0
-	mastery_popup.anchor_right = 0.0
+	mastery_popup.anchor_left = 1.0
+	mastery_popup.anchor_right = 1.0
+	mastery_popup.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	mastery_popup.anchor_top = 1.0
 	mastery_popup.anchor_bottom = 1.0
-	mastery_popup.offset_left = 16.0
-	mastery_popup.offset_right = 314.0
+	mastery_popup.offset_left = -314.0
+	mastery_popup.offset_right = -16.0
 	mastery_popup.offset_top = -186.0
 	mastery_popup.offset_bottom = -113.0
 	mastery_popup.add_theme_stylebox_override("panel", _panel_style(Color(0.95, 0.58, 0.16)))
@@ -450,6 +452,12 @@ func _show_next_mastery_popup() -> void:
 		mastery_popup_category.text = "TAILED BEAST LEVEL UP"
 		mastery_popup_icon.texture = Moves.mode_icon("uzumaki")
 		accent = beast["ui"]
+	elif id.begins_with("el:") and GameData.ELEMENTS.has(id.substr(3)):
+		var element := id.substr(3)
+		mastery_popup_title.text = "%s Level %d" % [element, level]
+		mastery_popup_category.text = "ELEMENT LEVEL UP"
+		mastery_popup_icon.texture = Moves.tex("res://assets/icons/el_%s_0.png" % element.to_lower())
+		accent = GameData.ELEMENT_COLORS[element]
 	elif Bloodline.DEFS.has(id) and id != "none":
 		var bloodline: Dictionary = Bloodline.get_def(id)
 		mastery_popup_title.text = "%s Level %d" % [bloodline["name"], level]
@@ -471,7 +479,11 @@ func _tick_mastery_popups(delta: float) -> void:
 	if _mastery_remaining > 0.0:
 		_mastery_remaining = maxf(0.0, _mastery_remaining - delta)
 		var elapsed := MASTERY_POPUP_SECONDS - _mastery_remaining
-		mastery_popup.modulate.a = minf(clampf(elapsed / 0.22, 0.0, 1.0), clampf(_mastery_remaining / 0.5, 0.0, 1.0))
+		var k := minf(clampf(elapsed / 0.3, 0.0, 1.0), clampf(_mastery_remaining / 0.4, 0.0, 1.0))
+		mastery_popup.modulate.a = minf(1.0, k * 2.0)
+		var slide := pow(1.0 - k, 3.0) * 340.0   # in / out through the right screen edge
+		mastery_popup.offset_left = -314.0 + slide
+		mastery_popup.offset_right = -16.0 + slide
 		if _mastery_remaining <= 0.0:
 			mastery_popup.visible = false
 

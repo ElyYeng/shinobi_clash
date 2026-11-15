@@ -465,8 +465,10 @@ static func _record_mastery_level(id: String, old: int, now: int) -> void:
 	if id.begins_with("biju:") and BEASTS.has(id.substr(5)):
 		old = maxi(1, old)
 		now = maxi(1, now)
+	elif id.begins_with("el:") and ELEMENTS.has(id.substr(3)):
+		pass   # elements level up the same way (their "new jutsu" toast still shows too)
 	elif not Bloodline.DEFS.has(id) or id == "none":
-		return   # Elements continue using their regular unlock notifications.
+		return
 	if now > old:
 		_mastery_level_ups.append({"id": id, "level": now})
 
