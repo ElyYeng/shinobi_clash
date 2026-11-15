@@ -540,6 +540,9 @@ func _start_arena() -> void:
 		n.body_color = d["color"]
 		n.band_color = d["band"]
 		n.greeting = d["greet"]
+		for line in d.get("dialogue_lines", []):
+			n.dialogue_lines.append(str(line))
+		n.goodbye_label = str(d.get("goodbye", "Goodbye"))
 		n.appearance = d["appearance"]
 		n.model_path = d["model"]
 		n.model_height = d["model_height"]
@@ -562,8 +565,8 @@ func _talk_arena(npc: Npc) -> void:
 		who += 1
 	var status := "\n\n[You are %s.  Players in it: %d]" % ["IN" if on else "not in it", who]
 	var action := ("Leave the %s" if on else "Join the %s") % npc.display_name
-	dialog.open(npc.display_name, npc.greeting + status,
-		[[action, NetworkSession.request_arena_toggle.bind(kind)], ["Not now", Callable()]])
+	dialog.open(npc.display_name, npc.next_dialogue_line() + status,
+		[[action, NetworkSession.request_arena_toggle.bind(kind)], [npc.goodbye_label, Callable()]])
 
 ## Updates the NPC markers ("ON" when you're in that battle) and tells you when your status changes.
 var _arena_mine := {}
