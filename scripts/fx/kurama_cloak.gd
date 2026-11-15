@@ -6,6 +6,7 @@ extends Node3D
 
 const CHAKRA := Color(0.95, 0.095, 0.025)
 const RIM := Color(1.0, 0.32, 0.06)
+const TAIL_BASE := Vector3(0.0, 0.85, 0.12)   # the tail swings around this point
 const RINGS := 32
 const SIDES := 12
 
@@ -35,20 +36,21 @@ func _ready() -> void:
 	_aura.mat.set_shader_parameter("_Opacity", 3.0)
 	_aura.mat.set_shader_parameter("_OutlineFixed", 0.8)
 	_aura.mat.set_shader_parameter("_SpeedY", 4.0)
+	_aura.mat.set_shader_parameter("_OffsetFade", 10.0)   # the default fades the aura out below ~1 m under the camera: legs stayed bare
 	# Like the anime cloak: one fat S-shaped tail rises behind the back, arcs over the head and
 	# ends in a point (the aura shell adds ~0.045 m to every radius).
 	_tail = _tube(
-		Vector3(0.0, 0.85, 0.12), Vector3(-0.55, 1.10, 1.10),
+		TAIL_BASE, Vector3(-0.55, 1.10, 1.10),
 		Vector3(-0.90, 2.90, 0.90), Vector3(0.25, 2.75, 0.10),
 		0.17, _aura.mat, 0.7, 0.55)
 	add_child(_tail)
 	_ears = Node3D.new()
 	add_child(_ears)
 	for side in [-1.0, 1.0]:
-		var ear := _tube(   # pointed fox ear: a cone leaning slightly outward
-			Vector3(side * 0.10, 0.12, 0.0), Vector3(side * 0.13, 0.20, 0.0),
-			Vector3(side * 0.17, 0.31, 0.0), Vector3(side * 0.22, 0.47, 0.0),
-			0.075, _aura.mat, 1.0, 0.0)
+		var ear := _tube(   # short, wide fox ear on top of the head (thin cones vanish in the aura shader)
+			Vector3(side * 0.10, 0.17, 0.0), Vector3(side * 0.12, 0.25, 0.0),
+			Vector3(side * 0.14, 0.35, 0.0), Vector3(side * 0.16, 0.46, 0.0),
+			0.08, _aura.mat, 0.75, 0.15)
 		_ears.add_child(ear)
 	# Cache the head bone once rather than traversing the model every frame.
 	for node in model.find_children("*", "Skeleton3D", true, false):
@@ -70,6 +72,9 @@ func _process(delta: float) -> void:
 	_age += delta
 	var strength := smoothstep(0.0, 0.45, _age)
 	_aura.set_strength(strength * (0.70 + sin(_age * 3.0) * 0.045))
+	# The tail lashes side to side and nods a little, pivoting at its base.
+	var sway := Basis(Vector3.UP, sin(_age * 2.4) * 0.30 + sin(_age * 5.1) * 0.06) * Basis(Vector3.RIGHT, sin(_age * 1.7 + 1.0) * 0.08)
+	_tail.transform = Transform3D(sway, TAIL_BASE - sway * TAIL_BASE)
 	_follow_model()
 
 func _follow_model() -> void:
