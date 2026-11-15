@@ -24,6 +24,8 @@ var _tail_nodes: Array[MeshInstance3D] = []
 var _ears: Node3D
 var _head_skeleton: Skeleton3D
 var _head_bone := -1
+var _hip_bone := -1
+var _tails_root: Node3D   # sits on the hip bone; the tails hang off it
 var _age := 0.0
 
 static func attach(parent: Node, character: Node3D, tail_count := 1) -> KuramaCloak:
@@ -46,6 +48,8 @@ func _ready() -> void:
 	_aura.mat.set_shader_parameter("_OutlineFixed", 0.8)
 	_aura.mat.set_shader_parameter("_SpeedY", 4.0)
 	_aura.mat.set_shader_parameter("_OffsetFade", 10.0)   # the default fades the aura out below ~1 m under the camera: legs stayed bare
+	_tails_root = Node3D.new()
+	add_child(_tails_root)
 	_build_tails()
 	_ears = Node3D.new()
 	add_child(_ears)
@@ -58,13 +62,16 @@ func _ready() -> void:
 	# Cache the head bone once rather than traversing the model every frame.
 	for node in model.find_children("*", "Skeleton3D", true, false):
 		var skeleton := node as Skeleton3D
+		var hip := -1
 		for bone in skeleton.get_bone_count():
 			var bone_name := skeleton.get_bone_name(bone).to_lower()
-			if bone_name.ends_with("head") and not bone_name.contains("ctrl"):
+			if _head_bone < 0 and bone_name.ends_with("head") and not bone_name.contains("ctrl"):
 				_head_skeleton = skeleton
 				_head_bone = bone
-				break
+			if hip < 0 and (bone_name.ends_with("hips") or bone_name.contains("pelvis")) and not bone_name.contains("ctrl"):
+				hip = bone
 		if _head_bone >= 0:
+			_hip_bone = hip
 			break
 	_follow_model()
 
@@ -77,7 +84,7 @@ func _build_tails() -> void:
 	for i in tails:
 		var sh: Array = TAIL_SHAPES[i]
 		var tail := _tube(TAIL_BASE, sh[1], sh[2], sh[3], float(sh[0]), _aura.mat, 0.7, 0.55)
-		add_child(tail)
+		_tails_root.add_child(tail)
 		_tail_nodes.append(tail)
 
 func set_tails(count: int) -> void:
@@ -109,6 +116,12 @@ func _follow_model() -> void:
 	if is_instance_valid(_head_skeleton) and _head_bone >= 0:
 		head_position = (_head_skeleton.global_transform * _head_skeleton.get_bone_global_pose(_head_bone)).origin
 	_ears.global_position = head_position
+	# The tails stay on the waist however the body leans, dashes or crouches (the model's root stays
+	# at the feet): their base follows the hip bone, the direction follows the character.
+	var waist := model.global_position + global_basis.y * TAIL_BASE.y
+	if is_instance_valid(_head_skeleton) and _hip_bone >= 0:
+		waist = (_head_skeleton.global_transform * _head_skeleton.get_bone_global_pose(_hip_bone)).origin
+	_tails_root.global_position = waist - global_basis.y * TAIL_BASE.y
 	# Head tracking rotates the ears along with the character's face.
 	_ears.global_basis = (_head_skeleton.global_transform * _head_skeleton.get_bone_global_pose(_head_bone)).basis.orthonormalized() if is_instance_valid(_head_skeleton) and _head_bone >= 0 else global_basis
 
