@@ -10,7 +10,6 @@ extends Node3D
 @export var water_wave_height := 0.35
 @export var water_wave_speed := 1.2
 @export var water_alpha := 0.85
-@export var spawn_point := Vector3(-63.0, 20.0, 149.0)   ## moves Markers/PlayerSpawn at load; edit the marker instead if you prefer
 
 func _ready() -> void:
 	var body := StaticBody3D.new()
@@ -67,6 +66,3 @@ func _ready() -> void:
 		var wc := CollisionShape3D.new()
 		wc.shape = ws
 		wb.add_child(wc)
-	var marker := get_parent().get_node_or_null("Markers/PlayerSpawn") as Node3D if get_parent() != null else null
-	if marker != null:
-		marker.position = spawn_point
