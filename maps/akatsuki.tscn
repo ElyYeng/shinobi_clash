@@ -27,7 +27,7 @@ shader_parameter/cloud_offset = Vector2(0, 0)
 sky_material = SubResource("ShaderMaterial_dnl03")
 
 [sub_resource type="BoxShape3D" id="wall"]
-size = Vector3(4, 200, 90)
+size = Vector3(4, 130, 60)
 
 [sub_resource type="Environment" id="Environment_la0qa"]
 background_mode = 2
@@ -63,7 +63,7 @@ adjustment_saturation = 1.12
 
 [node name="Akatsuki" type="Node3D"]
 script = ExtResource("gm")
-play_half = 800.0
+play_half = 480.0
 spawn_area = Rect2(-100, -100, 200, 200)
 
 [node name="Environment" type="Node3D" parent="."]
@@ -84,13 +84,13 @@ script = ExtResource("am")
 [node name="Bounds" type="Node3D" parent="."]
 
 [node name="BoulderWallLeft" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(0.88, 0, -0.48, 0, 1, 0, 0.48, 0, 0.88, -632, 40, 252)
+transform = Transform3D(0.88, 0, -0.48, 0, 1, 0, 0.48, 0, 0.88, -405, 58, 227)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallLeft"]
 shape = SubResource("wall")
 
 [node name="BoulderWallRight" type="StaticBody3D" parent="Bounds"]
-transform = Transform3D(-0.555, 0, -0.831, 0, 1, 0, 0.831, 0, -0.555, 525, 40, 225)
+transform = Transform3D(-0.555, 0, -0.831, 0, 1, 0, 0.831, 0, -0.555, 285, 58, 213)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallRight"]
 shape = SubResource("wall")
@@ -98,4 +98,4 @@ shape = SubResource("wall")
 [node name="Markers" type="Node3D" parent="."]
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -74.3, -7, 126)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 20, 149)

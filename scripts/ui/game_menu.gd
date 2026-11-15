@@ -1348,11 +1348,11 @@ func _page_travel() -> Array:
 				var n: Dictionary = Quests.NPCS[id]
 				spots.append([n["name"], str(n["name"]).substr(0, 1), n["color"].lightened(0.2), n["pos"] + Vector3(0, 1, 4), "Teleport next to this villager."])
 		"akatsuki":
-			spots.append(["Canyon Floor", "C", Color(0.6, 0.5, 0.35), Vector3(-74, -5, 126), "The valley floor by the river."])
-			spots.append(["West Boulder", "W", Color(0.5, 0.5, 0.55), Vector3(-645, 3, 195), "Beside the west boulder."])
-			spots.append(["East Boulder", "E", Color(0.5, 0.5, 0.55), Vector3(542, 79, 158), "Beside the east boulder."])
-			spots.append(["East Ridge", "R", Color(0.55, 0.6, 0.4), Vector3(651, 84, 263), "The high ground in the east."])
-			spots.append(["North Plateau", "N", Color(0.55, 0.6, 0.4), Vector3(-93, 83, -82), "The plateau above the canyon."])
+			spots.append(["Canyon Floor", "C", Color(0.6, 0.5, 0.35), Vector3(-63, 20, 149), "The valley floor by the river."])
+			spots.append(["West Boulder", "W", Color(0.5, 0.5, 0.55), Vector3(-413, 26, 195), "Beside the west boulder."])
+			spots.append(["East Boulder", "E", Color(0.5, 0.5, 0.55), Vector3(297, 72, 173), "Beside the east boulder."])
+			spots.append(["East Ridge", "R", Color(0.55, 0.6, 0.4), Vector3(362, 75, 236), "The high ground in the east."])
+			spots.append(["North Plateau", "N", Color(0.55, 0.6, 0.4), Vector3(-42, 74, 26), "The plateau above the canyon."])
 		"kurama", "uchiha":
 			spots.append(["Arena Edge", "E", Color(0.6, 0.3, 0.2), Vector3(0, 1, 30), "Where the fight begins."])
 			spots.append(["Arena Center", "C", Color(0.8, 0.3, 0.1), Vector3(0, 1, 0), "The middle of the scorched arena."])
