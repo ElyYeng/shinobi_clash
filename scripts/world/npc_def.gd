@@ -6,12 +6,11 @@ extends Resource
 
 ## Cached list of facial shape-key variants found in the character model.
 static var _face_variant_options_cache: Dictionary = {}
-static var _face_variant_options_loaded := false
 const _FACE_PARTS := ["eyebrows", "eyes", "nose", "mouth"]
 const _FACE_EXPRESSIONS := ["blink", "blank", "blind", "scream", "screaml", "screamr", "tension", "down"]
 const _CHARACTER_MODEL_PATH := "res://assets/character/character_main.glb"
 
-## Inspector enum hints are generated from the same blend-shape names used by Hero.face_options().
+## Inspector enum hints are generated from the assigned model's actual facial blend shapes.
 func _validate_property(property: Dictionary) -> void:
 	var property_name := str(property.get("name", ""))
 	if not property_name.begins_with("face_"):
@@ -19,28 +18,29 @@ func _validate_property(property: Dictionary) -> void:
 	var part := property_name.trim_prefix("face_")
 	if not _FACE_PARTS.has(part):
 		return
-	var variants: Array = _get_face_variant_options().get(part, [])
+	var variants: Array = _get_face_variant_options(model).get(part, [])
 	var choices := PackedStringArray(["Default:__default"])
 	for variant in variants:
 		choices.append("%s:%s" % [_face_variant_label(str(variant)), str(variant)])
 	property["hint"] = PROPERTY_HINT_ENUM
 	property["hint_string"] = ",".join(choices)
 
-static func _get_face_variant_options() -> Dictionary:
-	if _face_variant_options_loaded:
-		return _face_variant_options_cache
-	_face_variant_options_loaded = true
+## Uses each NPC's own model when one is assigned; otherwise uses the game's default character.
+static func _get_face_variant_options(source_path: String = "") -> Dictionary:
+	var path := source_path if source_path != "" else _CHARACTER_MODEL_PATH
+	if _face_variant_options_cache.has(path):
+		return _face_variant_options_cache[path]
 	var result: Dictionary = {}
-	if not ResourceLoader.exists(_CHARACTER_MODEL_PATH):
-		_face_variant_options_cache = result
+	if not ResourceLoader.exists(path):
+		_face_variant_options_cache[path] = result
 		return result
-	var packed := load(_CHARACTER_MODEL_PATH) as PackedScene
+	var packed := load(path) as PackedScene
 	if packed == null:
-		_face_variant_options_cache = result
+		_face_variant_options_cache[path] = result
 		return result
 	var instance := packed.instantiate()
 	if instance == null:
-		_face_variant_options_cache = result
+		_face_variant_options_cache[path] = result
 		return result
 	for node in instance.find_children("*", "MeshInstance3D", true, false):
 		var mesh := (node as MeshInstance3D).mesh
@@ -60,8 +60,8 @@ static func _get_face_variant_options() -> Dictionary:
 			var a_original := str(a).contains("original")
 			var b_original := str(b).contains("original")
 			return a_original if a_original != b_original else str(a) < str(b))
-	_face_variant_options_cache = result
-	return _face_variant_options_cache
+	_face_variant_options_cache[path] = result
+	return result
 
 ## [part, variant, side, expression], matching Hero.face_key().
 static func _parse_face_shape(shape_name: String) -> Array:
