@@ -49,15 +49,12 @@ func _rebuild() -> void:
 	var model: Node3D = null
 	if npc != null:
 		title = npc.display_name
-		model = Npc.build_model(npc.model, npc.model_height, npc.model_yaw_deg, npc.outline, npc.display_name, npc.get_appearance())
+		# Match runtime exactly: preview the shared player character with this NPC's look.
+		model = Npc.character_look(npc.get_appearance(), npc_id() if npc_id() != "" else npc.display_name)
 		if model != null:
-			label_y = float(model.get_meta("label_y", label_y))
+			label_y = 2.3
 		else:
-			model = Npc.character_look(npc.get_appearance(), npc_id() if npc_id() != "" else npc.display_name)
-			if model != null:
-				label_y = 2.3
-			else:
-				model = Fx.make_ninja(npc.body_color, npc.band_color)
+			model = Fx.make_ninja(npc.body_color, npc.band_color)
 	if model != null:
 		model.set_meta("npc_preview", true)
 		add_child(model)
