@@ -35,20 +35,20 @@ func _ready() -> void:
 	_aura.mat.set_shader_parameter("_Opacity", 3.0)
 	_aura.mat.set_shader_parameter("_OutlineFixed", 0.8)
 	_aura.mat.set_shader_parameter("_SpeedY", 4.0)
-	# One tapered curve rises behind the body and curls up to head height (aura material, so the
-	# shell adds ~0.045 m to every radius below).
+	# Like the anime cloak: one fat S-shaped tail rises behind the back, arcs over the head and
+	# ends in a point (the aura shell adds ~0.045 m to every radius).
 	_tail = _tube(
-		Vector3(0.0, 0.90, 0.12), Vector3(-0.25, 1.00, 0.80),
-		Vector3(-0.35, 2.00, 0.70), Vector3(0.20, 1.80, 0.35),
-		0.12, _aura.mat)
+		Vector3(0.0, 0.85, 0.12), Vector3(-0.55, 1.10, 1.10),
+		Vector3(-0.90, 2.90, 0.90), Vector3(0.25, 2.75, 0.10),
+		0.17, _aura.mat, 0.7, 0.55)
 	add_child(_tail)
 	_ears = Node3D.new()
 	add_child(_ears)
 	for side in [-1.0, 1.0]:
-		var ear := _tube(
-			Vector3(side * 0.12, 0.12, 0.0), Vector3(side * 0.17, 0.20, 0.01),
-			Vector3(side * 0.20, 0.32, 0.02), Vector3(side * 0.23, 0.38, 0.01),
-			0.05, _aura.mat)
+		var ear := _tube(   # pointed fox ear: a cone leaning slightly outward
+			Vector3(side * 0.10, 0.12, 0.0), Vector3(side * 0.13, 0.20, 0.0),
+			Vector3(side * 0.17, 0.31, 0.0), Vector3(side * 0.22, 0.47, 0.0),
+			0.075, _aura.mat, 1.0, 0.0)
 		_ears.add_child(ear)
 	# Cache the head bone once rather than traversing the model every frame.
 	for node in model.find_children("*", "Skeleton3D", true, false):
@@ -84,7 +84,8 @@ func _follow_model() -> void:
 
 ## Closed tapered tube with analytic curve tangents and a stable radial frame.
 ## Only built on activation; the flowing chakra is animated by the aura shader.
-static func _tube(a: Vector3, b: Vector3, c: Vector3, d: Vector3, radius: float, material: Material) -> MeshInstance3D:
+## taper: how sharply it narrows to a point (1 = cone); bulge: extra thickness in the middle.
+static func _tube(a: Vector3, b: Vector3, c: Vector3, d: Vector3, radius: float, material: Material, taper := 0.65, bulge := 0.40) -> MeshInstance3D:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
@@ -102,7 +103,7 @@ static func _tube(a: Vector3, b: Vector3, c: Vector3, d: Vector3, radius: float,
 		axis = axis.normalized()
 		previous_axis = axis
 		var other := tangent.cross(axis).normalized()
-		var width := radius * pow(1.0 - t, 0.65) * (1.0 + sin(t * PI) * 0.40)
+		var width := radius * pow(1.0 - t, taper) * (1.0 + sin(t * PI) * bulge)
 		for segment in SIDES + 1:
 			var angle := TAU * float(segment) / SIDES
 			var normal := axis * cos(angle) + other * sin(angle)
