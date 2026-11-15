@@ -1684,7 +1684,7 @@ static func _remap_headband_plate_uvs(src: ArrayMesh, surfaces: Array[int], move
 
 
 ## Finds connected UV islands from triangle topology, then moves whole islands between atlas halves.
-## An island already in the requested half is left untouched.
+## If any island crosses u=0.5, the complete surface is left unchanged to avoid a partial remap.
 static func _shift_headband_uv_islands(arrays: Array, move_to_right: bool, primitive: Mesh.PrimitiveType) -> bool:
 	if primitive != Mesh.PRIMITIVE_TRIANGLES:
 		push_warning("[Hero] Headband UV remap expects triangle surfaces; leaving this surface unchanged.")
@@ -1732,7 +1732,7 @@ static func _shift_headband_uv_islands(arrays: Array, move_to_right: bool, primi
 		island_bounds[root] = bounds
 
 	var shifts: Dictionary = {}
-	var warned_straddle := false
+	var has_straddle := false
 	for root in island_bounds:
 		var lo := float(island_bounds[root][0])
 		var hi := float(island_bounds[root][1])
@@ -1740,9 +1740,12 @@ static func _shift_headband_uv_islands(arrays: Array, move_to_right: bool, primi
 			shifts[root] = 0.5
 		elif not move_to_right and lo >= 0.5 - _HEADBAND_UV_EPSILON:
 			shifts[root] = -0.5
-		elif lo < 0.5 - _HEADBAND_UV_EPSILON and hi > 0.5 + _HEADBAND_UV_EPSILON and not warned_straddle:
-			push_warning("[Hero] A headband UV island crosses u=0.5; it was left unchanged. Re-pack that island in Blender.")
-			warned_straddle = true
+		elif lo < 0.5 - _HEADBAND_UV_EPSILON and hi > 0.5 + _HEADBAND_UV_EPSILON and not has_straddle:
+			push_warning("[Hero] A headband UV island crosses u=0.5; this surface was left unchanged. Re-pack the island in Blender.")
+			has_straddle = true
+
+	if has_straddle:
+		return false
 
 	for i in uvs.size():
 		var root := _headband_uv_root(parent, i)
