@@ -1581,7 +1581,7 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 				var tex_name := str(look.get(str(COLOR_SLOTS[slot].get("texture_key", "")), ""))
 				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])), true, _slot_texture(slot, tex_name))
 				if slot == "headbandmetal":
-					_apply_headband_plate_state(hair, surface, str(look.get("headband_state", "")))
+					_apply_headband_plate_state(hair, surface, str(look.get("headband_state", "")), tex_name)
 	# The scalp mesh uses the same material as the hair.
 	if extras.has("backhead"):
 		var back := extras["backhead"] as MeshInstance3D
@@ -1596,19 +1596,157 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 				_tint_surface(face, surface, color)
 
 
-## The headband atlas has the scratched emblem on the left and clean emblem on the right.
-## The mesh UVs already frame one emblem at its original size, so preserve UV scale and shift
-## the existing region left by half an atlas for the scratched option. Clean keeps the GLB UVs.
-static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, state: String) -> void:
-	if state != "scratched":
-		return
-	var material := hair.get_surface_override_material(surface) as BaseMaterial3D
-	if material == null:
-		return
-	var offset := material.uv1_offset
-	offset.x -= 0.5
-	material.uv1_offset = offset
+## Cache remapped meshes by source mesh, surface, and requested plate condition.
+## The texture itself does not affect the UV remap, so different village atlases share this cache.
+static var _headband_plate_mesh_cache: Dictionary = {}
 
+## Atlas layout: scratched emblem on the LEFT, clean emblem on the RIGHT.
+## Move the plate UV islands on a duplicate ArrayMesh instead of changing material UV transforms.
+## Empty state / empty texture restores the untouched imported mesh.
+static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, state: String, tex_name: String) -> void:
+	const ORIGINAL_META := "hero_headband_original_mesh"
+	if not hair.has_meta(ORIGINAL_META):
+		hair.set_meta(ORIGINAL_META, hair.mesh)
+	var original_mesh := hair.get_meta(ORIGINAL_META) as Mesh
+	if original_mesh == null:
+		return
+	var original_array := original_mesh as ArrayMesh
+	if original_array == null:
+		hair.mesh = original_mesh
+		push_warning("[Hero] Headband UV remap skipped: the source hair mesh is not an ArrayMesh.")
+		return
+
+	var normalized_state := state.strip_edges().to_lower()
+	if tex_name.strip_edges() == "" or not normalized_state in ["scratched", "clean"]:
+		hair.mesh = original_mesh
+		return
+
+	if surface < 0 or surface >= original_array.get_surface_count():
+		push_warning("[Hero] Headband UV remap skipped: surface index %d is invalid." % surface)
+		return
+
+	var cache_key := "%d:%d:%s" % [original_array.get_instance_id(), surface, normalized_state]
+	if not _headband_plate_mesh_cache.has(cache_key):
+		_headband_plate_mesh_cache[cache_key] = _remap_headband_plate_uvs(
+			original_array, surface, normalized_state == "clean"
+		)
+	hair.mesh = _headband_plate_mesh_cache[cache_key] as ArrayMesh
+
+
+## Rebuilds an ArrayMesh while changing only the selected surface's UV coordinates.
+## Skin weights, bones, blend shapes, LOD indices, materials, and surface names are retained.
+static func _remap_headband_plate_uvs(src: ArrayMesh, surface: int, move_to_right: bool) -> ArrayMesh:
+	var dst := ArrayMesh.new()
+	dst.resource_name = src.resource_name
+	dst.blend_shape_mode = src.blend_shape_mode
+	dst.custom_aabb = src.custom_aabb
+	for i in src.get_blend_shape_count():
+		dst.add_blend_shape(src.get_blend_shape_name(i))
+
+	for s in src.get_surface_count():
+		var arrays := src.surface_get_arrays(s)
+		if s == surface:
+			if not _shift_headband_uv_islands(arrays, move_to_right, src.surface_get_primitive_type(s)):
+				return src
+
+		var format_mask := src.surface_get_format(s)
+		var flags := format_mask & (
+			Mesh.ARRAY_FLAG_USE_DYNAMIC_UPDATE
+			| Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
+			| Mesh.ARRAY_FLAG_USES_EMPTY_VERTEX_ARRAY
+		)
+		dst.add_surface_from_arrays(
+			src.surface_get_primitive_type(s),
+			arrays,
+			src.surface_get_blend_shape_arrays(s),
+			src.surface_get_lods(s),
+			flags
+		)
+		dst.surface_set_material(s, src.surface_get_material(s))
+		dst.surface_set_name(s, src.surface_get_name(s))
+
+	# The shadow mesh uses the same positions; UV changes do not affect its purpose.
+	dst.shadow_mesh = src.shadow_mesh
+	return dst
+
+
+## Finds a connected UV island from the triangle index topology, then moves whole islands
+## between atlas halves. An island already in the requested half is left untouched.
+static func _shift_headband_uv_islands(arrays: Array, move_to_right: bool, primitive: Mesh.PrimitiveType) -> bool:
+	if primitive != Mesh.PRIMITIVE_TRIANGLES:
+		push_warning("[Hero] Headband UV remap expects triangle surfaces; leaving this surface unchanged.")
+		return false
+
+	var uv_data = arrays[Mesh.ARRAY_TEX_UV]
+	if not uv_data is PackedVector2Array or (uv_data as PackedVector2Array).is_empty():
+		push_warning("[Hero] Headband UV remap skipped: the plate surface has no UV2D data.")
+		return false
+	var uvs: PackedVector2Array = uv_data
+
+	var index_data = arrays[Mesh.ARRAY_INDEX]
+	var use_indices := index_data is PackedInt32Array and not (index_data as PackedInt32Array).is_empty()
+	var indices := PackedInt32Array()
+	if use_indices:
+		indices = index_data as PackedInt32Array
+	var element_count := indices.size() if use_indices else uvs.size()
+	if element_count % 3 != 0:
+		push_warning("[Hero] Headband UV remap skipped: triangle index count is not divisible by 3.")
+		return false
+
+	var parent: Array[int] = []
+	for i in uvs.size():
+		parent.append(i)
+
+	for t in range(0, element_count, 3):
+		var a: int = indices[t] if use_indices else t
+		var b: int = indices[t + 1] if use_indices else t + 1
+		var c: int = indices[t + 2] if use_indices else t + 2
+		if a < 0 or b < 0 or c < 0 or a >= uvs.size() or b >= uvs.size() or c >= uvs.size():
+			push_warning("[Hero] Headband UV remap skipped: a triangle references an invalid vertex.")
+			return false
+		var root_a := _headband_uv_root(parent, a)
+		var root_b := _headband_uv_root(parent, b)
+		var root_c := _headband_uv_root(parent, c)
+		parent[root_b] = root_a
+		parent[root_c] = root_a
+
+	var island_bounds: Dictionary = {}
+	for i in uvs.size():
+		var root := _headband_uv_root(parent, i)
+		var bounds: Array = island_bounds.get(root, [INF, -INF])
+		bounds[0] = minf(float(bounds[0]), uvs[i].x)
+		bounds[1] = maxf(float(bounds[1]), uvs[i].x)
+		island_bounds[root] = bounds
+
+	const EPSILON := 0.002
+	var shifts: Dictionary = {}
+	var warned_straddle := false
+	for root in island_bounds:
+		var lo := float(island_bounds[root][0])
+		var hi := float(island_bounds[root][1])
+		if move_to_right and hi <= 0.5 + EPSILON:
+			shifts[root] = 0.5
+		elif not move_to_right and lo >= 0.5 - EPSILON:
+			shifts[root] = -0.5
+		elif lo < 0.5 - EPSILON and hi > 0.5 + EPSILON and not warned_straddle:
+			push_warning("[Hero] A headband UV island crosses u=0.5; it was left unchanged. Re-pack that island in Blender.")
+			warned_straddle = true
+
+	for i in uvs.size():
+		var root := _headband_uv_root(parent, i)
+		var shift := float(shifts.get(root, 0.0))
+		if not is_zero_approx(shift):
+			uvs[i].x += shift
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	return true
+
+
+static func _headband_uv_root(parent: Array[int], index: int) -> int:
+	var current := index
+	while parent[current] != current:
+		parent[current] = parent[parent[current]]
+		current = parent[current]
+	return current
 
 ## Each Hero gets its own copy of the (cached, shared) toon material, so one player's
 ## hair colour never leaks onto another player, a clone or a preview.
