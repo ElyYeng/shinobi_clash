@@ -10,7 +10,13 @@ extends Marker3D
 
 @export var npc: NpcDef:
 	set(v):
+		if npc == v:
+			return
+		if npc != null and npc.changed.is_connected(_queue):
+			npc.changed.disconnect(_queue)
 		npc = v
+		if npc != null and not npc.changed.is_connected(_queue):
+			npc.changed.connect(_queue)
 		_queue()
 
 var _pending := false
@@ -47,7 +53,7 @@ func _rebuild() -> void:
 		if model != null:
 			label_y = float(model.get_meta("label_y", label_y))
 		else:
-			model = Npc.character_look(npc.appearance, npc_id() if npc_id() != "" else npc.display_name)
+			model = Npc.character_look(npc.get_appearance(), npc_id() if npc_id() != "" else npc.display_name)
 			if model != null:
 				label_y = 2.3
 			else:
