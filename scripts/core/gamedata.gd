@@ -116,7 +116,7 @@ static var character_appearance := {
 	"pants_style": "pants1",
 	"headband_color": "#2B3A67",
 	"headbandmetal_color": "#FFFFFF",
-	"headbandmetal_texture": "",
+	"headbandmetal_texture": "Leaf.png",
 	"shirt_color": "#FFFFFF",
 	"pants_color": "#FFFFFF"
 }
