@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="NpcDef" format=3 uid="uid://gnqndnu0wqmt"]
+
+[ext_resource type="Script" uid="uid://dwb3sfiqnm17g" path="res://scripts/world/npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Itachi"
+pos = Vector3(-65, 0, 35)
+greeting = "You have courage showing your face around here..."
+dialogue_lines_text = "Come back later.."
+goodbye_label = "..."
+hair_style = "hair6"
+hair_color = Color(0.2538, 0.25596002, 0.27, 1)
+shirt_style = "shirt3"
+headband_state = "scratched"
+face_eyebrows = "sasuke"
+face_eyes = "itachi"
+face_nose = "itachi"
+face_mouth = "Moriginal01"
+iris_style = "Eye_1.png"
+use_custom_eye_color = true
+eye_color = Color(0, 0, 0, 1)
+body_color = Color(0.8, 0.45, 0.1, 1)
+band_color = Color(0.2, 0.2, 0.25, 1)

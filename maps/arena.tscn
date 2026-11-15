@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://d3lkyqs4nx81k"]
 
+[ext_resource type="PackedScene" path="res://scenes/npc_spawn.tscn" id="8_1wtoh"]
+[ext_resource type="Resource" uid="uid://gnqndnu0wqmt" path="res://data/npcs/itachi.tres" id="9_1wtoh"]
 [ext_resource type="Script" uid="uid://c8ckl5gadv870" path="res://scripts/world/arena_map.gd" id="am"]
 [ext_resource type="Resource" path="res://data/arena_npcs/ninja_battle.tres" id="arena_ninja"]
 [ext_resource type="Resource" path="res://data/arena_npcs/pvp_battle.tres" id="arena_pvp"]
@@ -104,3 +106,7 @@ npc = ExtResource("arena_ninja")
 transform = Transform3D(-0.57484156, 0, 0.8182648, 0, 1, 0, -0.8182648, 0, -0.57484156, 4, 0, 12)
 script = ExtResource("arena_spawn")
 npc = ExtResource("arena_pvp")
+
+[node name="NpcSpawn" parent="." unique_id=1528877273 instance=ExtResource("8_1wtoh")]
+transform = Transform3D(-0.5387746, 0, 0.84244996, 0, 1, 0, -0.84244996, 0, -0.5387746, 28.31501, 0, 29.123753)
+npc = ExtResource("9_1wtoh")
