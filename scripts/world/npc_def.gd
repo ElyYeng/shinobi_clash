@@ -19,10 +19,18 @@ func _validate_property(property: Dictionary) -> void:
 	if property_name in ["model", "model_height", "model_yaw_deg", "outline"]:
 		property["usage"] = PROPERTY_USAGE_STORAGE
 		return
+	if property_name == "headband_texture":
+		# Legacy fabric-texture field: hidden because the folder contains plate atlases.
+		property["usage"] = PROPERTY_USAGE_STORAGE
+		return
+	if property_name == "headband_state":
+		property["hint"] = PROPERTY_HINT_ENUM
+		property["hint_string"] = ",scratched,clean"
+		return
 	var texture_dir := ""
 	if property_name == "iris_style":
 		texture_dir = _EYE_STYLES_DIR
-	elif property_name in ["headband_texture", "headbandmetal_texture"]:
+	elif property_name == "headbandmetal_texture":
 		texture_dir = _HEADBAND_TEXTURES_DIR
 	if texture_dir != "":
 		property["hint"] = PROPERTY_HINT_ENUM
@@ -222,19 +230,22 @@ static func _face_variant_label(variant: String) -> String:
 			return
 		headbandmetal_color = value
 		emit_changed()
-## Cloth texture on the headband. Empty uses the character model's original material.
-@export var headband_texture := "":
-	set(value):
-		if headband_texture == value:
-			return
-		headband_texture = value
-		emit_changed()
-## Metal plate texture / village symbol. Empty uses the model's embedded Konoha plate texture.
+## Legacy field retained for old NPC resources, hidden from the Inspector and no longer used.
+@export_storage var headband_texture := ""
+## Metal plate texture / village emblem atlas. Empty uses the model's embedded plate texture.
 @export var headbandmetal_texture := "":
 	set(value):
 		if headbandmetal_texture == value:
 			return
 		headbandmetal_texture = value
+		emit_changed()
+## Each emblem atlas has both variants: left half is scratched, right half is clean.
+@export var headband_state := "":
+	set(value):
+		var normalized := value.strip_edges().to_lower()
+		if headband_state == normalized:
+			return
+		headband_state = normalized
 		emit_changed()
 
 @export_subgroup("Face")
@@ -484,8 +495,8 @@ func get_appearance() -> Dictionary:
 		"pants_color": "#" + pants_color.to_html(false),
 		"headband_color": "#" + headband_color.to_html(false),
 		"headbandmetal_color": "#" + headbandmetal_color.to_html(false),
-		"headband_texture": headband_texture,
 		"headbandmetal_texture": headbandmetal_texture,
+		"headband_state": headband_state,
 		"eye_style": iris_style,
 		"cloak_color1": "#" + cloak_color1.to_html(false),
 		"cloak_color2": "#" + cloak_color2.to_html(false),
