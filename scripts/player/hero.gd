@@ -1598,16 +1598,17 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 
 ## Cache remapped meshes by source mesh, surface, and requested plate condition.
 ## The texture itself does not affect the UV remap, so different village atlases share this cache.
+const _HEADBAND_ORIGINAL_META := "hero_headband_original_mesh"
+const _HEADBAND_UV_EPSILON := 0.002
 static var _headband_plate_mesh_cache: Dictionary = {}
 
 ## Atlas layout: scratched emblem on the LEFT, clean emblem on the RIGHT.
 ## Move the plate UV islands on a duplicate ArrayMesh instead of changing material UV transforms.
 ## Empty state / empty texture restores the untouched imported mesh.
 static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, state: String, tex_name: String) -> void:
-	const ORIGINAL_META := "hero_headband_original_mesh"
-	if not hair.has_meta(ORIGINAL_META):
-		hair.set_meta(ORIGINAL_META, hair.mesh)
-	var original_mesh := hair.get_meta(ORIGINAL_META) as Mesh
+	if not hair.has_meta(_HEADBAND_ORIGINAL_META):
+		hair.set_meta(_HEADBAND_ORIGINAL_META, hair.mesh)
+	var original_mesh := hair.get_meta(_HEADBAND_ORIGINAL_META) as Mesh
 	if original_mesh == null:
 		return
 	var original_array := original_mesh as ArrayMesh
@@ -1617,7 +1618,7 @@ static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, stat
 		return
 
 	var normalized_state := state.strip_edges().to_lower()
-	if tex_name.strip_edges() == "" or not normalized_state in ["scratched", "clean"]:
+	if tex_name.strip_edges() == "" or not (normalized_state in ["scratched", "clean"]):
 		hair.mesh = original_mesh
 		return
 
@@ -1655,11 +1656,15 @@ static func _remap_headband_plate_uvs(src: ArrayMesh, surface: int, move_to_righ
 			| Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS
 			| Mesh.ARRAY_FLAG_USES_EMPTY_VERTEX_ARRAY
 		)
+		# Preserve custom-channel format bits as well as the optional mesh flags.
+		for custom_channel in range(4):
+			var shift := Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT + custom_channel * Mesh.ARRAY_FORMAT_CUSTOM_BITS
+			flags |= format_mask & (Mesh.ARRAY_FORMAT_CUSTOM_MASK << shift)
 		dst.add_surface_from_arrays(
 			src.surface_get_primitive_type(s),
 			arrays,
 			src.surface_get_blend_shape_arrays(s),
-			src.surface_get_lods(s),
+			{},
 			flags
 		)
 		dst.surface_set_material(s, src.surface_get_material(s))
@@ -1718,17 +1723,16 @@ static func _shift_headband_uv_islands(arrays: Array, move_to_right: bool, primi
 		bounds[1] = maxf(float(bounds[1]), uvs[i].x)
 		island_bounds[root] = bounds
 
-	const EPSILON := 0.002
 	var shifts: Dictionary = {}
 	var warned_straddle := false
 	for root in island_bounds:
 		var lo := float(island_bounds[root][0])
 		var hi := float(island_bounds[root][1])
-		if move_to_right and hi <= 0.5 + EPSILON:
+		if move_to_right and hi <= 0.5 + _HEADBAND_UV_EPSILON:
 			shifts[root] = 0.5
-		elif not move_to_right and lo >= 0.5 - EPSILON:
+		elif not move_to_right and lo >= 0.5 - _HEADBAND_UV_EPSILON:
 			shifts[root] = -0.5
-		elif lo < 0.5 - EPSILON and hi > 0.5 + EPSILON and not warned_straddle:
+		elif lo < 0.5 - _HEADBAND_UV_EPSILON and hi > 0.5 + _HEADBAND_UV_EPSILON and not warned_straddle:
 			push_warning("[Hero] A headband UV island crosses u=0.5; it was left unchanged. Re-pack that island in Blender.")
 			warned_straddle = true
 
