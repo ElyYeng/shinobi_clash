@@ -49,7 +49,7 @@ func _rebuild() -> void:
 	var model: Node3D = null
 	if npc != null:
 		title = npc.display_name
-		model = Npc.build_model(npc.model, npc.model_height, npc.model_yaw_deg, npc.outline, npc.display_name)
+		model = Npc.build_model(npc.model, npc.model_height, npc.model_yaw_deg, npc.outline, npc.display_name, npc.get_appearance())
 		if model != null:
 			label_y = float(model.get_meta("label_y", label_y))
 		else:
