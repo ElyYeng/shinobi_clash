@@ -7,6 +7,9 @@ var display_name := "Villager"
 var body_color := Color(0.3, 0.5, 0.7)
 var band_color := Color(0.9, 0.9, 0.9)
 var greeting := "Hello."
+var dialogue_lines: Array[String] = []
+var goodbye_label := "Goodbye"
+var _dialogue_line_index := 0
 var model_path := ""        # .glb / .gltf / .tscn; empty = the game character with `appearance`
 var appearance: Dictionary = {}
 var model_height := 1.85
@@ -15,6 +18,17 @@ var outline := true
 var label_y := 2.6
 var model: Node3D
 var marker: Label3D
+
+## Greeting first, then the Inspector-authored lines in order (loops at the end).
+func next_dialogue_line() -> String:
+	if _dialogue_line_index == 0:
+		_dialogue_line_index = 1
+		return greeting
+	if dialogue_lines.is_empty():
+		return greeting
+	var line := dialogue_lines[(_dialogue_line_index - 1) % dialogue_lines.size()]
+	_dialogue_line_index += 1
+	return line
 
 func _ready() -> void:
 	var col := CollisionShape3D.new()
