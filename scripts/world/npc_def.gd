@@ -23,9 +23,11 @@ func _validate_property(property: Dictionary) -> void:
 	if not _FACE_PARTS.has(part):
 		return
 	var variants: Array = _get_face_variant_options().get(part, [])
-	var choices := PackedStringArray(["Default:__default"])
+	# String enum hints must contain the actual stored string values. Label:value pairs
+	# are displayed/stored literally here (e.g. "Itachi:itachi"), so blend-shape names never match.
+	var choices := PackedStringArray(["__default"])
 	for variant in variants:
-		choices.append("%s:%s" % [_face_variant_label(str(variant)), str(variant)])
+		choices.append(str(variant))
 	property["hint"] = PROPERTY_HINT_ENUM
 	property["hint_string"] = ",".join(choices)
 
@@ -198,7 +200,7 @@ static func _face_variant_label(variant: String) -> String:
 
 @export_subgroup("Face")
 ## Face type chooses the default original facial features. Specific selectors below override it.
-@export_enum("Male:male", "Female:female") var face_sex := "male":
+@export_enum("male", "female") var face_sex := "male":
 	set(value):
 		if face_sex == value:
 			return
@@ -397,6 +399,15 @@ static func _face_variant_label(variant: String) -> String:
 		band_color = value
 		emit_changed()
 
+## Converts a string enum value to the exact identifier stored in the character's blend shapes.
+## This also repairs values saved by the earlier "Label:identifier" Inspector dropdowns.
+static func _face_option_value(raw: String) -> String:
+	var value := raw.strip_edges()
+	var separator := value.rfind(":")
+	if separator >= 0:
+		value = value.substr(separator + 1).strip_edges()
+	return value
+
 ## Array consumed by the NPC at runtime. Blank lines are ignored.
 func get_dialogue_lines() -> Array[String]:
 	var out: Array[String] = []
@@ -439,10 +450,12 @@ func get_appearance() -> Dictionary:
 		"jacket_trim": "#" + jacket_trim.to_html(false),
 	}
 	out.merge(colours, true)
-	out["sex"] = face_sex
+	# Older Inspector enum selections may have saved the display label and id together,
+	# e.g. "Itachi:itachi". Hero expects only the exact blend-shape id ("itachi").
+	out["sex"] = _face_option_value(face_sex)
 	var face := {}
 	for part in _FACE_PARTS:
-		var selected := str(get("face_" + part))
+		var selected := _face_option_value(str(get("face_" + part)))
 		if selected != "" and selected != "__default":
 			face[part] = selected
 	out["face"] = face
