@@ -4,6 +4,94 @@ extends Resource
 ## One NPC = one .tres file in res://data/npcs/ (the file name is the NPC id quests refer to).
 ## Leave model empty to use the game's customizable character; set a GLB / GLTF / TSCN for a unique model.
 
+## Cached list of facial shape-key variants found in the character model.
+static var _face_variant_options_cache: Dictionary = {}
+static var _face_variant_options_loaded := false
+const _FACE_PARTS := ["eyebrows", "eyes", "nose", "mouth"]
+const _FACE_EXPRESSIONS := ["blink", "blank", "blind", "scream", "screaml", "screamr", "tension", "down"]
+const _CHARACTER_MODEL_PATH := "res://assets/character/character_main.glb"
+
+## Inspector enum hints are generated from the same blend-shape names used by Hero.face_options().
+func _validate_property(property: Dictionary) -> void:
+	var property_name := str(property.get("name", ""))
+	if not property_name.begins_with("face_"):
+		return
+	var part := property_name.trim_prefix("face_")
+	if not _FACE_PARTS.has(part):
+		return
+	var variants: Array = _get_face_variant_options().get(part, [])
+	var choices := PackedStringArray(["Default:__default"])
+	for variant in variants:
+		choices.append("%s:%s" % [_face_variant_label(str(variant)), str(variant)])
+	property["hint"] = PROPERTY_HINT_ENUM
+	property["hint_string"] = ",".join(choices)
+
+static func _get_face_variant_options() -> Dictionary:
+	if _face_variant_options_loaded:
+		return _face_variant_options_cache
+	_face_variant_options_loaded = true
+	var result: Dictionary = {}
+	if not ResourceLoader.exists(_CHARACTER_MODEL_PATH):
+		_face_variant_options_cache = result
+		return result
+	var packed := load(_CHARACTER_MODEL_PATH) as PackedScene
+	if packed == null:
+		_face_variant_options_cache = result
+		return result
+	var instance := packed.instantiate()
+	if instance == null:
+		_face_variant_options_cache = result
+		return result
+	for node in instance.find_children("*", "MeshInstance3D", true, false):
+		var mesh := (node as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		for i in mesh.get_blend_shape_count():
+			var key := _parse_face_shape(str(mesh.get_blend_shape_name(i)))
+			if key[0] == "" or key[3] != "":
+				continue
+			if not result.has(key[0]):
+				result[key[0]] = []
+			if not (result[key[0]] as Array).has(key[1]):
+				(result[key[0]] as Array).append(key[1])
+	instance.free()
+	for part in result:
+		(result[part] as Array).sort_custom(func(a, b) -> bool:
+			var a_original := str(a).contains("original")
+			var b_original := str(b).contains("original")
+			return a_original if a_original != b_original else str(a) < str(b))
+	_face_variant_options_cache = result
+	return _face_variant_options_cache
+
+## [part, variant, side, expression], matching Hero.face_key().
+static func _parse_face_shape(shape_name: String) -> Array:
+	var cut := shape_name.find("_")
+	if cut < 0:
+		return ["", "", "", ""]
+	var part := shape_name.left(cut).to_lower()
+	if not _FACE_PARTS.has(part):
+		return ["", "", "", ""]
+	var rest := shape_name.substr(cut + 1)
+	var expression := ""
+	var bits := rest.split("_")
+	if bits.size() > 1 and _FACE_EXPRESSIONS.has(str(bits[-1]).to_lower()):
+		var last := str(bits[-1]).to_lower()
+		expression = last.trim_suffix("l").trim_suffix("r") if last.begins_with("scream") else last
+		if expression in ["blank", "blind"]:
+			expression = "blink"
+		bits.remove_at(bits.size() - 1)
+		rest = "_".join(bits)
+	var side := ""
+	if part == "eyes" and (rest.ends_with("L") or rest.ends_with("R")):
+		side = rest.right(1)
+		rest = rest.left(rest.length() - 1)
+	return [part, rest, side, expression]
+
+static func _face_variant_label(variant: String) -> String:
+	if variant.contains("original"):
+		return "Original %d (%s)" % [int(variant.right(2)), "F" if variant.begins_with("W") else "M"]
+	return variant.replace("_", " ").capitalize()
+
 @export_group("Identity")
 @export var display_name := "Villager":
 	set(value):
@@ -105,6 +193,39 @@ extends Resource
 		emit_changed()
 
 @export_subgroup("Face")
+## Face type chooses the default original facial features. Specific selectors below override it.
+@export_enum("Male:male", "Female:female") var face_sex := "male":
+	set(value):
+		if face_sex == value:
+			return
+		face_sex = value
+		emit_changed()
+## These dropdowns are populated from the facial shape keys in character_main.glb.
+## Choose Default to use the selected face type's original feature.
+@export var face_eyebrows := "__default":
+	set(value):
+		if face_eyebrows == value:
+			return
+		face_eyebrows = value
+		emit_changed()
+@export var face_eyes := "__default":
+	set(value):
+		if face_eyes == value:
+			return
+		face_eyes = value
+		emit_changed()
+@export var face_nose := "__default":
+	set(value):
+		if face_nose == value:
+			return
+		face_nose = value
+		emit_changed()
+@export var face_mouth := "__default":
+	set(value):
+		if face_mouth == value:
+			return
+		face_mouth = value
+		emit_changed()
 @export var use_custom_skin_color := false:
 	set(value):
 		if use_custom_skin_color == value:
@@ -312,6 +433,13 @@ func get_appearance() -> Dictionary:
 		"jacket_trim": "#" + jacket_trim.to_html(false),
 	}
 	out.merge(colours, true)
+	out["sex"] = face_sex
+	var face := {}
+	for part in _FACE_PARTS:
+		var selected := str(get("face_" + part))
+		if selected != "" and selected != "__default":
+			face[part] = selected
+	out["face"] = face
 	if use_custom_skin_color:
 		out["skin_color"] = "#" + skin_color.to_html(false)
 	else:
