@@ -9,6 +9,8 @@ static var _face_variant_options_cache: Dictionary = {}
 const _FACE_PARTS := ["eyebrows", "eyes", "nose", "mouth"]
 const _FACE_EXPRESSIONS := ["blink", "blank", "blind", "scream", "screaml", "screamr", "tension", "down"]
 const _CHARACTER_MODEL_PATH := "res://assets/character/character_main.glb"
+const _EYE_STYLES_DIR := "res://assets/character/eye_styles"
+const _HEADBAND_TEXTURES_DIR := "res://assets/character/headband_textures"
 
 ## Inspector enum hints are generated from the assigned model's actual facial blend shapes.
 func _validate_property(property: Dictionary) -> void:
@@ -17,6 +19,15 @@ func _validate_property(property: Dictionary) -> void:
 	if property_name in ["model", "model_height", "model_yaw_deg", "outline"]:
 		property["usage"] = PROPERTY_USAGE_STORAGE
 		return
+	var texture_dir := ""
+	if property_name == "iris_style":
+		texture_dir = _EYE_STYLES_DIR
+	elif property_name in ["headband_texture", "headbandmetal_texture"]:
+		texture_dir = _HEADBAND_TEXTURES_DIR
+	if texture_dir != "":
+		property["hint"] = PROPERTY_HINT_ENUM
+		property["hint_string"] = ",".join(_texture_file_options(texture_dir))
+		return
 	if not property_name.begins_with("face_"):
 		return
 	var part := property_name.trim_prefix("face_")
@@ -24,12 +35,26 @@ func _validate_property(property: Dictionary) -> void:
 		return
 	var variants: Array = _get_face_variant_options().get(part, [])
 	# String enum hints must contain the actual stored string values. Label:value pairs
-	# are displayed/stored literally here (e.g. "Itachi:itachi"), so blend-shape names never match.
+	# are displayed/stored literally here, so keep the exact blend-shape ids.
 	var choices := PackedStringArray(["__default"])
 	for variant in variants:
 		choices.append(str(variant))
 	property["hint"] = PROPERTY_HINT_ENUM
 	property["hint_string"] = ",".join(choices)
+
+## Texture filenames exposed by the Inspector, matching the same folders used by the player editor.
+## The empty first option means "use the texture embedded in character_main.glb".
+static func _texture_file_options(directory_path: String) -> PackedStringArray:
+	var choices := PackedStringArray([""])
+	if not DirAccess.dir_exists_absolute(directory_path):
+		return choices
+	var files := DirAccess.get_files_at(directory_path)
+	files.sort()
+	for raw_file in files:
+		var file_name := str(raw_file).trim_suffix(".import").trim_suffix(".remap")
+		if file_name.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"] and not choices.has(file_name):
+			choices.append(file_name)
+	return choices
 
 ## Uses each NPC's own model when one is assigned; otherwise uses the game's default character.
 static func _get_face_variant_options(source_path: String = "") -> Dictionary:
@@ -197,6 +222,20 @@ static func _face_variant_label(variant: String) -> String:
 			return
 		headbandmetal_color = value
 		emit_changed()
+## Cloth texture on the headband. Empty uses the character model's original material.
+@export var headband_texture := "":
+	set(value):
+		if headband_texture == value:
+			return
+		headband_texture = value
+		emit_changed()
+## Metal plate texture / village symbol. Empty uses the model's embedded Konoha plate texture.
+@export var headbandmetal_texture := "":
+	set(value):
+		if headbandmetal_texture == value:
+			return
+		headbandmetal_texture = value
+		emit_changed()
 
 @export_subgroup("Face")
 ## Face type chooses the default original facial features. Specific selectors below override it.
@@ -236,6 +275,13 @@ static func _face_variant_label(variant: String) -> String:
 		if face_mouth == normalized:
 			return
 		face_mouth = normalized
+		emit_changed()
+## Iris texture design from the same eye_styles folder used by Customize > Eyes.
+@export var iris_style := "":
+	set(value):
+		if iris_style == value:
+			return
+		iris_style = value
 		emit_changed()
 @export var use_custom_skin_color := false:
 	set(value):
@@ -438,6 +484,9 @@ func get_appearance() -> Dictionary:
 		"pants_color": "#" + pants_color.to_html(false),
 		"headband_color": "#" + headband_color.to_html(false),
 		"headbandmetal_color": "#" + headbandmetal_color.to_html(false),
+		"headband_texture": headband_texture,
+		"headbandmetal_texture": headbandmetal_texture,
+		"eye_style": iris_style,
 		"cloak_color1": "#" + cloak_color1.to_html(false),
 		"cloak_color2": "#" + cloak_color2.to_html(false),
 		"vest_color1": "#" + vest_color1.to_html(false),
