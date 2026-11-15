@@ -1,6 +1,6 @@
 class_name AkatsukiCrowd
 extends Node3D
-## Akatsuki members for the Akatsuki canyon: a few stand guard (talk to them with E like any NPC)
+## Akatsuki members for the Akatsuki canyon: a few stand guard (decorative, no dialogue yet)
 ## and a few patrol on foot, following the ground. Cosmetic walkers (no collision). Built by
 ## main.gd for mode "akatsuki"; edit GUARDS / WALKERS to move or add people (x, z in map space).
 
@@ -28,7 +28,7 @@ static func look(hair: String, hair_color: String) -> Dictionary:
 	return l
 
 ## Adds the guards (as Npc) and the walkers under `map`.
-static func populate(map: Node3D) -> void:
+static func populate(map: Node3D) -> void:   # (async: waits one physics frame so the ground exists)
 	var crowd := AkatsukiCrowd.new()
 	crowd.name = "AkatsukiCrowd"
 	map.add_child(crowd)
@@ -42,12 +42,18 @@ static func populate(map: Node3D) -> void:
 		n.position = Vector3(float(g[1]), 30.0, float(g[2]))
 		crowd.add_child(n)
 		n.rotation.y = deg_to_rad(float(g[3]))
+	var guards: Array[Node3D] = []
+	for c in crowd.get_children():
+		guards.append(c)
 	for i in WALKERS.size():
 		var w := Walker.new()
 		w.route = WALKERS[i]
 		w.seed_i = i
 		w.position = Vector3(WALKERS[i][0][0], 30.0, WALKERS[i][0][1])
 		crowd.add_child(w)
+	await map.get_tree().physics_frame
+	for n in guards:
+		n.position.y = ground_y(n, n.position.x, n.position.z, 17.0)
 
 ## Drops a point onto the ground (ray from high above; solid terrain only).
 static func ground_y(node: Node3D, x: float, z: float, fallback: float) -> float:
