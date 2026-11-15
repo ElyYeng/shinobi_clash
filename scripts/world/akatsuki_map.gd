@@ -9,7 +9,7 @@ extends Node3D
 @export var water_flow := Vector2(0.05, 0.02)
 @export var water_wave_height := 0.35
 @export var water_wave_speed := 1.2
-@export var water_alpha := 1.0
+@export var water_alpha := 0.85
 @export var spawn_point := Vector3(-74.3, -7.0, 126.0)   ## moves Markers/PlayerSpawn at load; edit the marker instead if you prefer
 
 func _ready() -> void:
@@ -37,7 +37,7 @@ func _ready() -> void:
 				if mat is BaseMaterial3D:
 					water.set_shader_parameter("base_tex", (mat as BaseMaterial3D).albedo_texture)
 				mi.set_surface_override_material(s, water)
-			if nm.contains("water") or nm.contains("rock") or nm.contains("path"):
+			if nm.contains("water") or not (nm.contains("foliage") or nm.contains("leaf") or nm.contains("grass") or nm.contains("tree")):   # everything but cut-out plants is solid (rock, path, sand...)
 				var out := wfaces if nm.contains("water") else faces
 				var arr := mi.mesh.surface_get_arrays(s)
 				var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
