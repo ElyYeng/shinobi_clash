@@ -202,35 +202,40 @@ static func _face_variant_label(variant: String) -> String:
 ## Face type chooses the default original facial features. Specific selectors below override it.
 @export_enum("male", "female") var face_sex := "male":
 	set(value):
-		if face_sex == value:
+		var normalized := _face_option_value(value)
+		if face_sex == normalized:
 			return
-		face_sex = value
+		face_sex = normalized
 		emit_changed()
 ## These dropdowns are populated from the facial shape keys in character_main.glb.
-## Choose Default to use the selected face type's original feature.
+## The stored String is the exact blend-shape identifier (e.g. "itachi"), not a display label.
 @export var face_eyebrows := "__default":
 	set(value):
-		if face_eyebrows == value:
+		var normalized := _face_option_value(value)
+		if face_eyebrows == normalized:
 			return
-		face_eyebrows = value
+		face_eyebrows = normalized
 		emit_changed()
 @export var face_eyes := "__default":
 	set(value):
-		if face_eyes == value:
+		var normalized := _face_option_value(value)
+		if face_eyes == normalized:
 			return
-		face_eyes = value
+		face_eyes = normalized
 		emit_changed()
 @export var face_nose := "__default":
 	set(value):
-		if face_nose == value:
+		var normalized := _face_option_value(value)
+		if face_nose == normalized:
 			return
-		face_nose = value
+		face_nose = normalized
 		emit_changed()
 @export var face_mouth := "__default":
 	set(value):
-		if face_mouth == value:
+		var normalized := _face_option_value(value)
+		if face_mouth == normalized:
 			return
-		face_mouth = value
+		face_mouth = normalized
 		emit_changed()
 @export var use_custom_skin_color := false:
 	set(value):
