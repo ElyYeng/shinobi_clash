@@ -67,7 +67,7 @@ func _ready() -> void:
 
 ## Loads a real character model (also used by NpcSpawn for its editor preview).
 func _load_model() -> Node3D:
-	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name)
+	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name, appearance)
 	if m != null:
 		label_y = float(m.get_meta("label_y", label_y))
 	return m
@@ -93,7 +93,7 @@ static func character_look(look: Dictionary, seed_key: String) -> Node3D:
 
 ## Builds a character model: scaled to `height`, feet on the ground, first animation looped as idle.
 ## Returns null if there is no model. The name-tag height is stored in meta "label_y".
-static func build_model(path: String, height: float, yaw_deg: float, use_outline: bool, who := "") -> Node3D:
+static func build_model(path: String, height: float, yaw_deg: float, use_outline: bool, who := "", appearance: Dictionary = {}) -> Node3D:
 	if path == "" or not ResourceLoader.exists(path):
 		if path != "":
 			push_warning("[Npc] %s: model not found: %s" % [who, path])
@@ -102,6 +102,10 @@ static func build_model(path: String, height: float, yaw_deg: float, use_outline
 	if scene == null:
 		return null
 	var inst := scene.instantiate() as Node3D
+	# Custom NPC GLBs can expose the same facial blend shapes as the main character.
+	# Apply the Inspector-selected face when those shape keys exist; other models are unchanged.
+	if inst != null and not appearance.is_empty():
+		Hero.apply_face(inst, Hero.sanitize_appearance(appearance))
 	var wrapper := Node3D.new()
 	var fixer := Node3D.new()
 	fixer.rotation.y = deg_to_rad(yaw_deg)
