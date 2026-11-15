@@ -268,6 +268,9 @@ func _start_world() -> void:
 		n.body_color = d["color"]
 		n.band_color = d["band"]
 		n.greeting = d["greet"]
+		for line in d.get("dialogue_lines", []):
+			n.dialogue_lines.append(str(line))
+		n.goodbye_label = str(d.get("goodbye", "Goodbye"))
 		n.position = d["pos"]
 		var terrain := map.get_node_or_null("WorldTerrain")
 		if terrain != null:
@@ -498,7 +501,7 @@ func _talk(npc: Npc) -> void:
 		elif act["giver"] == id:
 			dialog.open(npc.display_name, str(act["remind"]), [["Okay, I'm on it", none], ["Abandon quest", quests.abandon]])
 		else:
-			dialog.open(npc.display_name, npc.greeting, [["Goodbye", none]])
+			dialog.open(npc.display_name, npc.next_dialogue_line(), [[npc.goodbye_label, none]])
 		return
 	var qid := quests.available_for(id)
 	if qid != "":
@@ -506,7 +509,7 @@ func _talk(npc: Npc) -> void:
 		var txt := "%s\n\n[Quest: %s   Recommended Lv %d   Reward: %s]" % [q["offer"], q["title"], Quests.rec_level(q), Quests.reward_text(q)]
 		dialog.open(npc.display_name, txt, [["Accept quest", quests.accept.bind(qid)], ["Not now", none]])
 	else:
-		dialog.open(npc.display_name, npc.greeting + "\n\n(I have no more work for you right now.)", [["Goodbye", none]])
+		dialog.open(npc.display_name, npc.next_dialogue_line() + "\n\n(I have no more work for you right now.)", [[npc.goodbye_label, none]])
 
 # ---------------------------------------------------------------- PvP arena NPCs
 ## Two NPCs in the PvP arena let each player opt into fights. Their files are in
