@@ -27,8 +27,9 @@ void fragment() {
 	float hz = waves(wpos.xz + vec2(0.0, e), TIME) - waves(wpos.xz - vec2(0.0, e), TIME);
 	NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(-hx, 0.0, -hz, 0.0)).xyz * wave_height * 1.5);
 	float sparkle = smoothstep(0.82, 1.0, (a.r + b.g) * 0.6 + waves(wpos.xz * 2.0, TIME * 1.5) * 0.3);
-	ALBEDO = c + sparkle * 0.25;
-	ROUGHNESS = 0.08;
-	SPECULAR = 0.7;
+	vec3 cel = floor((c + step(0.55, sparkle) * 0.3) * 4.0 + 0.5) / 4.0;   // cel look: hard colour bands + hard sparkles
+	ALBEDO = cel;
+	ROUGHNESS = 0.9;
+	SPECULAR = 0.0;
 	ALPHA = alpha;
 }

@@ -61,6 +61,8 @@ func _ready() -> void:
 		_start_uchiha()
 	elif mode == "world":
 		_start_world()
+	elif mode == "akatsuki":
+		AkatsukiCrowd.populate(map)
 	elif _is_pvp_arena():
 		_start_arena()
 
