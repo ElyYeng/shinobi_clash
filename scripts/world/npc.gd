@@ -10,7 +10,7 @@ var greeting := "Hello."
 var dialogue_lines: Array[String] = []
 var goodbye_label := "Goodbye"
 var _dialogue_line_index := 0
-var model_path := ""        # .glb / .gltf / .tscn; empty = the game character with `appearance`
+var model_path := ""        # Legacy field; world NPCs always use the shared Hero character.
 var appearance: Dictionary = {}
 var model_height := 1.85
 var model_yaw_deg := 180.0
@@ -38,11 +38,11 @@ func _ready() -> void:
 	col.shape = cap
 	col.position.y = 0.95
 	add_child(col)
-	model = _load_model()
-	if model == null:
-		model = Npc.character_look(appearance, npc_id if npc_id != "" else display_name)
-		if model != null:
-			label_y = 2.3
+	# All world NPCs use the same fully customizable character rig as the player.
+	# Their look comes only from the assigned NpcDef appearance settings, never a custom GLB.
+	model = Npc.character_look(appearance, npc_id if npc_id != "" else display_name)
+	if model != null:
+		label_y = 2.3
 	if model == null:
 		model = Fx.make_ninja(body_color, band_color)
 	add_child(model)
