@@ -13,12 +13,16 @@ const _CHARACTER_MODEL_PATH := "res://assets/character/character_main.glb"
 ## Inspector enum hints are generated from the assigned model's actual facial blend shapes.
 func _validate_property(property: Dictionary) -> void:
 	var property_name := str(property.get("name", ""))
+	# Kept only so older NPC resources still load; world NPCs all use Hero's shared character.
+	if property_name in ["model", "model_height", "model_yaw_deg", "outline"]:
+		property["usage"] = PROPERTY_USAGE_STORAGE
+		return
 	if not property_name.begins_with("face_"):
 		return
 	var part := property_name.trim_prefix("face_")
 	if not _FACE_PARTS.has(part):
 		return
-	var variants: Array = _get_face_variant_options(model).get(part, [])
+	var variants: Array = _get_face_variant_options().get(part, [])
 	var choices := PackedStringArray(["Default:__default"])
 	for variant in variants:
 		choices.append("%s:%s" % [_face_variant_label(str(variant)), str(variant)])
@@ -129,7 +133,7 @@ static func _face_variant_label(variant: String) -> String:
 
 @export_group("Character Appearance")
 ## Keep enabled for the existing deterministic random village look. Disable to use the controls below.
-@export var randomize_appearance := true:
+@export var randomize_appearance := false:
 	set(value):
 		if randomize_appearance == value:
 			return
@@ -402,7 +406,8 @@ func get_dialogue_lines() -> Array[String]:
 			out.append(line)
 	return out
 
-## Builds the appearance dictionary expected by Hero. Randomized NPCs retain their old behaviour.
+## Builds the shared Hero appearance. Manual Inspector options are active by default; enable
+## randomize_appearance only when a deterministic random village appearance is desired.
 func get_appearance() -> Dictionary:
 	var out: Dictionary = appearance.duplicate(true)
 	if randomize_appearance:
