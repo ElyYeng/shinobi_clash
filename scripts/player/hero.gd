@@ -30,8 +30,9 @@ const DEFAULT_APPEARANCE := {
 	"pants_style": "pants1",
 	"headband_color": "#2B3A67",
 	"headbandmetal_color": "#FFFFFF",   # white = show the texture untinted
-	"headbandmetal_texture": "",        # "" = the texture embedded in the GLB
-	"headband_texture": "",             # "" = plain cloth in headband_color, else a file in headband_textures
+	"headbandmetal_texture": "",        # Village emblem atlas (each image contains scratched + clean halves)
+	"headband_texture": "",             # Legacy key; kept for old saved looks
+	"headband_state": "",               # "" = original UVs, "scratched" = left half, "clean" = right half
 	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
 	"pants_color": "#FFFFFF",
 	"skin_color": "",                   # "" = the model's own skin colour
@@ -67,10 +68,8 @@ const CLOTH_COLORS := {"shirt": "shirt_color", "pants": "pants_color"}
 ## MATERIAL NAME matches ("headband", "headbandmetal"), so hairs without a headband show
 ## nothing extra. To add another (e.g. a scarf) add an entry here + a default above.
 const COLOR_SLOTS := {
-	"headband": {"key": "headband_color", "label": "Headband", "material": "headband",
-		"texture_key": "headband_texture", "textures_dir": "res://assets/character/headband_textures", "random_color": true},
-	## "textures_dir": every png/jpg/webp in that folder becomes a selectable texture for the slot
-	## (stored under "texture_key"). Drop a new image in the folder and it shows up in the creator.
+	# Cloth is colour-only. The files in headband_textures are plate/emblem atlases, not cloth maps.
+	"headband": {"key": "headband_color", "label": "Headband", "material": "headband", "random_color": true},
 	"headbandmetal": {"key": "headbandmetal_color", "label": "Headband plate", "material": "headbandmetal",
 		"texture_key": "headbandmetal_texture", "textures_dir": "res://assets/character/headband_textures"},
 }
@@ -218,6 +217,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 			var tname := str(raw.get(tkey, "")).strip_edges()
 			if tname == "" or (tname.get_file() == tname and tname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"]):
 				safe[tkey] = tname
+	var band_state := str(raw.get("headband_state", "")).strip_edges().to_lower()
+	safe["headband_state"] = band_state if band_state in ["scratched", "clean"] else ""
 	# face customisation: body type + one variant per feature {"eyes": "naruto", ...}
 	safe["sex"] = "female" if str(raw.get("sex", "male")) == "female" else "male"
 	var face := {}
@@ -1579,6 +1580,25 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 			else:
 				var tex_name := str(look.get(str(COLOR_SLOTS[slot].get("texture_key", "")), ""))
 				_tint_surface(hair, surface, Color.html(str(look[COLOR_SLOTS[slot]["key"]])), true, _slot_texture(slot, tex_name))
+				if slot == "headbandmetal":
+					_apply_headband_plate_state(hair, surface, str(look.get("headband_state", "")))
+## The headband emblem maps are two-state atlases: scratched is the left half,
+## clean is the right half. Remap the plate UVs so both sides of the physical plate use
+## the selected half of the same source image. The original/default state leaves UVs untouched.
+static func _apply_headband_plate_state(hair: MeshInstance3D, surface: int, state: String) -> void:
+	if state != "scratched" and state != "clean":
+		return
+	var material := hair.get_surface_override_material(surface) as BaseMaterial3D
+	if material == null:
+		return
+	var scale := material.uv1_scale
+	scale.x *= 0.5
+	material.uv1_scale = scale
+	var offset := material.uv1_offset
+	offset.x += 0.0 if state == "scratched" else 0.5
+	material.uv1_offset = offset
+
+
 	# The scalp mesh uses the same material as the hair.
 	if extras.has("backhead"):
 		var back := extras["backhead"] as MeshInstance3D
