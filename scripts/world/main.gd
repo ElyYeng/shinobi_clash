@@ -278,10 +278,6 @@ func _start_world() -> void:
 		if terrain != null:
 			map_position.y = terrain.height_at(map_position.x, map_position.z)
 		n.position = map_position
-		n.model_path = d["model"]
-		n.model_height = d["model_height"]
-		n.model_yaw_deg = d["model_yaw"]
-		n.outline = d["outline"]
 		n.appearance = d.get("appearance", {})
 		map.add_child(n)
 		if placed.has(id):
@@ -548,10 +544,6 @@ func _start_arena() -> void:
 			n.dialogue_lines.append(str(line))
 		n.goodbye_label = str(d.get("goodbye", "Goodbye"))
 		n.appearance = d["appearance"]
-		n.model_path = d["model"]
-		n.model_height = d["model_height"]
-		n.model_yaw_deg = d["model_yaw"]
-		n.outline = d["outline"]
 		var map_position: Vector3 = d["pos"]
 		if placed.has(id):
 			map_position = map.to_local((placed[id] as Node3D).global_position)
