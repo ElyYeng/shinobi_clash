@@ -22,6 +22,8 @@ var max_stamina := 100.0
 var stam_delay := 0.0
 var mode_meter := 0.0        # "MD" bar: fills over time and with kills; Z (Kurama Mode) needs it full
 var kurama := false          # Kurama Mode (Z) is on; drains MD, no timer
+var kurama_tails := 1        # 1..3: hold Z + 1 / 2 / 3 (cosmetic: more tails)
+var _biju_off_pending := false   # Z pressed while on: it ends on release unless 1 / 2 / 3 was pressed
 var armor_time := 0.0
 var t_cd := 0.0
 var y_cd := 0.0
@@ -534,10 +536,23 @@ func _physics_process(delta: float) -> void:
 	for k in Moves.active_keys():   # hotbar keys run the move on them (scheme: classic / modern)
 		if holding_charge and k in ["1", "2", "3", "4"]:
 			continue   # (charge + 1-4 = forms, not element skills)
+		if Input.is_action_pressed("biju") and k in ["1", "2", "3"]:
+			continue   # (Kurama key + 1-3 = number of tails)
 		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and kl_keys().has(k)):
 			use_key(k)
 	if Input.is_action_just_pressed("biju"):
-		_kurama_mode()
+		if kurama:
+			_biju_off_pending = true   # ends on release, so Z + 2 / 3 can switch the tail count instead
+		else:
+			_kurama_mode()
+	if Input.is_action_pressed("biju"):
+		for n in [1, 2, 3]:
+			if Input.is_action_just_pressed("form_%d" % n):
+				_biju_off_pending = false
+				_set_kurama_tails(n)
+	if _biju_off_pending and Input.is_action_just_released("biju"):
+		_biju_off_pending = false
+		_kurama_mode()   # toggles it off
 	if Input.is_action_just_pressed("volley") and Input.is_action_pressed("kunai"):
 		_kunai_volley()
 	# C: hold = charge chakra; keep holding for POWER_HOLD s to activate the bloodline power-up
@@ -2032,7 +2047,7 @@ func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest
 
 ## Z - Kurama Mode on / off. Needs Kurama defeated and KURAMA_MIN_MD to start; no timer, it drains MD.
 ## Works together with the bloodline power-up (C); with both on, MD drains faster.
-func _kurama_mode() -> void:
+func _kurama_mode(tails := 1) -> void:
 	if is_dead:
 		return
 	if kurama:
@@ -2046,20 +2061,42 @@ func _kurama_mode() -> void:
 		_toast("Not enough MD for Kurama Mode  (%d / %d)" % [int(mode_meter), int(KURAMA_MIN_MD)])
 		return
 	kurama = true
+	kurama_tails = clampi(tails, 1, 3)
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_kurama_state(true)
+		NetworkSession.broadcast_kurama_state(true, kurama_tails)
 	Sfx.play(self, "power")
-	cloak_fx = KuramaCloak.attach(self, model)
+	cloak_fx = KuramaCloak.attach(self, model, kurama_tails)
 	health = minf(max_health, health + max_health * 0.25)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	Vfx.shake(cam, 0.25, 0.4)
-	_toast("KURAMA • ONE TAIL + %s!" % str(pmode["name"]).to_upper() if powered else "KURAMA • ONE TAIL!")
+	_toast("KURAMA • %s + %s!" % [_tails_text(), str(pmode["name"]).to_upper()] if powered else "KURAMA • %s!" % _tails_text())
 	_play_once("jutsu", 0.6)
+
+func _tails_text() -> String:
+	return ["ONE TAIL", "TWO TAILS", "THREE TAILS"][clampi(kurama_tails, 1, 3) - 1]
+
+## Hold Z + 1 / 2 / 3: switches the number of tails (turns Kurama Mode on first if it is off).
+func _set_kurama_tails(n: int) -> void:
+	if is_dead:
+		return
+	if not kurama:
+		_kurama_mode(n)
+		return
+	if n == kurama_tails:
+		return
+	kurama_tails = n
+	if cloak_fx != null and is_instance_valid(cloak_fx):
+		(cloak_fx as KuramaCloak).set_tails(n)
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_kurama_state(true, n)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 24, 8.0, 0.2, 0.5, 0.0)
+	_toast("KURAMA • %s!" % _tails_text())
 
 func _end_mode() -> void:
 	if kurama and NetworkSession.is_active():
 		NetworkSession.broadcast_kurama_state(false)
 	kurama = false
+	kurama_tails = 1
 	if cloak_fx != null and is_instance_valid(cloak_fx):
 		cloak_fx.queue_free()
 	cloak_fx = null

@@ -1354,16 +1354,16 @@ func _apply_power_state(peer_id: int, enabled: bool, color: Color, bloodline := 
 		_avatars[peer_id].set_powered_visual(enabled, color, bloodline)
 
 ## Replicate Kurama Mode (Z) on remote avatars.
-func broadcast_kurama_state(enabled: bool) -> void:
+func broadcast_kurama_state(enabled: bool, tails := 1) -> void:
 	if not is_active():
 		return
 	if multiplayer.is_server():
-		_broadcast_kurama_state.rpc(1, enabled)
+		_broadcast_kurama_state.rpc(1, enabled, tails)
 	else:
-		_request_kurama_state.rpc_id(1, enabled)
+		_request_kurama_state.rpc_id(1, enabled, tails)
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_kurama_state(enabled: bool) -> void:
+func _request_kurama_state(enabled: bool, tails: int = 1) -> void:
 	if not multiplayer.is_server():
 		return
 	var sender := multiplayer.get_remote_sender_id()
@@ -1371,15 +1371,15 @@ func _request_kurama_state(enabled: bool) -> void:
 		return
 	# The host must update its own remote avatar; RPC call_remote never runs locally.
 	if _avatars.has(sender) and is_instance_valid(_avatars[sender]):
-		_avatars[sender].set_kurama_visual(enabled)
-	_broadcast_kurama_state.rpc(sender, enabled)
+		_avatars[sender].set_kurama_visual(enabled, clampi(tails, 1, 3))
+	_broadcast_kurama_state.rpc(sender, enabled, clampi(tails, 1, 3))
 
 @rpc("authority", "call_remote", "reliable")
-func _broadcast_kurama_state(peer_id: int, enabled: bool) -> void:
+func _broadcast_kurama_state(peer_id: int, enabled: bool, tails: int = 1) -> void:
 	if peer_id == multiplayer.get_unique_id():
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
-		_avatars[peer_id].set_kurama_visual(enabled)
+		_avatars[peer_id].set_kurama_visual(enabled, clampi(tails, 1, 3))
 
 ## Relay basic combat animation events (melee, dash, throw) to remote avatars.
 func broadcast_combat_animation(state: String, variant: int = 0) -> void:
