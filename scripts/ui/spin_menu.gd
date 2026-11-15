@@ -1265,20 +1265,22 @@ func _build_look_extras() -> void:
 			var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", ""))
 			var files: Array = Hero.list_slot_textures(slot)
 			if tkey != "" and not files.is_empty():
-				_texture_dropdown(str(Hero.COLOR_SLOTS[slot]["label"]), tkey, files)
+				_texture_dropdown(str(Hero.COLOR_SLOTS[slot]["label"]), tkey, files, tkey != "headbandmetal_texture")
 		# Each emblem PNG contains both states side-by-side: left = scratched, right = clean.
 		if slots.has("headbandmetal"):
 			_texture_dropdown("Plate Condition", "headband_state", ["scratched", "clean"])
 
-## "<label>  [Default | file ...]" - stores the chosen file name (or "") under look key `key`.
-func _texture_dropdown(label: String, key: String, files: Array) -> void:
+## Shows a file picker; include_default is used for optional texture slots such as iris styles.
+func _texture_dropdown(label: String, key: String, files: Array, include_default := true) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	extras_box.add_child(row)
 	UiStyle.label(row, label, 16, INK)
 	var dd := _dropdown(row)
 	dd.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var choices: Array = [""] + files
+	var choices: Array = files.duplicate()
+	if include_default:
+		choices.push_front("")
 	for n in choices.size():
 		dd.add_item("Default" if choices[n] == "" else str(choices[n]).get_basename().replace("_", " ").capitalize(), n)
 		dd.set_item_metadata(n, str(choices[n]))
