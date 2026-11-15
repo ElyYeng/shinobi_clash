@@ -224,7 +224,12 @@ extends Resource
 
 ## Legacy / advanced overrides for appearance keys not exposed above (e.g. custom textures).
 @export_group("Advanced")
-@export var appearance: Dictionary = {}
+@export var appearance: Dictionary = {}:
+	set(value):
+		if appearance == value:
+			return
+		appearance = value
+		emit_changed()
 
 @export_group("Model")
 @export_file("*.glb", "*.gltf", "*.tscn") var model := "":
