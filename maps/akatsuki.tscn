@@ -1,10 +1,9 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://gqiwe74nb2yd"]
 
-[ext_resource type="Script" path="res://scripts/world/game_map.gd" id="gm"]
-[ext_resource type="Script" path="res://scripts/world/akatsuki_map.gd" id="am"]
-[ext_resource type="PackedScene" path="res://assets/akatsuki/akatsuki.glb" id="glb"]
+[ext_resource type="Script" uid="uid://bocyml2ytheir" path="res://scripts/world/akatsuki_map.gd" id="am"]
+[ext_resource type="PackedScene" uid="uid://cg6fgvlrr81ca" path="res://assets/akatsuki/akatsuki.glb" id="glb"]
+[ext_resource type="Script" uid="uid://cqgiv0wj4q4g0" path="res://scripts/world/game_map.gd" id="gm"]
 [ext_resource type="Shader" uid="uid://c57ptq70hrcg3" path="res://shaders/sky.gdshader" id="sky_shader"]
-
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_dnl03"]
 shader = ExtResource("sky_shader")
@@ -25,9 +24,6 @@ shader_parameter/cloud_offset = Vector2(0, 0)
 
 [sub_resource type="Sky" id="Sky_0btfk"]
 sky_material = SubResource("ShaderMaterial_dnl03")
-
-[sub_resource type="BoxShape3D" id="wall"]
-size = Vector3(4, 130, 60)
 
 [sub_resource type="Environment" id="Environment_la0qa"]
 background_mode = 2
@@ -61,41 +57,44 @@ adjustment_enabled = true
 adjustment_contrast = 1.08
 adjustment_saturation = 1.12
 
-[node name="Akatsuki" type="Node3D"]
+[sub_resource type="BoxShape3D" id="wall"]
+size = Vector3(4, 130, 60)
+
+[node name="Akatsuki" type="Node3D" unique_id=1121495128]
 script = ExtResource("gm")
 play_half = 480.0
 spawn_area = Rect2(-100, -100, 200, 200)
 
-[node name="Environment" type="Node3D" parent="."]
+[node name="Environment" type="Node3D" parent="." unique_id=1856832427]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Environment" unique_id=865617312]
 environment = SubResource("Environment_la0qa")
 
-[node name="Sun" type="DirectionalLight3D" parent="Environment"]
+[node name="Sun" type="DirectionalLight3D" parent="Environment" unique_id=1144177167]
 transform = Transform3D(0.9635231, -0.2456808, -0.10613305, 0.25790593, 0.74648976, 0.61338204, -0.07146896, -0.61838007, 0.78262264, 0, 80, 0)
 light_color = Color(1, 0.93, 0.82, 1)
 light_energy = 1.6
 shadow_enabled = true
 directional_shadow_max_distance = 300.0
 
-[node name="Ground" parent="." instance=ExtResource("glb")]
+[node name="Ground" parent="." unique_id=813486857 instance=ExtResource("glb")]
 script = ExtResource("am")
 
-[node name="Bounds" type="Node3D" parent="."]
+[node name="Bounds" type="Node3D" parent="." unique_id=366810255]
 
-[node name="BoulderWallLeft" type="StaticBody3D" parent="Bounds"]
+[node name="BoulderWallLeft" type="StaticBody3D" parent="Bounds" unique_id=1704631946]
 transform = Transform3D(0.88, 0, -0.48, 0, 1, 0, 0.48, 0, 0.88, -405, 58, 227)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallLeft"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallLeft" unique_id=637383853]
 shape = SubResource("wall")
 
-[node name="BoulderWallRight" type="StaticBody3D" parent="Bounds"]
+[node name="BoulderWallRight" type="StaticBody3D" parent="Bounds" unique_id=27333867]
 transform = Transform3D(-0.555, 0, -0.831, 0, 1, 0, 0.831, 0, -0.555, 285, 58, 213)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallRight"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bounds/BoulderWallRight" unique_id=217506578]
 shape = SubResource("wall")
 
-[node name="Markers" type="Node3D" parent="."]
+[node name="Markers" type="Node3D" parent="." unique_id=1381982057]
 
-[node name="PlayerSpawn" type="Marker3D" parent="Markers"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -63, 20, 149)
+[node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=373378942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.51294, 24.60299, 111.43336)
