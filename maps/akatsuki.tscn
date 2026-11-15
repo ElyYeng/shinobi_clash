@@ -98,3 +98,73 @@ shape = SubResource("wall")
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=373378942]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.51294, 24.60299, 111.43336)
+
+[node name="Members" type="Node3D" parent="."]
+
+[node name="Kisame" type="Marker3D" parent="Members"]
+transform = Transform3D(-0.9397, 0, 0.3420, 0, 1, 0, -0.3420, 0, -0.9397, -50, 17.4, 137)
+script = ExtResource("mem")
+display_name = "Kisame"
+hair_style = "hair6"
+hair_color = Color("#3A4A6B")
+
+[node name="Deidara" type="Marker3D" parent="Members"]
+transform = Transform3D(-0.8660, 0, -0.5000, 0, 1, 0, 0.5000, 0, -0.8660, -76, 19.1, 162)
+script = ExtResource("mem")
+display_name = "Deidara"
+hair_style = "hair1"
+hair_color = Color("#E6B52E")
+
+[node name="Hidan" type="Marker3D" parent="Members"]
+transform = Transform3D(-0.5736, 0, 0.8192, 0, 1, 0, -0.8192, 0, -0.5736, -36, 17.6, 160)
+script = ExtResource("mem")
+display_name = "Hidan"
+hair_style = "hair2"
+hair_color = Color("#C9C9D4")
+
+[node name="Sasori" type="Marker3D" parent="Members"]
+transform = Transform3D(-0.5000, 0, -0.8660, 0, 1, 0, 0.8660, 0, -0.5000, -90, 17.1, 137)
+script = ExtResource("mem")
+display_name = "Sasori"
+hair_style = "hair3"
+hair_color = Color("#8A2F25")
+
+[node name="Walker1" type="Marker3D" parent="Members"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -119, 17.7, 155)
+script = ExtResource("mem")
+display_name = "Akatsuki Scout"
+hair_style = "hair1"
+hair_color = Color("#1C1B24")
+wander_radius = 14.0
+
+[node name="Walker2" type="Marker3D" parent="Members"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -67, 17.6, 122)
+script = ExtResource("mem")
+display_name = "Akatsuki Guard"
+hair_style = "hair2"
+hair_color = Color("#6B4423")
+wander_radius = 10.0
+
+[node name="Walker3" type="Marker3D" parent="Members"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 17.6, 150)
+script = ExtResource("mem")
+display_name = "Akatsuki Courier"
+hair_style = "hair3"
+hair_color = Color("#1C1B24")
+wander_radius = 14.0
+
+[node name="Walker4" type="Marker3D" parent="Members"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 17.6, 140)
+script = ExtResource("mem")
+display_name = "Akatsuki Spy"
+hair_style = "hair6"
+hair_color = Color("#8A2F25")
+wander_radius = 10.0
+
+[node name="Walker5" type="Marker3D" parent="Members"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, 17.0, 138)
+script = ExtResource("mem")
+display_name = "Akatsuki Member"
+hair_style = "hair1"
+hair_color = Color("#E6B52E")
+wander_radius = 12.0
