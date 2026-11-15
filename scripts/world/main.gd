@@ -122,7 +122,7 @@ func _load_map() -> void:
 			map.add_child(terrain)
 	add_child(map)
 	AnimePost.add_to(map)   # anime ink outlines (Forward+ only)
-	if map.get_node_or_null("Village") == null:   # (the Hidden Leaf map is pre-merged by its bake tool)
+	if map.get_node_or_null("Village") == null and mode != "akatsuki":   # (the Hidden Leaf map is pre-merged by its bake tool)
 		StaticBatcher.batch(map)   # merge static meshes per material -> far fewer draw calls
 	CharToon.apply(map)   # Ultimate Toon Source stylized shader on the map too
 

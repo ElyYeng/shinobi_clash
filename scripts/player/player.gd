@@ -931,6 +931,8 @@ func _climbable(col: Object) -> bool:
 	if not (col is StaticBody3D or col is CSGShape3D):
 		return false   # not enemies / NPCs / ragdolls
 	var n := col as Node
+	if n.has_meta("no_wall_walk"):
+		return false   # e.g. the Akatsuki canyon cliffs
 	return not (n.name.begins_with("Bound") or (n.get_parent() != null and n.get_parent().name == "Bounds"))
 
 func _stick_to(n: Vector3, point: Vector3) -> void:
