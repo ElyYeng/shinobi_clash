@@ -1601,7 +1601,7 @@ static func _apply_hair_color(model: Node3D, color: Color, look: Dictionary) -> 
 				_tint_surface(face, surface, color)
 
 
-## Cache remapped meshes by source mesh, surface, and requested plate condition.
+## Cache remapped meshes by source mesh and requested plate condition.
 ## The texture itself does not affect the UV remap, so different village atlases share this cache.
 const _HEADBAND_ORIGINAL_META := "hero_headband_original_mesh"
 const _HEADBAND_UV_EPSILON := 0.002
