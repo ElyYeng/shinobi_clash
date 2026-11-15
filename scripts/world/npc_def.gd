@@ -234,7 +234,7 @@ static func _face_variant_label(variant: String) -> String:
 		emit_changed()
 ## Legacy field retained for old NPC resources, hidden from the Inspector and no longer used.
 @export_storage var headband_texture := ""
-## Metal plate texture / village emblem atlas. Empty uses the model's embedded plate texture.
+## Metal plate texture / village emblem atlas. Leaf is the default for new and empty selections.
 @export var headbandmetal_texture := "Leaf.png":
 	set(value):
 		if headbandmetal_texture == value:
