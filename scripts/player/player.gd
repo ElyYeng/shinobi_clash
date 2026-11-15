@@ -1539,7 +1539,7 @@ func _footsteps(delta: float) -> void:
 	_step_t -= delta
 	if _step_t <= 0.0:
 		var run := sp > Hero.WALK_BELOW
-		Sfx.play(self, "step_run" if run else "step_walk")
+		Sfx.step(self, run, Sfx.surface_of(self))
 		_step_t = clampf(2.4 / sp, 0.22, 0.55) if run else 0.5
 
 # ---------------------------------------------------------------- spectate (boss fights)

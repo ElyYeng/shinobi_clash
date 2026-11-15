@@ -25,6 +25,8 @@ var _home := Vector3.ZERO
 var _goal := Vector3.ZERO
 var _pause := 1.0
 var _pending := false
+var _step_t := 0.0
+var _surface := "ground"
 
 func _ready() -> void:
 	_home = position
@@ -85,6 +87,14 @@ func _physics_process(delta: float) -> void:
 	var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 4.0, global_position + Vector3.DOWN * 6.0, 1 | 512)
 	var h := get_world_3d().direct_space_state.intersect_ray(q)
 	if not h.is_empty():
+		_surface = "water" if (h["collider"] as Node).has_meta("water_walk") else "ground"
 		global_position.y = lerpf(global_position.y, float(h["position"].y), clampf(delta * 8.0, 0.0, 1.0))
-	model.rotation.y = lerp_angle(model.rotation.y, atan2(dir.x, dir.z), clampf(delta * 6.0, 0.0, 1.0))
+	model.rotation.y = lerp_angle(model.rotation.y, atan2(-dir.x, -dir.z), clampf(delta * 6.0, 0.0, 1.0))
 	Hero.play_move(model, Hero.move_state(speed), speed)
+	_step_t -= delta
+	if _step_t <= 0.0:
+		_step_t = clampf(1.7 / maxf(speed, 0.5), 0.3, 0.7)
+		var cam := get_viewport().get_camera_3d()
+		var dist := cam.global_position.distance_to(global_position) if cam != null else 999.0
+		if dist < 30.0:   # only audible near you
+			Sfx.step(self, speed >= Hero.WALK_BELOW, _surface, -4.0 - dist * 0.4)

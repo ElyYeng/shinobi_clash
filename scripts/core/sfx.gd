@@ -51,6 +51,48 @@ static func _streams(id: String) -> Array:
 		_variants[id] = out
 	return _variants[id]
 
+## Footstep on a surface: "water" splashes, "rock" is hard and bright, "ground" (sand / dirt / grass) soft and dull.
+const STEP_SURFACE := {"rock": [1.12, 2.0], "ground": [0.86, -2.0], "grass": [0.78, -4.0], "wood": [0.95, 0.0]}
+static func step(from: Node, run: bool, surface := "ground", vol_db := 0.0) -> void:
+	if surface == "water":
+		play(from, "splash", vol_db - 4.0)
+		return
+	var pr := _play_ret(from, "step_run" if run else "step_walk", vol_db)
+	if pr != null:
+		var m: Array = STEP_SURFACE.get(surface, [1.0, 0.0])
+		pr.pitch_scale *= float(m[0])
+		pr.volume_db += float(m[1])
+
+## Surface under a body standing on the floor: collider meta "surface", water_walk meta, else steep = rock.
+static func surface_of(body: CharacterBody3D) -> String:
+	for i in body.get_slide_collision_count():
+		var c := body.get_slide_collision(i)
+		var o := c.get_collider() as Node
+		if o == null:
+			continue
+		if o.has_meta("surface"):
+			return str(o.get_meta("surface"))
+		if o.has_meta("water_walk"):
+			return "water"
+		return "rock" if c.get_normal().y < 0.85 else "ground"
+	return "ground"
+
+static func _play_ret(from: Node, id: String, vol_db := 0.0) -> AudioStreamPlayer:
+	if from == null or not from.is_inside_tree():
+		return null
+	var rec := _streams(id)
+	if rec.is_empty():
+		play(from, id, vol_db)
+		return null
+	var p := AudioStreamPlayer.new()
+	p.stream = rec[randi() % rec.size()]
+	p.volume_db = vol_db + float(FILES[id][1])
+	p.pitch_scale = randf_range(0.95, 1.05)
+	from.get_tree().root.add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+	return p
+
 static func play(from: Node, id: String, vol_db := 0.0) -> void:
 	if from == null or not from.is_inside_tree():
 		return
