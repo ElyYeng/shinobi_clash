@@ -34,7 +34,7 @@ func _validate_property(property: Dictionary) -> void:
 		texture_dir = _HEADBAND_TEXTURES_DIR
 	if texture_dir != "":
 		property["hint"] = PROPERTY_HINT_ENUM
-		property["hint_string"] = ",".join(_texture_file_options(texture_dir))
+		property["hint_string"] = ",".join(_texture_file_options(texture_dir, property_name != "headbandmetal_texture"))
 		return
 	if not property_name.begins_with("face_"):
 		return
@@ -51,9 +51,11 @@ func _validate_property(property: Dictionary) -> void:
 	property["hint_string"] = ",".join(choices)
 
 ## Texture filenames exposed by the Inspector, matching the same folders used by the player editor.
-## The empty first option means "use the texture embedded in character_main.glb".
-static func _texture_file_options(directory_path: String) -> PackedStringArray:
-	var choices := PackedStringArray([""])
+## The empty first option is kept for optional iris styles, but not for headband plate atlases.
+static func _texture_file_options(directory_path: String, include_empty := true) -> PackedStringArray:
+	var choices := PackedStringArray()
+	if include_empty:
+		choices.append("")
 	if not DirAccess.dir_exists_absolute(directory_path):
 		return choices
 	var files := DirAccess.get_files_at(directory_path)
@@ -233,7 +235,7 @@ static func _face_variant_label(variant: String) -> String:
 ## Legacy field retained for old NPC resources, hidden from the Inspector and no longer used.
 @export_storage var headband_texture := ""
 ## Metal plate texture / village emblem atlas. Empty uses the model's embedded plate texture.
-@export var headbandmetal_texture := "":
+@export var headbandmetal_texture := "Leaf.png":
 	set(value):
 		if headbandmetal_texture == value:
 			return
