@@ -73,6 +73,7 @@ const BASE := {
 }
 
 static var _tex_cache := {}
+static var mode_owner := ""   # bloodline whose power-up is on (its mode_abilities replace its slots)
 
 ## Full data for a move ({} if the id is unknown). Adds: id, src ("bl" / "el" / "base"),
 ## owner (bloodline id / element name), mkey (mastery key), icon (path).
@@ -119,7 +120,10 @@ static func raw(id: String) -> Dictionary:
 	var parts := id.split(":")
 	match parts[0]:
 		"bl":
-			var list: Array = Bloodline.get_def(parts[1])["abilities"]
+			var bdef := Bloodline.get_def(parts[1])
+			var list: Array = bdef["abilities"]
+			if mode_owner == parts[1] and bdef.has("mode_abilities") and int(parts[2]) < list.size():
+				return (bdef["mode_abilities"] as Array)[int(parts[2])]
 			return list[int(parts[2])] if int(parts[2]) < list.size() else {}
 		"el":
 			var el: Array = ElementData.DEFS.get(parts[1], [])

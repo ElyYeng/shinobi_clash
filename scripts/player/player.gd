@@ -48,6 +48,7 @@ var clone_count := 2
 var clone_time := 8.0
 var hp_regen := 0.0
 var move_cd := {}                           # move id -> cooldown left (see moves.gd)
+var cur_move := ""                          # id of the move being cast (Shien reads its data)
 var cur_mkey := ""                          # mastery key of the move being cast (for hit XP)
 var buffs: Array[Dictionary] = []           # active bloodline buffs / auras
 var powered := false                        # bloodline power-up (C) is on
@@ -1370,6 +1371,7 @@ func _use_move(id: String) -> void:
 			return
 	chakra -= cost
 	move_cd[id] = float(a["cd"])
+	cur_move = id
 	cur_mkey = str(a["mkey"])
 	var raw := Moves.raw(id)
 	var col: Color = a["col"]
@@ -1481,6 +1483,13 @@ func _use_move(id: String) -> void:
 		if kind == "fan" or kind == "homing":
 			Vfx.sprite_flash(get_parent(), global_position + Vector3.UP * 1.3 + facing * 1.2, "effects/Impact24.png", col, 1.6, 0.18)
 	cur_mkey = ""
+
+func _fx_shien_claw(col: Color) -> void: Shien.claw(self, col)
+func _fx_shien_cremation(col: Color) -> void: Shien.cremation(self, col)
+func _fx_shien_bind(col: Color) -> void: Shien.bind(self, col)
+func _fx_shien_rush(col: Color) -> void: Shien.rush(self, col)
+func _fx_shien_wolves(col: Color) -> void: Shien.wolves(self, col)
+func _fx_shien_calamity(col: Color) -> void: Shien.calamity(self, col)
 
 func _stun(e, secs: float) -> void:   # untyped: the target may already be freed
 	if secs <= 0.0 or not is_instance_valid(e) or not (e is Enemy):
@@ -1715,6 +1724,7 @@ func _toggle_power() -> void:
 	if id == "rinnegan" or id == "otsutsuki":
 		Sfx.play(self, "rinnegan")
 	powered = true
+	Moves.mode_owner = id
 	pmode = m
 	mode_tick = 0.0
 	var col: Color = m["col"]
@@ -1753,6 +1763,7 @@ func _power_off() -> void:
 	if model != null and not pmode.get("look", {}).is_empty():
 		Hero.apply_mode_look(model, {})
 	powered = false
+	Moves.mode_owner = ""
 	pmode = {}
 	if pmode_fx != null and is_instance_valid(pmode_fx):
 		pmode_fx.queue_free()
@@ -1892,6 +1903,8 @@ func _hit_foe(t, amount: float, knock: Vector3) -> void:
 
 ## Damages an enemy only if it is still alive (stops double kills in one frame). Gives mastery XP.
 func _hit(e: Enemy, amount: float, knock: Vector3) -> void:
+	if cur_mkey == "shien":
+		amount = Shien.on_hit(self, e, amount)   # Violet Brand
 	if is_instance_valid(e) and e.health > 0.0:
 		e.take_damage(amount, knock)
 		if amount >= 8.0:   # not for tiny damage-over-time ticks

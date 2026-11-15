@@ -270,6 +270,26 @@ const DEFS := {
 		"mode": {"name": "Tenseigan Chakra Mode", "dmg": 1.45, "def": 0.7, "speed": 1.15, "ck": 20.0, "hp": 3.0, "cutscene": "eyes",
 			"look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Tenseigan.png", "aura": true}, "desc": "+45% damage, take 30% less damage, +15% speed, +20 chakra/s, heal 3/s."}},
 
+	"shien": {"name": "Shien - Violet Calamity", "rarity": "Legendary", "weight": 1.2, "color": Color("#A44BFF"),
+		"desc": "Violet flame (Lightning + Yin): hits Brand foes for 6s - the next Shien hit on a Branded foe deals +10% and consumes it.", "stats": {"dmg": 1.05},
+		"brand": {"secs": 6.0, "bonus": 1.10},
+		"abilities": [
+			{"name": "Demon Claw", "kind": "custom", "fn": "_fx_shien_claw", "lvl": 0, "cost": 25.0, "cd": 16.0, "dmg": 60.0, "r": 6.5, "lunge": 4.0, "stun": 0.5,
+				"desc": "Lunge forward and rake three violet claws; the last one staggers and launches. Brands on hit."},
+			{"name": "Violet Cremation", "kind": "custom", "fn": "_fx_shien_cremation", "lvl": 0, "cost": 40.0, "cd": 22.0, "dmg": 110.0, "r": 20.0, "stun": 0.4, "max_hits": 2,
+				"desc": "Three violet flame pillars erupt one after another near the nearest enemy (warning rings first)."},
+			{"name": "Phantom Bind", "kind": "custom", "fn": "_fx_shien_bind", "lvl": 500, "cost": 45.0, "cd": 24.0, "dmg": 35.0, "r": 22.0, "root": 0.7, "pull": 2.5,
+				"desc": "Chain the nearest enemy: roots 0.7s and drags them ~2.5m toward you (bosses resist). Brands on hit."}],
+		"mode_abilities": [
+			{"name": "Demon Rush", "kind": "custom", "fn": "_fx_shien_rush", "cost": 30.0, "cd": 19.0, "dmg": 75.0, "r": 3.6, "lunge": 9.0, "stun": 0.5,
+				"desc": "Burst dash with an afterimage, then a flaming uppercut. Misses if they leave the path."},
+			{"name": "Phantom Wolves", "kind": "custom", "fn": "_fx_shien_wolves", "cost": 40.0, "cd": 25.0, "dmg": 80.0, "wolves": 3, "spread": 22.0, "speed": 17.0,
+				"desc": "Three violet flame wolves launch in a spread and chase briefly. Each hits once."},
+			{"name": "Murasaki no Metsubo", "kind": "custom", "fn": "_fx_shien_calamity", "lvl": 1000, "cost": 70.0, "cd": 45.0, "dmg": 210.0, "r": 30.0, "blast": 9.0, "charge": 1.3, "stun": 1.0,
+				"desc": "Charge overhead, then a flame serpent crashes onto the marked area for one huge explosion."}],
+		"mode": {"name": "Violet Awakening", "dmg": 1.05, "speed": 1.05, "look": {"aura": true},
+			"desc": "+5% damage and speed. Your moves become Demon Rush, Phantom Wolves and Murasaki no Metsubo."}},
+
 	# ================================================================ Mythic (1.5%)
 	"otsutsuki": {"name": "Otsutsuki", "rarity": "Mythic", "weight": 1.5, "color": Color(0.85, 0.8, 1.0),
 		"desc": "Celestial: +50 max health and chakra, +25% damage, 1.5x chakra regen.",
@@ -315,6 +335,8 @@ static func ability(id: String, i: int) -> Dictionary:
 	var a: Dictionary = ABILITY_DEFAULTS.duplicate()
 	a.merge({"lvl": UNLOCK_LEVELS[i], "cost": SLOT_COST[i], "cd": SLOT_CD[i], "col": def["color"]}, true)
 	a.merge(list[i], true)
+	if Moves.mode_owner == id and def.has("mode_abilities"):   # power-up swaps the slot's move
+		a.merge((def["mode_abilities"] as Array)[i], true)
 	return a
 
 ## The bloodline's power-up mode with every field filled in ({} for no bloodline).
