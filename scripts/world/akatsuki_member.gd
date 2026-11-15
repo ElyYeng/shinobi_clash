@@ -69,6 +69,7 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint() or model == null:
 		return
 	_look_at_player(delta)
+	FootIK.drive(model, true)
 	if wander_radius <= 0.0:
 		return
 	if _pause > 0.0:

@@ -1533,6 +1533,7 @@ func _aura_tick(radius: float, dps: float, col: Color) -> void:
 var _step_t := 0.0
 func _footsteps(delta: float) -> void:
 	var sp := Vector2(velocity.x, velocity.z).length()
+	FootIK.drive(model, is_on_floor() and not wall_walking and not _floating())   # feet follow the real ground
 	if not is_on_floor() or sp < 1.0 or wall_walking or _floating():   # hovering: no steps
 		_step_t = 0.0
 		return
