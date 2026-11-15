@@ -1260,11 +1260,15 @@ func _build_look_extras() -> void:
 	if not styles.is_empty():
 		_texture_dropdown("Eye style", "eye_style", styles)
 	if preview_model != null and preview_model.has_meta("anim_player"):
-		for slot in Hero.get_color_slots(preview_model, str(_working.get("hair_style", ""))):
+		var slots := Hero.get_color_slots(preview_model, str(_working.get("hair_style", "")))
+		for slot in slots:
 			var tkey := str(Hero.COLOR_SLOTS[slot].get("texture_key", ""))
 			var files: Array = Hero.list_slot_textures(slot)
 			if tkey != "" and not files.is_empty():
 				_texture_dropdown(str(Hero.COLOR_SLOTS[slot]["label"]), tkey, files)
+		# Each emblem PNG contains both states side-by-side: left = scratched, right = clean.
+		if slots.has("headbandmetal"):
+			_texture_dropdown("Plate Condition", "headband_state", ["scratched", "clean"])
 
 ## "<label>  [Default | file ...]" - stores the chosen file name (or "") under look key `key`.
 func _texture_dropdown(label: String, key: String, files: Array) -> void:
