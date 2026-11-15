@@ -48,9 +48,9 @@ func _ready() -> void:
 	add_child(_ears)
 	for side in [-1.0, 1.0]:
 		var ear := _tube(   # short, wide fox ear on top of the head (thin cones vanish in the aura shader)
-			Vector3(side * 0.10, 0.17, 0.0), Vector3(side * 0.12, 0.25, 0.0),
-			Vector3(side * 0.14, 0.35, 0.0), Vector3(side * 0.16, 0.46, 0.0),
-			0.08, _aura.mat, 0.75, 0.15)
+			Vector3(side * 0.04, 0.05, -0.01), Vector3(side * 0.06, 0.16, -0.01),
+			Vector3(side * 0.09, 0.27, 0.0), Vector3(side * 0.13, 0.40, 0.0),
+			0.07, _aura.mat, 0.8, 0.1)   # base sits inside the skull so the ear grows out of the hair
 		_ears.add_child(ear)
 	# Cache the head bone once rather than traversing the model every frame.
 	for node in model.find_children("*", "Skeleton3D", true, false):
