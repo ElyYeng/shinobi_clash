@@ -14,10 +14,16 @@ const TAIL_SHAPES := [
 	[0.15, Vector3(0.55, 1.00, 1.10), Vector3(0.95, 2.50, 0.85), Vector3(-0.10, 2.35, 0.05)],
 	[0.14, Vector3(0.0, 1.25, 1.20), Vector3(0.15, 2.45, 1.40), Vector3(0.0, 2.95, 0.60)],
 ]
+## Matatabi (two-tailed cat): two slimmer tails curling up on both sides. [radius, b, c, d]
+const MATATABI_TAILS := [
+	[0.10, Vector3(-0.40, 1.15, 0.95), Vector3(-0.85, 2.00, 0.95), Vector3(-0.45, 2.80, 0.50)],
+	[0.10, Vector3(0.40, 1.15, 0.95), Vector3(0.85, 2.00, 0.95), Vector3(0.45, 2.80, 0.50)],
+]
 const RINGS := 32
 const SIDES := 12
 
 var model: Node3D
+var beast := "kurama"   # a key of GameData.BEASTS: colours and tail shapes
 var _aura: AuraShell
 var tails := 1   # 1..3, set before the cloak is added or later with set_tails()
 var _tail_nodes: Array[MeshInstance3D] = []
@@ -28,10 +34,11 @@ var _hip_bone := -1
 var _tails_root: Node3D   # sits on the hip bone; the tails hang off it
 var _age := 0.0
 
-static func attach(parent: Node, character: Node3D, tail_count := 1) -> KuramaCloak:
+static func attach(parent: Node, character: Node3D, tail_count := 1, beast_id := "kurama") -> KuramaCloak:
 	var cloak := KuramaCloak.new()
 	cloak.model = character
-	cloak.tails = clampi(tail_count, 1, TAIL_SHAPES.size())
+	cloak.beast = beast_id if GameData.BEASTS.has(beast_id) else "kurama"
+	cloak.tails = clampi(tail_count, 1, cloak._shapes().size())
 	parent.add_child(cloak)
 	return cloak
 
@@ -41,7 +48,8 @@ func _ready() -> void:
 		return
 	# World-sized effects follow the model's pose without inheriting its import scale.
 	top_level = true
-	_aura = AuraShell.make(self, model, CHAKRA, RIM, 0.0, 0.045)
+	var def: Dictionary = GameData.BEASTS[beast]
+	_aura = AuraShell.make(self, model, def["col"], def["rim"], 0.0, 0.045)
 	_aura.set_strength(0.0)
 	_aura.mat.set_shader_parameter("_Brightness", 0.8)
 	_aura.mat.set_shader_parameter("_Opacity", 3.0)
@@ -82,13 +90,16 @@ func _build_tails() -> void:
 		t.queue_free()
 	_tail_nodes.clear()
 	for i in tails:
-		var sh: Array = TAIL_SHAPES[i]
+		var sh: Array = _shapes()[i]
 		var tail := _tube(TAIL_BASE, sh[1], sh[2], sh[3], float(sh[0]), _aura.mat, 0.7, 0.55)
 		_tails_root.add_child(tail)
 		_tail_nodes.append(tail)
 
+func _shapes() -> Array:
+	return MATATABI_TAILS if beast == "matatabi" else TAIL_SHAPES
+
 func set_tails(count: int) -> void:
-	count = clampi(count, 1, TAIL_SHAPES.size())
+	count = clampi(count, 1, _shapes().size())
 	if count == tails:
 		return
 	tails = count

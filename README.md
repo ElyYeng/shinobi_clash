@@ -35,6 +35,8 @@ C tap = bloodline power-up on/off, C hold = charge chakra | Hold Z for 2s = Kura
 
 In **M > Sub-Ability**, click the single Kurama beast icon to view its own Tailed Beast Level and EXP. While Kurama Cloak is active, kills and bosses earn Kurama mastery EXP; the level is saved with other mastery. The old three cloak selection buttons have been removed.
 
+A second tailed beast, **Matatabi** (blue two-tailed cat, test build, unlocked from the start), sits next to Kurama in **M > Sub-Ability**: click its icon to select it, and the Kurama key then awakens its blue two-tail cloak. Each beast keeps its own level and EXP.
+
 ## Spins and elements
 Bloodline spins: start with 3; earn 1 per 8 kills, per quest and for beating Kurama. A Legendary is guaranteed within 20 spins.
 

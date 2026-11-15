@@ -22,6 +22,7 @@ var max_stamina := 100.0
 var stam_delay := 0.0
 var mode_meter := 0.0        # "MD" bar: fills over time and with kills; Z (Kurama Mode) needs it full
 var kurama := false          # Kurama Mode (Z) is on; drains MD, no timer
+var kurama_beast := "kurama"   # which GameData.BEASTS entry the active cloak is
 var kurama_tails := 1        # 1..3: instantly select a cloak with Z + 1 / 2 / 3
 var armor_time := 0.0
 var t_cd := 0.0
@@ -1755,10 +1756,10 @@ func on_kill(boss: bool) -> void:
 	_gain_element(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
 	if kurama:   # only active tailed-beast play awards Kurama's own persistent mastery XP
 		var before := GameData.tailed_beast_level()
-		GameData.add_mastery(GameData.TAILED_BEAST_KEY, GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
+		GameData.add_mastery(GameData.beast_key(kurama_beast), GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
 		var after := GameData.tailed_beast_level()
 		if after > before and (before == 1 or after / 25 > before / 25):
-			_toast("KURAMA TAILED BEAST LV %d!" % after)
+			_toast("%s TAILED BEAST LV %d!" % [_beast_name(), after])
 	GameData.save()
 
 func gain_xp(n: int) -> void:
@@ -2057,24 +2058,29 @@ func _kurama_mode(tails := 1) -> void:
 		_end_mode()
 		_toast("Kurama Mode released")
 		return
-	if not GameData.kurama_defeated:
+	if not GameData.beast_unlocked(GameData.tailed_beast):
 		_toast("Defeat Kurama in the Kurama Boss Fight to unlock Kurama Mode")
 		return
 	if mode_meter < KURAMA_MIN_MD:
 		_toast("Not enough MD for Kurama Mode  (%d / %d)" % [int(mode_meter), int(KURAMA_MIN_MD)])
 		return
 	kurama = true
-	kurama_tails = clampi(tails, 1, 3)
+	kurama_beast = GameData.tailed_beast
+	kurama_tails = 2 if kurama_beast == "matatabi" else clampi(tails, 1, 3)
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_kurama_state(true, kurama_tails)
+		NetworkSession.broadcast_kurama_state(true, kurama_tails, kurama_beast)
 	Sfx.play(self, "power")
-	cloak_fx = KuramaCloak.attach(self, model, kurama_tails)
+	cloak_fx = KuramaCloak.attach(self, model, kurama_tails, kurama_beast)
 	KuramaCutscene.play(self, kurama_tails)
 	health = minf(max_health, health + max_health * 0.25)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	Vfx.shake(cam, 0.25, 0.4)
-	_toast("KURAMA • %s + %s!" % [_tails_text(), str(pmode["name"]).to_upper()] if powered else "KURAMA • %s!" % _tails_text())
+	_toast("%s • %s + %s!" % [_beast_name(), _tails_text(), str(pmode["name"]).to_upper()] if powered else "%s • %s!" % [_beast_name(), _tails_text()])
 	_play_once("jutsu", 0.6)
+
+## The awake beast's name (or the selected one while the cloak is off), upper case for toasts.
+func _beast_name() -> String:
+	return str(GameData.BEASTS[kurama_beast if kurama else GameData.tailed_beast]["name"]).to_upper()
 
 func _tails_text() -> String:
 	return ["ONE TAIL", "TWO TAILS", "THREE TAILS"][clampi(kurama_tails, 1, 3) - 1]
@@ -2083,6 +2089,8 @@ func _tails_text() -> String:
 func _set_kurama_tails(n: int) -> void:
 	if is_dead:
 		return
+	if (kurama_beast if kurama else GameData.tailed_beast) == "matatabi":
+		n = 2   # the two-tailed beast has only its own cloak
 	if not kurama:
 		_kurama_mode(n)
 		return
@@ -2092,9 +2100,9 @@ func _set_kurama_tails(n: int) -> void:
 	if cloak_fx != null and is_instance_valid(cloak_fx):
 		(cloak_fx as KuramaCloak).set_tails(n)
 	if NetworkSession.is_active():
-		NetworkSession.broadcast_kurama_state(true, n)
+		NetworkSession.broadcast_kurama_state(true, n, kurama_beast)
 	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 24, 8.0, 0.2, 0.5, 0.0)
-	_toast("KURAMA • %s!" % _tails_text())
+	_toast("%s • %s!" % [_beast_name(), _tails_text()])
 	KuramaCutscene.play(self, kurama_tails)
 
 func _end_mode() -> void:
@@ -2143,7 +2151,7 @@ func slot_info(key: String) -> Dictionary:
 		"E", "H":
 			d["name"] = "Talk"
 		"Z", "J":
-			d.merge({"name": "Kurama", "locked": not GameData.kurama_defeated or not GameData.kurama_equipped, "active": kurama,
+			d.merge({"name": str(GameData.BEASTS[GameData.tailed_beast]["name"]), "locked": not GameData.beast_unlocked(GameData.tailed_beast) or not GameData.kurama_equipped, "active": kurama,
 				"not_ready": mode_meter < KURAMA_MIN_MD and not kurama}, true)
 		"C", "Y":   # power-up: no timer, drains MD
 			var m := Bloodline.mode(GameData.equipped)
@@ -2486,7 +2494,7 @@ func _tick_biju_hold(delta: float) -> void:
 
 	# Holding the Kurama key by itself still triggers the cinematic on Cloak 1.
 	if Input.is_action_pressed("biju") and not _z_done:
-		if not GameData.kurama_defeated or (not kurama and mode_meter < KURAMA_MIN_MD):
+		if not GameData.beast_unlocked(GameData.tailed_beast) or (not kurama and mode_meter < KURAMA_MIN_MD):
 			if _z_hold == 0.0:
 				_toast("Defeat Kurama first" if not GameData.kurama_defeated else "Not enough MD for Kurama Mode")
 			_z_done = true

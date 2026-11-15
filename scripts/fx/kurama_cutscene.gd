@@ -61,10 +61,12 @@ func _ready() -> void:
 		bar.offset_bottom = 0
 		bars.append(bar)
 	title = Label.new()
-	title.text = "CLOAK %d\n%s" % [form, ["ONE TAIL • AWAKENING", "TWO TAILS • SURGING CHAKRA", "THREE TAILS • UNLEASHED"][form - 1]]
+	var beast: Dictionary = GameData.BEASTS[player.kurama_beast]
+	title.text = "CLOAK %d\n%s" % [form, ["ONE TAIL • AWAKENING", "TWO TAILS • SURGING CHAKRA", "THREE TAILS • UNLEASHED"][form - 1]] if player.kurama_beast == "kurama" \
+		else "%s\nTWO TAILS • BLUE FLAME" % str(beast["name"]).to_upper()
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 34)
-	title.add_theme_color_override("font_color", Color(1, 0.65, 0.3))
+	title.add_theme_color_override("font_color", beast["title"])
 	title.add_theme_color_override("font_outline_color", Color(0.12, 0.025, 0.01))
 	title.add_theme_constant_override("outline_size", 8)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE

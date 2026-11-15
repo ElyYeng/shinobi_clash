@@ -57,14 +57,14 @@ func _ready() -> void:
 var kurama_fx: Node3D
 var animation_lock := 0.0
 
-func set_kurama_visual(enabled: bool, tails := 1) -> void:
+func set_kurama_visual(enabled: bool, tails := 1, beast := "kurama") -> void:
 	if enabled and (network_ragdoll_started or not is_instance_valid(model)):
 		return
 	if enabled:
 		if kurama_fx != null and is_instance_valid(kurama_fx):
 			(kurama_fx as KuramaCloak).set_tails(tails)   # 1 -> 2 -> 3 tails while it stays on
 			return
-		kurama_fx = KuramaCloak.attach(self, model, tails)
+		kurama_fx = KuramaCloak.attach(self, model, tails, beast)
 		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.55, 0.1), 36, 9.0, 0.22, 0.6, 0.0)
 	else:
 		if kurama_fx != null and is_instance_valid(kurama_fx):

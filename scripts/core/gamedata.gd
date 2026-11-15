@@ -77,6 +77,21 @@ const MASTERY_KILL := 100              # mastery XP per kill with that bloodline
 const MASTERY_BOSS := 1000
 const MASTERY_HIT := 3                 # per enemy hit by one of its abilities
 const TAILED_BEAST_KEY := "biju:kurama" # saved alongside bloodline/element mastery
+## Tailed beasts the Kurama key can awaken (M > Sub-Ability). "col" / "rim" tint the cloak, "ui" the menu icon.
+const BEASTS := {
+	"kurama": {"name": "Kurama", "sub": "NINE TAILS", "col": Color(0.95, 0.095, 0.025), "rim": Color(1.0, 0.32, 0.06),
+		"ui": Color(0.89, 0.28, 0.09), "title": Color(1.0, 0.65, 0.3)},
+	"matatabi": {"name": "Matatabi", "sub": "TWO TAILS  \u2022  BLUE FLAME", "col": Color(0.04, 0.32, 1.0), "rim": Color(0.45, 0.85, 1.0),
+		"ui": Color(0.15, 0.45, 0.95), "title": Color(0.5, 0.85, 1.0)},
+}
+static var tailed_beast := "kurama"      # the beast the Kurama key awakens
+
+## Kurama is unlocked by beating him; Matatabi (test beast) is open from the start.
+static func beast_unlocked(id: String) -> bool:
+	return kurama_defeated if id == "kurama" else BEASTS.has(id)
+
+static func beast_key(id := "") -> String:
+	return "biju:" + (tailed_beast if id == "" else id)
 static var mastery := {}               # bloodline, element and tailed-beast XP by id
 
 # ---- Hotbar keybinds: key -> move id (see moves.gd). Set in M > Bloodline / M > Element.
@@ -139,6 +154,8 @@ static func load_data() -> void:
 		owned = d.get("owned", ["none"])
 		equipped = str(d.get("equipped", "none"))
 		kurama_equipped = bool(d.get("kurama_equipped", true))
+		var tb := str(d.get("tailed_beast", "kurama"))
+		tailed_beast = tb if BEASTS.has(tb) else "kurama"
 		kurama_defeated = bool(d.get("kurama_defeated", false))
 		susanoo_color = int(d.get("susanoo_color", -1))
 		toon_shading = bool(d.get("toon_shading", true))
@@ -168,7 +185,7 @@ static func load_data() -> void:
 		if m is Dictionary:
 			for k in m:
 				var mk := str(k)
-				if Bloodline.DEFS.has(mk) or (mk.begins_with("el:") and ELEMENTS.has(mk.substr(3))):
+				if Bloodline.DEFS.has(mk) or (mk.begins_with("el:") and ELEMENTS.has(mk.substr(3))) or (mk.begins_with("biju:") and BEASTS.has(mk.substr(5))):
 					mastery[mk] = maxi(int(m[k]), 0)
 		key_scheme = "modern" if str(d.get("key_scheme", "classic")) == "modern" else "classic"
 		var km = d.get("keybinds_modern", {})
@@ -299,7 +316,7 @@ static func save() -> void:
 			"element_spins": element_spins, "owned_elements": owned_elements,
 			"equipped_element": equipped_element,
 			"el_slots": el_slots, "el_slot_unlocked": el_slot_unlocked, "active_el_slot": active_el_slot, "el_bag": el_bag,
-			"kurama_equipped": kurama_equipped, "kurama_defeated": kurama_defeated, "susanoo_color": susanoo_color, "toon_shading": toon_shading, "errands_done": errands_done, "quests_done": quests_done,
+			"kurama_equipped": kurama_equipped, "tailed_beast": tailed_beast, "kurama_defeated": kurama_defeated, "susanoo_color": susanoo_color, "toon_shading": toon_shading, "errands_done": errands_done, "quests_done": quests_done,
 			"quest_active": quest_active, "quest_state": quest_state,
 			"quest_progress": quest_progress,
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
@@ -436,10 +453,10 @@ static func mastery_progress(id: String) -> Array:
 ## Kurama starts at level 1, and earns XP from kills while its cloak is active.
 ## Reuses the existing saved mastery dictionary, so older saves work unchanged.
 static func tailed_beast_level() -> int:
-	return maxi(1, mastery_level(TAILED_BEAST_KEY))
+	return maxi(1, mastery_level(beast_key()))
 
 static func tailed_beast_progress() -> Array:
-	return mastery_progress(TAILED_BEAST_KEY)
+	return mastery_progress(beast_key())
 
 ## Adds mastery XP; returns [old level, new level].
 static func add_mastery(id: String, n: int) -> Array:

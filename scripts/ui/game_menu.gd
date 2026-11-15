@@ -1643,25 +1643,38 @@ func _build_spirit_page() -> void:
 	_clear(bl_page)
 	_bl_label("[ TAILED SPIRIT ]", Rect2(0, 8, 600, 48), 32, INK, bl_page)
 	_bl_rect(Rect2(12, 60, 576, 3), INK, bl_page)
+	var beast: String = GameData.tailed_beast
+	var def: Dictionary = GameData.BEASTS[beast]
+	var bname := str(def["name"]).to_upper()
 
-	# One clickable Shindo-style beast icon replaces the three separate cloak buttons.
-	var icon := AbilityIcon.new()
-	icon.position = Vector2(268, 73)
-	icon.size = Vector2(74, 74)
-	icon.fill = Color(0.89, 0.28, 0.09)
-	icon.letter = "K"
-	icon.tex = load("res://assets/icons/mode_uzumaki.png") as Texture2D
-	icon.key_text = "J" if GameData.key_scheme == "modern" else "Z"
-	icon.is_mode = true
-	icon.locked = not GameData.kurama_defeated
-	icon.lvl_text = "BOSS"
-	icon.selected = _spirit_details_open
-	icon.tooltip_text = "Click for Kurama's Tailed Beast level and EXP"
-	icon.pressed.connect(func() -> void:
-		_spirit_details_open = not _spirit_details_open
-		_build_spirit_page())
-	bl_page.add_child(icon)
-	_bl_label("KURAMA  •  NINE TAILS", Rect2(10, 151, 580, 42), 27, INK, bl_page)
+	# One Shindo-style icon per tailed beast: click another to switch to it, click the selected one for its level.
+	var ids: Array = GameData.BEASTS.keys()
+	var x0 := 300.0 - (ids.size() * 82 - 8) / 2.0
+	for i in ids.size():
+		var id: String = ids[i]
+		var icon := AbilityIcon.new()
+		icon.position = Vector2(x0 + i * 82, 73)
+		icon.size = Vector2(74, 74)
+		icon.fill = GameData.BEASTS[id]["ui"]
+		icon.letter = str(GameData.BEASTS[id]["name"]).substr(0, 1)
+		icon.tex = load("res://assets/icons/mode_uzumaki.png") as Texture2D
+		icon.key_text = "J" if GameData.key_scheme == "modern" else "Z"
+		icon.is_mode = true
+		icon.locked = not GameData.beast_unlocked(id)
+		icon.lvl_text = "BOSS" if id == "kurama" else "TEST"
+		icon.selected = id == beast
+		icon.tooltip_text = "Click for %s's Tailed Beast level and EXP" % GameData.BEASTS[id]["name"] if id == beast else "Click to awaken %s with the Kurama key" % GameData.BEASTS[id]["name"]
+		icon.pressed.connect(func() -> void:
+			if id == GameData.tailed_beast:
+				_spirit_details_open = not _spirit_details_open
+			else:
+				GameData.tailed_beast = id
+				if p.kurama:
+					p._end_mode()
+				GameData.save()
+			_build_spirit_page())
+		bl_page.add_child(icon)
+	_bl_label("%s  •  %s" % [bname, def["sub"]], Rect2(10, 151, 580, 42), 27, INK, bl_page)
 	_bl_label("CLICK THE ICON TO %s LEVEL" % ("HIDE" if _spirit_details_open else "VIEW"), Rect2(30, 191, 540, 25), 16, Color(0.48, 0.16, 0.07), bl_page)
 
 	if _spirit_details_open:
@@ -1671,16 +1684,16 @@ func _build_spirit_page() -> void:
 		_bl_rect(Rect2(126, 256, 348, 17), Color(0.08, 0.06, 0.05), bl_page)
 		if level < GameData.MASTERY_MAX:
 			var fraction := clampf(float(progress[0]) / maxf(float(progress[1]), 1.0), 0.0, 1.0)
-			_bl_rect(Rect2(128, 258, 344.0 * fraction, 13), Color(0.79, 0.21, 0.08), bl_page)
+			_bl_rect(Rect2(128, 258, 344.0 * fraction, 13), Color(def["ui"]).darkened(0.15), bl_page)
 		_bl_label("EXP %d / %d" % [int(progress[0]), int(progress[1])] if level < GameData.MASTERY_MAX else "MAX LEVEL", Rect2(110, 275, 380, 19), 14, INK, bl_page)
-		_bl_label("KILLS WHILE IN KURAMA CLOAK EARN BEAST EXP", Rect2(10, 293, 580, 23), 14, INK, bl_page)
+		_bl_label("KILLS WHILE IN %s CLOAK EARN BEAST EXP" % bname, Rect2(10, 293, 580, 23), 14, INK, bl_page)
 	else:
-		_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT", Rect2(20, 230, 560, 28), 18, Color(0.48, 0.16, 0.07), bl_page)
+		_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT" if beast == "kurama" else "TEST BEAST  /  UNLOCKED FOR TESTING", Rect2(20, 230, 560, 28), 18, Color(0.48, 0.16, 0.07), bl_page)
 		var hold_key := "J" if GameData.key_scheme == "modern" else "Z"
-		_bl_label("Hold %s for 2 seconds to awaken Cloak 1.\nTap %s to release an active cloak." % [hold_key, hold_key], Rect2(25, 263, 550, 49), 17, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
-	_bl_label("Z + 1: ONE TAIL     Z + 2: TWO TAILS     Z + 3: THREE TAILS", Rect2(5, 313, 590, 23), 15, INK, bl_page)
+		_bl_label("Hold %s for 2 seconds to awaken %s.\nTap %s to release an active cloak." % [hold_key, "Cloak 1" if beast == "kurama" else def["name"], hold_key], Rect2(25, 263, 550, 49), 17, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
+	_bl_label("Z + 1: ONE TAIL     Z + 2: TWO TAILS     Z + 3: THREE TAILS" if beast == "kurama" else "Z + 1 / 2 / 3: TWO TAILS  (its only cloak)", Rect2(5, 313, 590, 23), 15, INK, bl_page)
 	var status := "EQUIPPED" if GameData.kurama_equipped else "UNEQUIPPED"
-	if not GameData.kurama_defeated:
+	if not GameData.beast_unlocked(beast):
 		status = "LOCKED  •  DEFEAT KURAMA"
 	elif p.kurama:
 		status = "ACTIVE  •  %d TAILS" % p.kurama_tails
@@ -1690,7 +1703,7 @@ func _build_spirit_page() -> void:
 	equip.text = "UNEQUIP" if GameData.kurama_equipped else "EQUIP"
 	equip.position = Vector2(170, 359)
 	equip.size = Vector2(260, 40)
-	equip.disabled = not GameData.kurama_defeated
+	equip.disabled = not GameData.beast_unlocked(beast)
 	_style_green(equip)
 	equip.pressed.connect(func() -> void:
 		GameData.kurama_equipped = not GameData.kurama_equipped
