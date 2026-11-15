@@ -23,6 +23,7 @@ const CATEGORIES := {
 	"shirt": {"key": "shirt_style", "label": "SHIRT", "pattern": "^shirts?(\\d+)$"},
 	"pants": {"key": "pants_style", "label": "PANTS", "pattern": "^pants(\\d+)$"},
 }
+const DEFAULT_HEADBAND_PLATE_TEXTURE := "Leaf.png"
 const DEFAULT_APPEARANCE := {
 	"hair_style": "hair1",
 	"hair_color": "#E6B52E",
@@ -30,7 +31,7 @@ const DEFAULT_APPEARANCE := {
 	"pants_style": "pants1",
 	"headband_color": "#2B3A67",
 	"headbandmetal_color": "#FFFFFF",   # white = show the texture untinted
-	"headbandmetal_texture": "",        # Village emblem atlas (each image contains scratched + clean halves)
+	"headbandmetal_texture": DEFAULT_HEADBAND_PLATE_TEXTURE, # Village emblem atlas (each image contains scratched + clean halves)
 	"headband_texture": "",             # Legacy key; kept for old saved looks
 	"headband_state": "",               # "" = original UVs, "scratched" = left half, "clean" = right half
 	"shirt_color": "#FFFFFF",           # tint for every shirt / pants mesh; white = original colours
@@ -215,6 +216,8 @@ static func sanitize_appearance(raw: Dictionary) -> Dictionary:
 		var tkey := str(COLOR_SLOTS[slot].get("texture_key", ""))
 		if tkey != "":
 			var tname := str(raw.get(tkey, "")).strip_edges()
+			if tkey == "headbandmetal_texture" and tname == "":
+				tname = DEFAULT_HEADBAND_PLATE_TEXTURE
 			if tname == "" or (tname.get_file() == tname and tname.get_extension().to_lower() in ["png", "jpg", "jpeg", "webp"]):
 				safe[tkey] = tname
 	var band_state := str(raw.get("headband_state", "")).strip_edges().to_lower()
