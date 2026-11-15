@@ -982,7 +982,7 @@ func _page_tools() -> Array:
 		_item("Chakra / Power-up", "C", Color(0.3, 0.45, 1.0), "C",
 			"Hold C while standing still: charge chakra, 40 per second (x%.2f). Keep holding to power up (%s). No timer - it drains MD and ends when MD runs out; hold C again (or X) to release it.\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [p.regen_mult, pu]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
-			"Unlocks when you defeat Kurama. Equip in Sub-Ability. Hold Z for 2 seconds to activate (needs %d MD); tap Z to release. Hold Z + 1/2/3 to change cloak. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
+			"Unlocks when you defeat Kurama. Equip in Sub-Ability. Hold Z for 2 seconds to activate (needs %d MD); tap Z to release. Press Z + 1/2/3 to select a cloak instantly (no holding). No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
 				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(GameData.md_max())])]),
 	]
 
@@ -1506,7 +1506,7 @@ func _page_controls() -> Array:
 	if modern:
 		return _settings_items() + [
 			_item("Keybinds: Modern", "1-6  /  Z X C V B N  /  Q E R F T G", Color(0.85, 0.3, 0.2), "1",
-				"1-6: element skills\nZ X C V B N: jutsu (bloodline abilities, clones, substitution)\nQ E R F T G: buffs (bloodline buffs, armor)\nFilled from what you have equipped - change any key in the Bloodline / Element tabs, or Auto-fill again.\n\nCtrl: dash   H: talk   Y: hold to power up (Y + 1-4: forms)\nJ: Tailed Beast   U: power-up on/off   Right mouse + I: kunai volley\nKurama Link: Z / X / C\nK: mute voice chat   Tab: leaderboard   M: menu   F2: photo mode"),
+				"1-6: element skills\nZ X C V B N: jutsu (bloodline abilities, clones, substitution)\nQ E R F T G: buffs (bloodline buffs, armor)\nFilled from what you have equipped - change any key in the Bloodline / Element tabs, or Auto-fill again.\n\nCtrl: dash   H: talk   Y: hold to power up (Y + 1-4: forms)\nJ: hold for Tailed Beast; Z+1/2/3: instant tails   U: power-up on/off   Right mouse + I: kunai volley\nKurama Link: Z / X / C\nK: mute voice chat   Tab: leaderboard   M: menu   F2: photo mode"),
 			_item("Movement", "WASD, Shift, Space, Ctrl", Color(0.4, 0.7, 0.4), "W",
 				"WASD: move\nShift: sprint (uses stamina)\nSpace: jump, press again to double jump\nCtrl: dash"),
 		]
@@ -1518,7 +1518,7 @@ func _page_controls() -> Array:
 		_item("Combat", "Mouse, E, Tab", Color(0.6, 0.65, 0.8), "C",
 			"Left mouse: melee combo\nRight mouse: kunai\nRight mouse + E: kunai volley\nMiddle mouse: lock on\nTab: leaderboard"),
 		_item("Power", "C and Z", Color(1.0, 0.5, 0.1), "Z",
-			"Hold C: charge chakra - keep holding to power up or release a form (bloodline LV 1000, drains MD)\nX: power-up on / off\nZ: Kurama Mode on / off (after beating Kurama, drains MD; can stack with C)"),
+			"Hold C: charge chakra - keep holding to power up or release a form (bloodline LV 1000, drains MD)\nX: power-up on / off\nHold Z 2s: awaken Kurama; tap Z: release; Z+1/2/3: instant cloak 1/2/3 (can stack with C)"),
 		_item("Menus", "M, E, L, Esc", Color(0.9, 0.75, 0.2), "M",
 			"M: this menu\nF2: photo mode (free camera, poses, Enter = take photo)\nVoice chat (multiplayer): just talk - nearby players hear you. K: mute / unmute your mic\nE: talk to villagers (open world)\nL: show / hide the quest tracker\nEsc: free the mouse / close menus\nEnter: retry after dying"),
 	]
@@ -1637,34 +1637,59 @@ func _kill_all() -> void:
 			e.take_damage(999999.0, Vector3.ZERO)
 	_refresh_header()
 
-var _spirit_form := 1
+var _spirit_details_open := false
 
 func _build_spirit_page() -> void:
 	_clear(bl_page)
 	_bl_label("[ TAILED SPIRIT ]", Rect2(0, 8, 600, 48), 32, INK, bl_page)
 	_bl_rect(Rect2(12, 60, 576, 3), INK, bl_page)
-	for n in [1, 2, 3]:
-		var button := Button.new()
-		button.text = "CLOAK %d\n%s" % [n, ["ONE TAIL", "TWO TAILS", "THREE TAILS"][n - 1]]
-		button.position = Vector2(15 + (n - 1) * 195, 80)
-		button.size = Vector2(180, 88)
-		_style_green(button)
-		button.modulate = Color(1.0, 0.70, 0.40) if n == _spirit_form else Color.WHITE
-		button.pressed.connect(func() -> void:
-			_spirit_form = n
-			_build_spirit_page())
-		bl_page.add_child(button)
-	_bl_label("KURAMA • CLOAK %d" % _spirit_form, Rect2(10, 182, 580, 42), 28, INK, bl_page)
-	_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT", Rect2(10, 228, 580, 28), 17, Color(0.48, 0.16, 0.07), bl_page)
-	var status := "EQUIPPED [Z]" if GameData.kurama_equipped else "UNEQUIPPED"
+
+	# One clickable Shindo-style beast icon replaces the three separate cloak buttons.
+	var icon := AbilityIcon.new()
+	icon.position = Vector2(268, 73)
+	icon.size = Vector2(74, 74)
+	icon.fill = Color(0.89, 0.28, 0.09)
+	icon.letter = "K"
+	icon.tex = load("res://assets/icons/mode_uzumaki.png") as Texture2D
+	icon.key_text = "J" if GameData.key_scheme == "modern" else "Z"
+	icon.is_mode = true
+	icon.locked = not GameData.kurama_defeated
+	icon.lvl_text = "BOSS"
+	icon.selected = _spirit_details_open
+	icon.tooltip_text = "Click for Kurama's Tailed Beast level and EXP"
+	icon.pressed.connect(func() -> void:
+		_spirit_details_open = not _spirit_details_open
+		_build_spirit_page())
+	bl_page.add_child(icon)
+	_bl_label("KURAMA  •  NINE TAILS", Rect2(10, 151, 580, 42), 27, INK, bl_page)
+	_bl_label("CLICK THE ICON TO %s LEVEL" % ("HIDE" if _spirit_details_open else "VIEW"), Rect2(30, 191, 540, 25), 16, Color(0.48, 0.16, 0.07), bl_page)
+
+	if _spirit_details_open:
+		var level := GameData.tailed_beast_level()
+		var progress := GameData.tailed_beast_progress()
+		_bl_label("TAILED BEAST LEVEL  %d" % level, Rect2(20, 219, 560, 33), 25, INK, bl_page)
+		_bl_rect(Rect2(126, 256, 348, 17), Color(0.08, 0.06, 0.05), bl_page)
+		if level < GameData.MASTERY_MAX:
+			var fraction := clampf(float(progress[0]) / maxf(float(progress[1]), 1.0), 0.0, 1.0)
+			_bl_rect(Rect2(128, 258, 344.0 * fraction, 13), Color(0.79, 0.21, 0.08), bl_page)
+		_bl_label("EXP %d / %d" % [int(progress[0]), int(progress[1])] if level < GameData.MASTERY_MAX else "MAX LEVEL", Rect2(110, 275, 380, 19), 14, INK, bl_page)
+		_bl_label("KILLS WHILE IN KURAMA CLOAK EARN BEAST EXP", Rect2(10, 293, 580, 23), 14, INK, bl_page)
+	else:
+		_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT", Rect2(20, 230, 560, 28), 18, Color(0.48, 0.16, 0.07), bl_page)
+		var hold_key := "J" if GameData.key_scheme == "modern" else "Z"
+		_bl_label("Hold %s for 2 seconds to awaken Cloak 1.\nTap %s to release an active cloak." % [hold_key, hold_key], Rect2(25, 263, 550, 49), 17, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
+	_bl_label("Z + 1: ONE TAIL     Z + 2: TWO TAILS     Z + 3: THREE TAILS", Rect2(5, 313, 590, 23), 15, INK, bl_page)
+	var status := "EQUIPPED" if GameData.kurama_equipped else "UNEQUIPPED"
 	if not GameData.kurama_defeated:
-		status = "LOCKED • DEFEAT KURAMA"
-	_bl_label(status, Rect2(10, 264, 580, 28), 22, INK, bl_page)
-	_bl_label("Hold Z for 2 seconds to awaken Cloak 1.\nHold Z + 1 / 2 / 3 to choose a form. Tap Z to release.\nAll three cloaks share the Kurama boss unlock and MD meter.", Rect2(20, 300, 560, 54), 16, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
+		status = "LOCKED  •  DEFEAT KURAMA"
+	elif p.kurama:
+		status = "ACTIVE  •  %d TAILS" % p.kurama_tails
+	_bl_label(status, Rect2(20, 336, 560, 24), 19, INK, bl_page)
+
 	var equip := Button.new()
-	equip.text = "UNEQUIP [Z]" if GameData.kurama_equipped else "EQUIP [Z]"
-	equip.position = Vector2(170, 362)
-	equip.size = Vector2(260, 42)
+	equip.text = "UNEQUIP" if GameData.kurama_equipped else "EQUIP"
+	equip.position = Vector2(170, 359)
+	equip.size = Vector2(260, 40)
 	equip.disabled = not GameData.kurama_defeated
 	_style_green(equip)
 	equip.pressed.connect(func() -> void:

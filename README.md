@@ -31,7 +31,9 @@ docs/              notes, credits and setup guides
 WASD move | Shift sprint (stamina) | Space jump x2 | Q dash | LMB combo | RMB kunai | RMB+E kunai volley
 **Hotbar R T Y F G H V B N**: each key runs the move you put on it (M > Bloodline / M > Element: click an ability, then a key).
 Defaults: R Fireball, T Phoenix Flowers, Y Flame Wave, F Shadow Clones, G Dragon Flame, H Element Armor, V Substitution, B / N empty.
-C tap = bloodline power-up on/off, C hold = charge chakra | Z Kurama Mode | E talk | M menu | L quest tracker | Tab / MMB lock-on | Esc mouse
+C tap = bloodline power-up on/off, C hold = charge chakra | Hold Z for 2s = Kurama Cloak 1 | Tap Z = release active cloak | Z+1 = one tail, Z+2 = two tails, Z+3 = three tails (instant, no hold; modern layout uses J for hold/tap) | E talk | M menu | L quest tracker | Tab / MMB lock-on | Esc mouse
+
+In **M > Sub-Ability**, click the single Kurama beast icon to view its own Tailed Beast Level and EXP. While Kurama Cloak is active, kills and bosses earn Kurama mastery EXP; the level is saved with other mastery. The old three cloak selection buttons have been removed.
 
 ## Spins and elements
 Bloodline spins: start with 3; earn 1 per 8 kills, per quest and for beating Kurama. A Legendary is guaranteed within 20 spins.

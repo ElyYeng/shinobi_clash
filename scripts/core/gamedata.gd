@@ -76,7 +76,8 @@ const MASTERY_MAX := 1000
 const MASTERY_KILL := 100              # mastery XP per kill with that bloodline active
 const MASTERY_BOSS := 1000
 const MASTERY_HIT := 3                 # per enemy hit by one of its abilities
-static var mastery := {}               # bloodline id (or "el:<Element>" for elements) -> total mastery XP
+const TAILED_BEAST_KEY := "biju:kurama" # saved alongside bloodline/element mastery
+static var mastery := {}               # bloodline, element and tailed-beast XP by id
 
 # ---- Hotbar keybinds: key -> move id (see moves.gd). Set in M > Bloodline / M > Element.
 static var keybinds := {}
@@ -431,6 +432,14 @@ static func mastery_progress(id: String) -> Array:
 	if lv >= MASTERY_MAX:
 		return [0, 0]
 	return [int(mastery.get(id, 0)) - _table()[lv], mastery_needed(lv)]
+
+## Kurama starts at level 1, and earns XP from kills while its cloak is active.
+## Reuses the existing saved mastery dictionary, so older saves work unchanged.
+static func tailed_beast_level() -> int:
+	return maxi(1, mastery_level(TAILED_BEAST_KEY))
+
+static func tailed_beast_progress() -> Array:
+	return mastery_progress(TAILED_BEAST_KEY)
 
 ## Adds mastery XP; returns [old level, new level].
 static func add_mastery(id: String, n: int) -> Array:

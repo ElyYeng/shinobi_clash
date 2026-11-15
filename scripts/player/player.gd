@@ -22,7 +22,7 @@ var max_stamina := 100.0
 var stam_delay := 0.0
 var mode_meter := 0.0        # "MD" bar: fills over time and with kills; Z (Kurama Mode) needs it full
 var kurama := false          # Kurama Mode (Z) is on; drains MD, no timer
-var kurama_tails := 1        # 1..3: hold Z + 1 / 2 / 3 (cosmetic: more tails)
+var kurama_tails := 1        # 1..3: instantly select a cloak with Z + 1 / 2 / 3
 var armor_time := 0.0
 var t_cd := 0.0
 var y_cd := 0.0
@@ -532,11 +532,18 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("ability"):
 		_toggle_power()
 	var holding_charge := Input.is_action_pressed("charge")
+	# Classic: Z selects Kurama tails; modern: J still awakens, and Z is a chord modifier.
+	var holding_biju := Input.is_action_pressed("biju") or (GameData.key_scheme == "modern" and Input.is_physical_key_pressed(KEY_Z))
 	for k in Moves.active_keys():   # hotbar keys run the move on them (scheme: classic / modern)
 		if holding_charge and k in ["1", "2", "3", "4"]:
 			continue   # (charge + 1-4 = forms, not element skills)
-		if Input.is_action_pressed("biju") and k in ["1", "2", "3"]:
-			continue   # (Kurama key + 1-3 = number of tails)
+		if holding_biju and k in ["1", "2", "3"]:
+			continue   # tail form combinations must not cast element skills
+		if GameData.key_scheme == "modern" and k == "Z":
+			# Wait until release to tell a Z jutsu tap from a Z + number cloak chord.
+			if Input.is_action_just_released("slot_Z") and not _modern_z_chord_used:
+				use_key("Z")
+			continue
 		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and kl_keys().has(k)):
 			use_key(k)
 	_tick_biju_hold(delta)
@@ -1746,6 +1753,12 @@ func on_kill(boss: bool) -> void:
 	gain_xp(GameData.XP_BOSS if boss else GameData.XP_KILL)
 	_gain_mastery(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
 	_gain_element(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
+	if kurama:   # only active tailed-beast play awards Kurama's own persistent mastery XP
+		var before := GameData.tailed_beast_level()
+		GameData.add_mastery(GameData.TAILED_BEAST_KEY, GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
+		var after := GameData.tailed_beast_level()
+		if after > before and (before == 1 or after / 25 > before / 25):
+			_toast("KURAMA TAILED BEAST LV %d!" % after)
 	GameData.save()
 
 func gain_xp(n: int) -> void:
@@ -2034,7 +2047,8 @@ func _fx_sub(_col: Color) -> void:   # swap with a log; lands behind the nearest
 			facing = f.normalized()
 	Fx.puff(get_parent(), dest + Vector3.UP, Color(0.9, 0.9, 0.9, 0.8), 2.0)
 
-## Z - Kurama Mode on / off. Needs Kurama defeated and KURAMA_MIN_MD to start; no timer, it drains MD.
+## Hold the Kurama key to awaken Cloak 1, or press Z + 1/2/3 to switch instantly.
+## Needs Kurama defeated and KURAMA_MIN_MD to start; no timer, it drains MD.
 ## Works together with the bloodline power-up (C); with both on, MD drains faster.
 func _kurama_mode(tails := 1) -> void:
 	if is_dead or not GameData.kurama_equipped:
@@ -2065,7 +2079,7 @@ func _kurama_mode(tails := 1) -> void:
 func _tails_text() -> String:
 	return ["ONE TAIL", "TWO TAILS", "THREE TAILS"][clampi(kurama_tails, 1, 3) - 1]
 
-## Hold Z + 1 / 2 / 3: switches the number of tails (turns Kurama Mode on first if it is off).
+## Instantly select 1, 2 or 3 tails, activating Kurama Mode if it is not already on.
 func _set_kurama_tails(n: int) -> void:
 	if is_dead:
 		return
@@ -2430,41 +2444,64 @@ func take_damage(amount: float, knock: Vector3 = Vector3.ZERO, knockdown := fals
 
 
 
-# Z: a short tap releases an active cloak; hold to activate or change forms.
+# A short Kurama-key tap releases an active cloak; holding it alone awakens Cloak 1.
+# Z + 1 / 2 / 3 changes forms instantly (no two-second wait), even while powered up.
 const BIJU_HOLD := 2.0
 var _z_hold := 0.0
 var _z_done := false
 var _z_target := 1
 var _z_selected := false
+var _modern_z_chord_used := false
 
 func _tick_biju_hold(delta: float) -> void:
+	var modern := GameData.key_scheme == "modern"
+	if modern and Input.is_action_just_pressed("slot_Z"):
+		_modern_z_chord_used = false
 	if not GameData.kurama_equipped:
 		_z_done = false
 		_z_hold = 0.0
+		if modern and Input.is_action_just_released("slot_Z"):
+			_modern_z_chord_used = false
 		return
 	if Input.is_action_just_pressed("biju"):
 		_z_hold = 0.0
 		_z_done = false
 		_z_selected = false
 		_z_target = kurama_tails if kurama else 1
-	if Input.is_action_pressed("biju") and not _z_done:
+
+	# Modern keeps J for holding to awaken, but also accepts Z + number without
+	# consuming the modern Z hotbar jutsu. Classic uses Z for both actions.
+	var z_chord := modern and Input.is_physical_key_pressed(KEY_Z)
+	if Input.is_action_pressed("biju") or z_chord:
 		for n in [1, 2, 3]:
-			if Input.is_action_just_pressed("form_%d" % n):
+			var form_action := "form_%d" % n
+			if Input.is_action_just_pressed(form_action) or (z_chord and Input.is_action_just_pressed("slot_Z") and Input.is_action_pressed(form_action)):
 				_z_target = n
 				_z_selected = true
+				_z_done = true
+				if z_chord:
+					_modern_z_chord_used = true
+				_set_kurama_tails(n)
+				break
+
+	# Holding the Kurama key by itself still triggers the cinematic on Cloak 1.
+	if Input.is_action_pressed("biju") and not _z_done:
 		if not GameData.kurama_defeated or (not kurama and mode_meter < KURAMA_MIN_MD):
 			if _z_hold == 0.0:
 				_toast("Defeat Kurama first" if not GameData.kurama_defeated else "Not enough MD for Kurama Mode")
 			_z_done = true
-			return
-		_z_hold += delta
-		if not kurama or _z_target != kurama_tails:
-			_trauma = maxf(_trauma, 0.38 * smoothstep(0.25, BIJU_HOLD, _z_hold))
-		if _z_hold >= BIJU_HOLD:
-			_z_done = true
-			_set_kurama_tails(_z_target)
+		else:
+			_z_hold += delta
+			if not kurama:
+				_trauma = maxf(_trauma, 0.38 * smoothstep(0.25, BIJU_HOLD, _z_hold))
+			if _z_hold >= BIJU_HOLD:
+				_z_done = true
+				_set_kurama_tails(1)
 	if Input.is_action_just_released("biju"):
 		if kurama and not _z_done and not _z_selected and _z_hold < 0.3:
 			_end_mode()
 		_z_hold = 0.0
 		_z_done = false
+		_z_selected = false
+	if modern and Input.is_action_just_released("slot_Z"):
+		_modern_z_chord_used = false
