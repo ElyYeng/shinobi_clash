@@ -552,11 +552,13 @@ func _start_arena() -> void:
 		n.model_height = d["model_height"]
 		n.model_yaw_deg = d["model_yaw"]
 		n.outline = d["outline"]
-		n.position = d["pos"]
+		var map_position: Vector3 = d["pos"]
 		if placed.has(id):
-			n.position = (placed[id] as Node3D).global_position
-			n.rotation.y = (placed[id] as Node3D).global_rotation.y
-		add_child(n)
+			map_position = map.to_local((placed[id] as Node3D).global_position)
+		n.position = map_position
+		map.add_child(n)
+		if placed.has(id):
+			n.global_rotation.y = (placed[id] as Node3D).global_rotation.y
 		npcs[id] = n
 	NetworkSession.arena_flags_changed.connect(_on_arena_flags_changed)
 	_on_arena_flags_changed()
