@@ -351,6 +351,15 @@ func _nearest_enemy(max_dist: float) -> Enemy:
 	return best
 
 func _physics_process(delta: float) -> void:
+	# Water walking: with chakra the river surface (layer 10) is solid under your feet; it costs chakra.
+	var can_water := chakra > 1.0 and not is_dead
+	set_collision_mask_value(10, can_water)
+	if can_water and is_on_floor():
+		for i in get_slide_collision_count():
+			var wc := get_slide_collision(i).get_collider() as Node
+			if wc != null and wc.has_meta("water_walk"):
+				chakra = maxf(chakra - 3.0 * delta, 0.0)
+				break
 	_genjutsu_tick(delta)
 	if in_genjutsu and not is_dead:   # paralysed in the genjutsu world: look around, can't move
 		global_position = _gen_world.victim_spot() if is_instance_valid(_gen_world) else global_position
