@@ -93,6 +93,8 @@ static func beast_unlocked(id: String) -> bool:
 static func beast_key(id := "") -> String:
 	return "biju:" + (tailed_beast if id == "" else id)
 static var mastery := {}               # bloodline, element and tailed-beast XP by id
+# Pending HUD announcements; kept only in memory, never saved.
+static var _mastery_level_ups: Array[Dictionary] = []
 
 # ---- Hotbar keybinds: key -> move id (see moves.gd). Set in M > Bloodline / M > Element.
 static var keybinds := {}
@@ -458,17 +460,37 @@ static func tailed_beast_level() -> int:
 static func tailed_beast_progress() -> Array:
 	return mastery_progress(beast_key())
 
+## Queue one announcement per XP gain, even when a boss/quest grants multiple levels.
+static func _record_mastery_level(id: String, old: int, now: int) -> void:
+	if id.begins_with("biju:") and BEASTS.has(id.substr(5)):
+		old = maxi(1, old)
+		now = maxi(1, now)
+	elif not Bloodline.DEFS.has(id) or id == "none":
+		return   # Elements continue using their regular unlock notifications.
+	if now > old:
+		_mastery_level_ups.append({"id": id, "level": now})
+
+static func take_mastery_level_ups() -> Array[Dictionary]:
+	var pending: Array[Dictionary] = []
+	pending.append_array(_mastery_level_ups)
+	_mastery_level_ups.clear()
+	return pending
+
 ## Adds mastery XP; returns [old level, new level].
 static func add_mastery(id: String, n: int) -> Array:
 	if id == "none" or id == "" or n <= 0:
 		return [0, 0]
 	var old := mastery_level(id)
 	mastery[id] = mini(int(mastery.get(id, 0)) + n, _table()[MASTERY_MAX])
-	return [old, mastery_level(id)]
+	var now := mastery_level(id)
+	_record_mastery_level(id, old, now)
+	return [old, now]
 
 ## Sets a bloodline straight to a mastery level (cheats / testing).
 static func set_mastery_level(id: String, lv: int) -> void:
+	var old := mastery_level(id)
 	mastery[id] = _table()[clampi(lv, 0, MASTERY_MAX)]
+	_record_mastery_level(id, old, mastery_level(id))
 	save()
 
 static func rarity_rank(id: String) -> int:

@@ -1754,12 +1754,8 @@ func on_kill(boss: bool) -> void:
 	gain_xp(GameData.XP_BOSS if boss else GameData.XP_KILL)
 	_gain_mastery(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
 	_gain_element(GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
-	if kurama:   # only active tailed-beast play awards Kurama's own persistent mastery XP
-		var before := GameData.tailed_beast_level()
+	if kurama:   # level the specific cloak being worn (Kurama, Matatabi, etc.)
 		GameData.add_mastery(GameData.beast_key(kurama_beast), GameData.MASTERY_BOSS if boss else GameData.MASTERY_KILL)
-		var after := GameData.tailed_beast_level()
-		if after > before and (before == 1 or after / 25 > before / 25):
-			_toast("%s TAILED BEAST LV %d!" % [_beast_name(), after])
 	GameData.save()
 
 func gain_xp(n: int) -> void:
@@ -1768,6 +1764,16 @@ func gain_xp(n: int) -> void:
 		Sfx.play(self, "power", -2.0)
 		Vfx.burst(get_parent(), global_position + Vector3.UP, Color(1.0, 0.85, 0.3), 50, 9.0, 0.3, 0.8, 0.0)
 		_toast("LEVEL UP!  LV %d   (+%d stat points - M > Stats)" % [GameData.level, gained * GameData.POINTS_PER_LEVEL])
+
+## Quests train equipped bloodlines and the selected equipped/unlocked tailed beast.
+## Use only the base quest XP, not bonus shinobi levels.
+func gain_quest_mastery(n: int) -> void:
+	if n <= 0:
+		return
+	_gain_mastery(n)
+	_gain_element(n)
+	if GameData.kurama_equipped and GameData.beast_unlocked(GameData.tailed_beast):
+		GameData.add_mastery(GameData.beast_key(), n)
 
 func _gain_mastery(n: int) -> void:
 	var id := GameData.equipped
@@ -1786,8 +1792,7 @@ func _gain_mastery(n: int) -> void:
 	if old < Bloodline.MODE_LEVEL and now >= Bloodline.MODE_LEVEL:
 		_toast("POWER-UP UNLOCKED: %s  - hold C!" % Bloodline.mode(id)["name"])
 		Sfx.play(self, "power")
-	elif now / 100 > old / 100:
-		_toast("%s mastery LV %d" % [_bl_name(), now])
+
 
 ## Element mastery from kills goes to your main (equipped) element.
 func _gain_element(n: int) -> void:

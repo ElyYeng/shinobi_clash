@@ -274,6 +274,7 @@ func turn_in() -> void:
 			xp += GameData.xp_needed(GameData.level + i)
 		if xp > 0:
 			player.gain_xp(xp)
+			player.gain_quest_mastery(int(d.get("xp", 0)))
 	if Errands.is_errand(GameData.quest_active):
 		GameData.errands_done += 1   # villagers get new errands
 	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(GameData.quest_active):
@@ -387,6 +388,7 @@ func apply_party_quest_reward(id: String, xp: int, spins: int) -> void:
 		GameData.errands_done += 1   # villagers get new errands
 	if player != null and xp > 0:
 		player.gain_xp(xp)
+		player.gain_quest_mastery(int(d.get("xp", 0)))
 	if not bool(d.get("repeatable", false)) and not GameData.quests_done.has(id):
 		GameData.quests_done.append(id)
 	GameData.quest_active = ""

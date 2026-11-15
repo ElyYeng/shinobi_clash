@@ -20,6 +20,13 @@ var _alive_time := 0.0   # time survived (shown on the defeat screen)
 var _dead_time := 0.0
 var lock_label: Label
 var toast_label: Label
+var mastery_popup: PanelContainer
+var mastery_popup_icon: TextureRect
+var mastery_popup_title: Label
+var mastery_popup_category: Label
+var _mastery_queue: Array[Dictionary] = []
+var _mastery_remaining := 0.0
+const MASTERY_POPUP_SECONDS := 3.3
 var quest_label: Label
 var prompt_label: Label
 var sharingan_overlay: ColorRect
@@ -136,6 +143,7 @@ func _ready() -> void:
 	toast_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	toast_label.add_theme_constant_override("outline_size", 8)
 	toast_label.modulate.a = 0.0
+	_build_mastery_popup()
 	end_screen = EndScreen.new()
 	add_child(end_screen)
 	end_screen.retry.connect(func() -> void: get_tree().reload_current_scene())
@@ -381,6 +389,92 @@ func bind(player: Player) -> void:
 			if is_instance_valid(minimap):
 				minimap.position.x = get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0)
 
+## Bottom-left mastery notification, outside the bottom-centre combat hotbar.
+func _build_mastery_popup() -> void:
+	mastery_popup = PanelContainer.new()
+	mastery_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mastery_popup.visible = false
+	add_child(mastery_popup)
+	mastery_popup.anchor_left = 0.0
+	mastery_popup.anchor_right = 0.0
+	mastery_popup.anchor_top = 1.0
+	mastery_popup.anchor_bottom = 1.0
+	mastery_popup.offset_left = 16.0
+	mastery_popup.offset_right = 314.0
+	mastery_popup.offset_top = -186.0
+	mastery_popup.offset_bottom = -113.0
+	mastery_popup.add_theme_stylebox_override("panel", _panel_style(Color(0.95, 0.58, 0.16)))
+	var content := HBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_theme_constant_override("separation", 10)
+	mastery_popup.add_child(content)
+	mastery_popup_icon = TextureRect.new()
+	mastery_popup_icon.custom_minimum_size = Vector2(43, 43)
+	mastery_popup_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	mastery_popup_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	mastery_popup_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(mastery_popup_icon)
+	var labels := VBoxContainer.new()
+	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	labels.add_theme_constant_override("separation", 2)
+	content.add_child(labels)
+	mastery_popup_category = Label.new()
+	mastery_popup_category.add_theme_font_override("font", GameMenu.font())
+	mastery_popup_category.add_theme_font_size_override("font_size", 13)
+	mastery_popup_category.add_theme_color_override("font_color", Color(0.95, 0.86, 0.65))
+	mastery_popup_category.clip_text = true
+	mastery_popup_category.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	labels.add_child(mastery_popup_category)
+	mastery_popup_title = Label.new()
+	mastery_popup_title.add_theme_font_override("font", GameMenu.font())
+	mastery_popup_title.add_theme_font_size_override("font_size", 19)
+	mastery_popup_title.add_theme_color_override("font_color", Color.WHITE)
+	mastery_popup_title.clip_text = true
+	mastery_popup_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	labels.add_child(mastery_popup_title)
+
+func _show_next_mastery_popup() -> void:
+	if _mastery_queue.is_empty():
+		return
+	var update: Dictionary = _mastery_queue.pop_front()
+	var id := str(update["id"])
+	var level := int(update["level"])
+	var accent := Color(0.95, 0.58, 0.16)
+	if id.begins_with("biju:"):
+		var beast_id := id.substr(5)
+		if not GameData.BEASTS.has(beast_id):
+			return
+		var beast: Dictionary = GameData.BEASTS[beast_id]
+		mastery_popup_title.text = "%s Cloak Level %d" % [beast["name"], level]
+		mastery_popup_category.text = "TAILED BEAST LEVEL UP"
+		mastery_popup_icon.texture = Moves.mode_icon("uzumaki")
+		accent = beast["ui"]
+	elif Bloodline.DEFS.has(id) and id != "none":
+		var bloodline: Dictionary = Bloodline.get_def(id)
+		mastery_popup_title.text = "%s Level %d" % [bloodline["name"], level]
+		mastery_popup_category.text = "BLOODLINE LEVEL UP"
+		mastery_popup_icon.texture = Moves.mode_icon(id)
+		accent = bloodline["color"]
+	else:
+		return
+	mastery_popup.add_theme_stylebox_override("panel", _panel_style(accent))
+	mastery_popup.modulate.a = 0.0
+	mastery_popup.visible = true
+	_mastery_remaining = MASTERY_POPUP_SECONDS
+
+func _tick_mastery_popups(delta: float) -> void:
+	for update in GameData.take_mastery_level_ups():
+		_mastery_queue.append(update)
+	if _mastery_remaining <= 0.0 and not _mastery_queue.is_empty():
+		_show_next_mastery_popup()
+	if _mastery_remaining > 0.0:
+		_mastery_remaining = maxf(0.0, _mastery_remaining - delta)
+		var elapsed := MASTERY_POPUP_SECONDS - _mastery_remaining
+		mastery_popup.modulate.a = minf(clampf(elapsed / 0.22, 0.0, 1.0), clampf(_mastery_remaining / 0.5, 0.0, 1.0))
+		if _mastery_remaining <= 0.0:
+			mastery_popup.visible = false
+
 func toast(text: String) -> void:
 	text = Fx.keyfix(text)
 	toast_label.text = text
@@ -468,6 +562,7 @@ func _process(delta: float) -> void:
 			_fill_board()
 	if p == null:
 		return
+	_tick_mastery_popups(delta)
 	bar.update_from(p)
 	# vignette: dark edges, red flash when hit, red pulse at low health
 	if last_hp >= 0.0 and p.health < last_hp - 0.5:
