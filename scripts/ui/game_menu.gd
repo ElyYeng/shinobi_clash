@@ -631,12 +631,15 @@ func _select_tab(i: int) -> void:
 	_reload_page(false)
 
 func _reload_page(keep_scroll := true) -> void:
-	var custom: bool = (TABS[tab] == "Bloodline" or TABS[tab] == "Element") and p != null
+	var custom: bool = (TABS[tab] == "Bloodline" or TABS[tab] == "Element" or TABS[tab] == "Sub-Ability") and p != null
 	bl_page.visible = custom
 	list_scroll.visible = not custom
 	detail.visible = not custom
 	sep_right.visible = not custom
 	if custom:
+		if TABS[tab] == "Sub-Ability":
+			_build_spirit_page()
+			return
 		var kind := "element" if TABS[tab] == "Element" else "bloodline"
 		if kind != tree_kind:
 			tree_kind = kind
@@ -979,7 +982,7 @@ func _page_tools() -> Array:
 		_item("Chakra / Power-up", "C", Color(0.3, 0.45, 1.0), "C",
 			"Hold C while standing still: charge chakra, 40 per second (x%.2f). Keep holding to power up (%s). No timer - it drains MD and ends when MD runs out; hold C again (or X) to release it.\nBloodline and element moves go on the hotbar keys you choose (Bloodline / Element tabs)." % [p.regen_mult, pu]),
 		_item("Kurama Mode", "Z", Color(1.0, 0.5, 0.1), "Z",
-			"Unlocks when you defeat Kurama. Press Z to turn it on (needs %d MD) and again to turn it off. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
+			"Unlocks when you defeat Kurama. Equip in Sub-Ability. Hold Z for 2 seconds to activate (needs %d MD); tap Z to release. Hold Z + 1/2/3 to change cloak. No timer: it drains MD (a full bar lasts %d s).\nx2 damage, x1.3 speed, half damage taken, health regen.\nWorks together with your bloodline power-up (C); with both on, MD drains faster.\nStatus: %s" % [
 				int(Player.KURAMA_MIN_MD), int(Player.MODE_TIME), "ACTIVE" if p.kurama else ("LOCKED" if not GameData.kurama_defeated else "MD %d / %d" % [int(p.mode_meter), int(GameData.md_max())])]),
 	]
 
@@ -1633,3 +1636,41 @@ func _kill_all() -> void:
 		if is_instance_valid(e):
 			e.take_damage(999999.0, Vector3.ZERO)
 	_refresh_header()
+
+var _spirit_form := 1
+
+func _build_spirit_page() -> void:
+	_clear(bl_page)
+	_bl_label("[ TAILED SPIRIT ]", Rect2(0, 8, 600, 48), 32, INK, bl_page)
+	_bl_rect(Rect2(12, 60, 576, 3), INK, bl_page)
+	for n in [1, 2, 3]:
+		var button := Button.new()
+		button.text = "CLOAK %d\n%s" % [n, ["ONE TAIL", "TWO TAILS", "THREE TAILS"][n - 1]]
+		button.position = Vector2(15 + (n - 1) * 195, 80)
+		button.size = Vector2(180, 88)
+		_style_green(button)
+		button.modulate = Color(1.0, 0.70, 0.40) if n == _spirit_form else Color.WHITE
+		button.pressed.connect(func() -> void:
+			_spirit_form = n
+			_build_spirit_page())
+		bl_page.add_child(button)
+	_bl_label("KURAMA • CLOAK %d" % _spirit_form, Rect2(10, 182, 580, 42), 28, INK, bl_page)
+	_bl_label("BOSS DROP  /  KURAMA BOSS FIGHT", Rect2(10, 228, 580, 28), 17, Color(0.48, 0.16, 0.07), bl_page)
+	var status := "EQUIPPED [Z]" if GameData.kurama_equipped else "UNEQUIPPED"
+	if not GameData.kurama_defeated:
+		status = "LOCKED • DEFEAT KURAMA"
+	_bl_label(status, Rect2(10, 264, 580, 28), 22, INK, bl_page)
+	_bl_label("Hold Z for 2 seconds to awaken Cloak 1.\nHold Z + 1 / 2 / 3 to choose a form. Tap Z to release.\nAll three cloaks share the Kurama boss unlock and MD meter.", Rect2(20, 300, 560, 54), 16, INK, bl_page, HORIZONTAL_ALIGNMENT_CENTER, 0, true)
+	var equip := Button.new()
+	equip.text = "UNEQUIP [Z]" if GameData.kurama_equipped else "EQUIP [Z]"
+	equip.position = Vector2(170, 362)
+	equip.size = Vector2(260, 42)
+	equip.disabled = not GameData.kurama_defeated
+	_style_green(equip)
+	equip.pressed.connect(func() -> void:
+		GameData.kurama_equipped = not GameData.kurama_equipped
+		if not GameData.kurama_equipped and p.kurama:
+			p._end_mode()
+		GameData.save()
+		_build_spirit_page())
+	bl_page.add_child(equip)
