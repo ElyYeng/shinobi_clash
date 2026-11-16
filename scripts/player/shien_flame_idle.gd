@@ -106,7 +106,6 @@ func _load_source() -> bool:
 	_source_skel = skels[0] as Skeleton3D
 	_source_root.global_transform = _target.global_transform
 	_source_root.visible = false   # only its bones are used; the claw mesh is copied onto the hand below
-	_build_claw()
 	var source_bones: Dictionary = {}
 	for si in _source_skel.get_bone_count():
 		source_bones[_bone_key(str(_source_skel.get_bone_name(si)))] = si

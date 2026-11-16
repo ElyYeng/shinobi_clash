@@ -8,6 +8,7 @@ const VIOLET := Color("#B45BFF")
 const HOT := Color("#E7C7FF")
 
 var _model: Node3D
+var _aura: AuraShell
 var _embers: Array[MeshInstance3D] = []
 var _ember_origins: Array[Vector3] = []
 var _flames: Array[Node3D] = []
@@ -45,11 +46,8 @@ static func attach(model: Node3D) -> ShienClaw:
 	claw.name = "ShienVioletClaw"
 	skeleton.add_child(claw)
 	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
-	# The claw itself is the mesh from the Flame Idle clip, drawn in the aura material on the hand.
-	var drv := ShienFlameIdle.attach(model)
-	if drv != null:
-		drv.set_claw(true)
 	claw._model = model
+	claw._aura = AuraShell.make(claw, model, OUTER, HOT, 0.4, 0.05)   # Form 1: a stronger violet aura over the body
 	return claw
 
 static func _clean_bone_name(value: String) -> String:

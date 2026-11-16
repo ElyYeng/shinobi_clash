@@ -708,6 +708,7 @@ func _shien_form2_toggle() -> void:
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.85, Shien.EDGE, 2.4, 0.35)
 	Vfx.shake(cam, 0.16, 0.28)
 	_toast("SHIEN • VIOLET CLAW - FORM 1")
+	ShienCutscene.play(self)
 
 func _shien_form2_update(delta: float) -> void:
 	if shien_claw == null or not is_instance_valid(shien_claw):
