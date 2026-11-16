@@ -624,7 +624,7 @@ const SUS_PUNCH := {"cd": 0.8, "ck": 6.0, "dmg": 55.0, "ahead": 6.5, "r": 4.5, "
 const SUS_SLAM := {"cd": 5.0, "ck": 20.0, "dmg": 120.0, "ahead": 5.0, "r": 7.5, "knock": 9.0}
 var susanoo: Susanoo
 const SHIEN_FORM2_MIN_CHAKRA := 25.0
-const SHIEN_FORM2_DRAIN := 3.5
+const SHIEN_FORM2_DRAIN := 6.0
 var shien_claw: ShienClaw
 var _sus_charge_fx: Node3D
 var _sus_cd := 0.0
@@ -635,7 +635,7 @@ var _sus_zoom := -1.0             # your camera distance before the Susanoo (res
 func _susanoo_ready() -> bool:
 	return Susanoo.USERS.has(str(GameData.equipped)) and _bl_level() >= Bloodline.MODE_LEVEL
 
-## Hold C and press 1-4: bloodline forms. Uchiha form 2 = Susanoo; the others are coming.
+## Hold C and press 1-4: bloodline forms. Shien / Uzumaki / Uchiha each have their own Form 2.
 func _activate_form(n: int) -> void:
 	if is_dead:
 		return
