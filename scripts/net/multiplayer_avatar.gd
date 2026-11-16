@@ -72,6 +72,7 @@ func set_kurama_visual(enabled: bool, tails := 1, beast := "kurama") -> void:
 		kurama_fx = null
 
 var susanoo: Susanoo
+var shien_claw: ShienClaw
 
 var _kd_rag: Ragdoll   # knocked down (ragdoll / getting up)
 var sitting := false   # sitting on the floor (P); held until they stand or move
@@ -98,6 +99,15 @@ func play_combat_animation(state: String, variant: int = 0) -> void:
 		"feet_off":
 			FeetChakra.detach(model)
 			return
+	if state == "shien_claw_on":
+		if shien_claw == null or not is_instance_valid(shien_claw):
+			shien_claw = ShienClaw.attach(model)
+		return
+	if state == "shien_claw_off":
+		if shien_claw != null and is_instance_valid(shien_claw):
+			shien_claw.queue_free()
+		shien_claw = null
+		return
 	if state == "knockdown":   # their combo-finisher knockdown: ragdoll here too, then get up
 		if _kd_rag == null or not is_instance_valid(_kd_rag):
 			var back := model.global_basis.z.normalized()
@@ -175,6 +185,9 @@ func _susanoo_event(ev: String, variant: int) -> void:
 func start_network_ragdoll(position: Vector3, yaw: float, launch_velocity: Vector3) -> void:
 	if network_ragdoll_started:
 		return
+	if shien_claw != null and is_instance_valid(shien_claw):
+		shien_claw.queue_free()
+	shien_claw = null
 	set_kurama_visual(false)
 	network_ragdoll_started = true
 	global_position = position
@@ -201,6 +214,7 @@ func apply_network_ragdoll_state(state: PackedFloat32Array) -> void:
 ## Restores this remote player after the owner respawns. Rebuilding the model
 ## clears every ragdoll bone pose and restarts its AnimationPlayer cleanly.
 func reset_network_ragdoll(position: Vector3, yaw: float) -> void:
+	shien_claw = null
 	if ragdoll != null and is_instance_valid(ragdoll):
 		ragdoll.set_process(false)
 		ragdoll.queue_free()
