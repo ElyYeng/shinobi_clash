@@ -98,7 +98,7 @@ shape = SubResource("wall")
 [node name="Markers" type="Node3D" parent="." unique_id=1381982057]
 
 [node name="PlayerSpawn" type="Marker3D" parent="Markers" unique_id=373378942]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.51294, 24.60299, 111.43336)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.51294, 28.0987, 111.43336)
 
 [node name="Members" type="Node3D" parent="." unique_id=1202561396]
 
