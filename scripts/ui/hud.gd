@@ -383,6 +383,10 @@ func bind(player: Player) -> void:
 		var ph = player.get_parent().get("play_half")
 		if ph != null:
 			minimap.half = float(ph)
+		var mp = player.get_parent().get("map")   # maps that are not centred on the origin say where they are
+		if mp is Node and (mp as Node).has_meta("minimap_center"):
+			minimap.center = (mp as Node).get_meta("minimap_center")
+			minimap.half = float((mp as Node).get_meta("minimap_half", minimap.half))
 		minimap.position = Vector2(get_viewport().get_visible_rect().size.x - Minimap.SIZE - 16.0, 16.0)
 		add_child(minimap)
 		get_viewport().size_changed.connect(func() -> void:
