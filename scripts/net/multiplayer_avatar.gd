@@ -357,7 +357,7 @@ func _process(delta: float) -> void:
 			speed = 0.0   # floating: idle pose only
 		if sitting and speed > 1.0:
 			sitting = false
-		var use_shien_flame_idle := _shien_powered and speed <= 1.0 and animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink))
+		var use_shien_flame_idle := _shien_powered and speed <= 1.0 and animation_lock <= 0.0 and not sitting and not stuck and (klink == null or not is_instance_valid(klink))
 		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
 			shien_flame_idle.set_active(use_shien_flame_idle)
 		if animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink)) and not use_shien_flame_idle:

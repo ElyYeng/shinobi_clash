@@ -237,6 +237,8 @@ func _build_claw() -> void:
 	shell.mesh = src.mesh
 	var am := ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
 	am.set_shader_parameter("_Brightness", 1.6)
+	var sc := maxf(_target.global_transform.basis.get_scale().x, 0.01)
+	am.set_shader_parameter("_Push", 0.03 / sc)   # the shader's default push inflated the claw into a huge ball
 	shell.material_override = am
 	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	shell.transform = base_t.scaled_local(Vector3.ONE * 1.06)

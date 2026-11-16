@@ -1208,7 +1208,7 @@ func _update_anim() -> void:
 	if _floating():
 		st = "idle"
 		ground = 0.0
-	var use_shien_flame_idle := powered and str(GameData.equipped) == "shien" and st == "idle"
+	var use_shien_flame_idle := powered and str(GameData.equipped) == "shien" and st == "idle" and not wall_walking
 	if use_shien_flame_idle:
 		if shien_flame_idle == null or not is_instance_valid(shien_flame_idle):
 			shien_flame_idle = ShienFlameIdle.attach(model)

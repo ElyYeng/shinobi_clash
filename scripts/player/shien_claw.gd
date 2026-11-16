@@ -69,6 +69,7 @@ static func _aura_material(col: Color, rim: Color) -> ShaderMaterial:
 	m.set_shader_parameter("_Opacity", 3.0)
 	m.set_shader_parameter("_OutlineFixed", 0.8)
 	m.set_shader_parameter("_OffsetFade", 10.0)
+	m.set_shader_parameter("_Push", 0.0)
 	return m
 
 static func _material(col: Color, alpha: float, energy: float) -> StandardMaterial3D:
