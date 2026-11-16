@@ -116,7 +116,7 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 	# Four long talons fan out from the palm. Each has a bright inner flame edge.
 	for i in 4:
 		var x := lerpf(-0.105, 0.105, float(i) / 3.0)
-		var length := [0.53, 0.66, 0.62, 0.50][i]
+		var length: float = [0.53, 0.66, 0.62, 0.50][i]
 		var spread := (float(i) - 1.5) * 0.035
 		var points: Array[Vector3] = [
 			Vector3(x, -0.015, -0.115),
