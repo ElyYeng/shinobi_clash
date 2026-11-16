@@ -1,6 +1,6 @@
 class_name ShienClaw
 extends BoneAttachment3D
-## Violet Calamity Form 2: a procedural aura claw attached to the shinobi's left hand.
+## Violet Calamity Form 1: a procedural violet flame wrapped round the forearm and fist attached to the shinobi's left hand.
 ## The whole effect is generated from meshes, so it needs no extra texture or model asset.
 
 const OUTER := Color("#7627D8")
@@ -10,6 +10,8 @@ const HOT := Color("#E7C7FF")
 var _grip: Node3D
 var _embers: Array[MeshInstance3D] = []
 var _ember_origins: Array[Vector3] = []
+var _flames: Array[Node3D] = []
+var _flame_phase: Array[float] = []
 var _time := 0.0
 
 ## Attach to the left hand (screen-right in a front-facing character shot).
@@ -71,90 +73,60 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 	_grip.basis = Basis.looking_at(finger_direction, up)
 	add_child(_grip)
 
-	var outer := _material(OUTER, 0.78, 2.8)
-	var violet := _material(VIOLET, 0.88, 4.0)
-	var hot := _material(HOT, 0.95, 5.0)
+	var outer := _material(OUTER, 0.62, 2.6)
+	var violet := _material(VIOLET, 0.8, 3.6)
+	var hot := _material(HOT, 0.9, 4.6)
 
-	# A glowing palm and wrist cuff make the claw read as part of the arm, not a floating weapon.
-	var palm := MeshInstance3D.new()
-	var palm_mesh := SphereMesh.new()
-	palm_mesh.radius = 0.145
-	palm_mesh.height = 0.29
-	palm_mesh.radial_segments = 14
-	palm_mesh.rings = 8
-	palm.mesh = palm_mesh
-	palm.scale = Vector3(1.12, 0.82, 1.45)
-	palm.position = Vector3(0.0, -0.015, -0.075)
-	palm.material_override = outer
-	palm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_grip.add_child(palm)
+	# Violet flame wrapped round the forearm and fist (the grip's -Z points along the fingers, +Z back up the arm).
+	var glow := MeshInstance3D.new()
+	var glow_mesh := SphereMesh.new()
+	glow_mesh.radius = 0.16
+	glow_mesh.height = 0.32
+	glow_mesh.radial_segments = 14
+	glow_mesh.rings = 8
+	glow.mesh = glow_mesh
+	glow.scale = Vector3(1.0, 0.9, 1.3)
+	glow.position = Vector3(0.0, 0.0, -0.06)
+	glow.material_override = outer
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_grip.add_child(glow)
 
-	var core := MeshInstance3D.new()
-	var core_mesh := SphereMesh.new()
-	core_mesh.radius = 0.095
-	core_mesh.height = 0.19
-	core_mesh.radial_segments = 12
-	core_mesh.rings = 7
-	core.mesh = core_mesh
-	core.scale = Vector3(1.0, 0.76, 1.45)
-	core.position = Vector3(0.0, 0.025, -0.13)
-	core.material_override = violet
-	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_grip.add_child(core)
-
-	var cuff := MeshInstance3D.new()
-	var cuff_mesh := TorusMesh.new()
-	cuff_mesh.inner_radius = 0.105
-	cuff_mesh.outer_radius = 0.145
-	cuff.mesh = cuff_mesh
-	cuff.position = Vector3(0.0, 0.0, 0.105)
-	cuff.rotation.x = PI * 0.5
-	cuff.material_override = hot
-	cuff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_grip.add_child(cuff)
-
-	# Four long talons fan out from the palm. Each has a bright inner flame edge.
-	for i in 4:
-		var x := lerpf(-0.105, 0.105, float(i) / 3.0)
-		var length: float = [0.53, 0.66, 0.62, 0.50][i]
-		var spread := (float(i) - 1.5) * 0.035
-		var points: Array[Vector3] = [
-			Vector3(x, -0.015, -0.115),
-			Vector3(x * 1.22, 0.015, -0.25),
-			Vector3(x * 1.52 + spread, 0.075, -length * 0.72),
-			Vector3(x * 1.8 + spread * 1.5, 0.12, -length)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	# Ragged flame sleeve: tongues start on a ring round the forearm and lick toward the fingers.
+	for i in 22:
+		var z := rng.randf_range(0.02, 0.42)
+		var ang := rng.randf() * TAU
+		var ring := 0.085 + z * 0.06
+		var base := Vector3(cos(ang) * ring, sin(ang) * ring, z)
+		var out := Vector3(cos(ang), sin(ang), 0.0)
+		var len := rng.randf_range(0.16, 0.34)
+		var curl := rng.randf_range(0.5, 1.0)
+		var pts: Array[Vector3] = [
+			Vector3.ZERO,
+			out * 0.035 + Vector3(0, 0, -len * 0.3),
+			out * 0.075 * curl + Vector3(0, 0, -len * 0.65) + Vector3(0, 0.02, 0),
+			out * 0.06 * curl + Vector3(0, 0.05, -len)
 		]
-		_add_tube(_grip, points, [0.061, 0.052, 0.027, 0.0015], outer, 7)
-		var inner_points: Array[Vector3] = []
-		for point in points:
-			inner_points.append(point + Vector3(0.0, 0.012, 0.0))
-		_add_tube(_grip, inner_points, [0.027, 0.023, 0.012, 0.0008], violet, 6)
-
-	# The thumb sweeps outward like a hooked claw.
-	var thumb: Array[Vector3] = [
-		Vector3(0.12, -0.025, -0.035),
-		Vector3(0.205, 0.015, -0.13),
-		Vector3(0.265, 0.075, -0.27),
-		Vector3(0.235, 0.14, -0.43)
-	]
-	_add_tube(_grip, thumb, [0.07, 0.058, 0.029, 0.001], outer, 7)
-	var thumb_core: Array[Vector3] = []
-	for point in thumb:
-		thumb_core.append(point + Vector3(0.0, 0.012, 0.0))
-	_add_tube(_grip, thumb_core, [0.029, 0.022, 0.012, 0.0008], hot, 6)
-
-	# Violet flame tongues crawl back over the forearm from the wrist.
-	var flame_paths: Array = [
-		[Vector3(-0.10, 0.015, 0.025), Vector3(-0.17, 0.08, 0.16), Vector3(-0.13, 0.17, 0.31), Vector3(-0.035, 0.23, 0.43)],
-		[Vector3(0.075, 0.005, 0.035), Vector3(0.15, 0.075, 0.17), Vector3(0.12, 0.19, 0.29), Vector3(0.04, 0.25, 0.39)],
-		[Vector3(-0.025, -0.075, 0.04), Vector3(-0.07, -0.13, 0.19), Vector3(-0.02, -0.17, 0.32), Vector3(0.065, -0.12, 0.42)],
-		[Vector3(0.12, -0.035, 0.03), Vector3(0.19, 0.015, 0.13), Vector3(0.22, 0.10, 0.24), Vector3(0.16, 0.18, 0.34)]
-	]
-	for i in flame_paths.size():
-		var path: Array[Vector3] = []
-		for point in flame_paths[i]:
-			path.append(point)
-		_add_tube(_grip, path, [0.075, 0.062, 0.034, 0.001], outer if i % 2 == 0 else violet, 7)
+		var w := rng.randf_range(0.032, 0.05)
+		_add_flame(base, pts, [w, w * 0.8, w * 0.4, 0.001], outer if i % 3 != 0 else violet, rng)
+	# Long wisps streaming off the fist and past the fingertips, hot cores inside.
+	for i in 9:
+		var ang := float(i) / 9.0 * TAU + rng.randf_range(-0.2, 0.2)
+		var base := Vector3(cos(ang) * 0.09, sin(ang) * 0.09, rng.randf_range(-0.12, 0.0))
+		var out := Vector3(cos(ang), sin(ang), 0.0)
+		var len := rng.randf_range(0.3, 0.5)
+		var pts: Array[Vector3] = [
+			Vector3.ZERO,
+			out * 0.06 + Vector3(0, 0.02, -len * 0.3),
+			out * 0.11 + Vector3(0, 0.07, -len * 0.65),
+			out * 0.07 + Vector3(0, 0.15, -len)
+		]
+		_add_flame(base, pts, [0.05, 0.04, 0.02, 0.001], violet, rng)
+		var core: Array[Vector3] = []
+		for q in pts:
+			core.append(q * 0.8)
+		_add_flame(base, core, [0.02, 0.016, 0.008, 0.0006], hot, rng)
 
 	# Small moving sparks keep the aura alive while the hand follows its animation.
 	for i in 7:
@@ -172,11 +144,22 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 		_ember_origins.append(Vector3(cos(float(i) * TAU / 7.0) * 0.17, sin(float(i) * TAU / 7.0) * 0.13, 0.03 + float(i % 3) * 0.09))
 		spark.position = _ember_origins[-1]
 
+## One flame tongue: a tapering tube on its own pivot at `base`, so it can sway from its root.
+func _add_flame(base: Vector3, pts: Array[Vector3], radii: Array[float], mat: Material, rng: RandomNumberGenerator) -> void:
+	var pivot := Node3D.new()
+	pivot.position = base
+	_grip.add_child(pivot)
+	_add_tube(pivot, pts, radii, mat, 6)
+	_flames.append(pivot)
+	_flame_phase.append(rng.randf() * TAU)
+
 func _process(delta: float) -> void:
 	_time += delta
-	if is_instance_valid(_grip):
-		var pulse := 1.0 + sin(_time * 6.0) * 0.025
-		_grip.scale = Vector3.ONE * pulse
+	for i in _flames.size():
+		if is_instance_valid(_flames[i]):
+			var f := _time * 7.0 + _flame_phase[i]
+			_flames[i].rotation = Vector3(sin(f) * 0.12, cos(f * 0.8) * 0.12, 0.0)
+			_flames[i].scale = Vector3.ONE * (1.0 + sin(f * 1.3) * 0.12)
 	for i in _embers.size():
 		if is_instance_valid(_embers[i]):
 			var angle := _time * (1.2 + float(i) * 0.12) + float(i) * TAU / 7.0

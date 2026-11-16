@@ -636,11 +636,11 @@ var _sus_zoom := -1.0             # your camera distance before the Susanoo (res
 func _susanoo_ready() -> bool:
 	return Susanoo.USERS.has(str(GameData.equipped)) and _bl_level() >= Bloodline.MODE_LEVEL
 
-## Hold C and press 1-4: bloodline forms. Shien / Uzumaki / Uchiha each have their own Form 2.
+## Hold C and press 1-4: bloodline forms. Shien's Violet Claw is Form 1; Uzumaki / Uchiha have their own Form 2.
 func _activate_form(n: int) -> void:
 	if is_dead:
 		return
-	if GameData.equipped == "shien" and n == 2:
+	if GameData.equipped == "shien" and n == 1:
 		_shien_form2_toggle()
 		return
 	if GameData.equipped == "uzumaki" and n == 2:
@@ -707,7 +707,7 @@ func _shien_form2_toggle() -> void:
 	Vfx.burst(get_parent(), global_position + Vector3.UP * 1.15, Shien.COL, 34, 8.0, 0.22, 0.55, 0.0)
 	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.85, Shien.EDGE, 2.4, 0.35)
 	Vfx.shake(cam, 0.16, 0.28)
-	_toast("SHIEN • VIOLET CLAW - FORM 2")
+	_toast("SHIEN • VIOLET CLAW - FORM 1")
 
 func _shien_form2_update(delta: float) -> void:
 	if shien_claw == null or not is_instance_valid(shien_claw):

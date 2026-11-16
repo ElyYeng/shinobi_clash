@@ -29,7 +29,7 @@ func _eyes(v: float) -> void:
 	var eyes := str((model.get_meta("face_choice") as Dictionary).get("eyes", ""))
 	for node in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
-		if mi.mesh == null or mi.mesh.get_blend_shape_count() == 0:
+		if not (mi.mesh is ArrayMesh) or mi.mesh.get_blend_shape_count() == 0:
 			continue
 		for i in mi.mesh.get_blend_shape_count():
 			var k := Hero.face_key(str(mi.mesh.get_blend_shape_name(i)))
