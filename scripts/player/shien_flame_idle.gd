@@ -124,10 +124,13 @@ func _load_source() -> bool:
 		if not source_nodes.has(key):
 			continue
 		var source_node := source_nodes[key] as Node3D
+		var rel := _source_root.global_transform.affine_inverse() * source_node.global_transform
 		_bone_tracks.append({
 			"index": bone_index,
 			"node": source_node,
-			"source_rest": source_node.transform
+			"key": key,
+			"rest_q": rel.basis.orthonormalized().get_rotation_quaternion(),   # clip rest, in the clip's own model space
+			"rest_pos": rel.origin
 		})
 	if _bone_tracks.is_empty():
 		push_warning("[ShienFlameIdle] No matching Mixamo bones were found in the imported animation.")
@@ -159,13 +162,28 @@ func set_active(enabled: bool) -> void:
 func _process(_delta: float) -> void:
 	if not _active or not is_instance_valid(_target) or not is_instance_valid(_source_player):
 		return
+	var inv_root := _source_root.global_transform.affine_inverse()
 	for track in _bone_tracks:
 		var source_node := track["node"] as Node3D
 		if not is_instance_valid(source_node):
 			continue
-		var source_rest: Transform3D = track["source_rest"]
-		var pose_delta := source_rest.affine_inverse() * source_node.transform
-		_target.set_bone_pose(int(track["index"]), pose_delta)
+		var idx := int(track["index"])
+		# The clip's rig and the character's have different local bone axes, so retarget in model
+		# space: how far the clip turned this bone from its rest, applied on the character's rest.
+		var rel := inv_root * source_node.global_transform
+		var turn := rel.basis.orthonormalized().get_rotation_quaternion() * (track["rest_q"] as Quaternion).inverse()
+		var want := turn * _target.get_bone_global_rest(idx).basis.get_rotation_quaternion()
+		var parent := _target.get_bone_parent(idx)
+		var parent_q := Quaternion.IDENTITY
+		if parent >= 0:
+			parent_q = _target.get_bone_global_pose(parent).basis.get_rotation_quaternion()
+		_target.set_bone_pose_rotation(idx, parent_q.inverse() * want)
+		if track["key"] == "hips":   # the clip's hip sway, scaled to this character's size
+			var rest_pos: Vector3 = track["rest_pos"]
+			var s := 1.0
+			if absf(rest_pos.y) > 0.001:
+				s = _target.get_bone_global_rest(idx).origin.y / rest_pos.y
+			_target.set_bone_pose_position(idx, _target.get_bone_rest(idx).origin + (rel.origin - rest_pos) * s)
 
 func _restore_target_pose() -> void:
 	if not is_instance_valid(_target):
