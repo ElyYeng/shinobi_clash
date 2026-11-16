@@ -12,6 +12,7 @@ extends Node3D
 @export var water_alpha := 0.85
 
 func _ready() -> void:
+	_dress.call_deferred()
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"
 	body.set_meta("no_wall_walk", true)
@@ -69,3 +70,100 @@ func _ready() -> void:
 		var wc := CollisionShape3D.new()
 		wc.shape = ws
 		wb.add_child(wc)
+
+# ---------------------------------------------------------------- dressing: rocks + grass
+@export_group("Dressing")
+@export var dress_seed := 7
+@export var rock_count := 90
+@export var grass_count := 2500
+@export var dress_min := Vector2(-560, -90)    ## scatter area (x, z) ...
+@export var dress_max := Vector2(410, 400)     ## ... the canyon floor is picked by ray casts
+
+func _dress() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var rng := RandomNumberGenerator.new()
+	rng.seed = dress_seed
+	var space := get_world_3d().direct_space_state
+	var rocks: Array[Transform3D] = []
+	var grass: Array[Transform3D] = []
+	var tries := 0
+	while (rocks.size() < rock_count or grass.size() < grass_count) and tries < 12000:
+		tries += 1
+		var x := rng.randf_range(dress_min.x, dress_max.x)
+		var z := rng.randf_range(dress_min.y, dress_max.y)
+		var q := PhysicsRayQueryParameters3D.create(Vector3(x, 200, z), Vector3(x, -50, z), 1)
+		var h := space.intersect_ray(q)
+		if h.is_empty() or (h["normal"] as Vector3).y < 0.9:
+			continue
+		var p: Vector3 = h["position"]
+		if p.y > 40.0:   # only the canyon floor; the plateaus already have trees
+			continue
+		var wq := PhysicsRayQueryParameters3D.create(Vector3(x, 200, z), Vector3(x, -50, z), 512)
+		var wh := space.intersect_ray(wq)
+		if not wh.is_empty() and float(wh["position"].y) > p.y - 0.2:
+			continue   # under water
+		var yaw := Basis(Vector3.UP, rng.randf() * TAU)
+		if rocks.size() < rock_count and rng.randf() < 0.05:
+			var s := rng.randf_range(0.6, 2.6)
+			var b := yaw * Basis.from_scale(Vector3(s * rng.randf_range(0.8, 1.4), s * rng.randf_range(0.5, 1.0), s * rng.randf_range(0.8, 1.4)))
+			rocks.append(Transform3D(b, p + Vector3.UP * s * 0.1))
+		elif grass.size() < grass_count:
+			var g := rng.randf_range(0.7, 1.5)
+			grass.append(Transform3D(yaw * Basis.from_scale(Vector3(g, g * rng.randf_range(0.8, 1.6), g)), p))
+	_multimesh("Rocks", _rock_mesh(), rocks, Color("#8b7a68"), 0.95)
+	_multimesh("Grass", _grass_mesh(), grass, Color("#9aa65a"), 0.8)
+
+func _multimesh(node_name: String, mesh: Mesh, xforms: Array[Transform3D], col: Color, rough: float) -> void:
+	if xforms.is_empty():
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = col
+	mat.roughness = rough
+	mat.metallic_specular = 0.0
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.vertex_color_use_as_albedo = true
+	mesh.surface_set_material(0, mat)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		mm.set_instance_transform(i, xforms[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = node_name
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if node_name == "Grass" else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	add_child(mmi)
+
+static func _rock_mesh() -> ArrayMesh:
+	var m := CylinderMesh.new()   # a chunky low-poly boulder
+	m.top_radius = 0.45
+	m.bottom_radius = 0.9
+	m.height = 1.0
+	m.radial_segments = 6
+	m.rings = 1
+	var st := SurfaceTool.new()
+	st.create_from(m, 0)
+	st.set_smooth_group(-1)   # flat shaded
+	st.generate_normals()
+	return st.commit()
+
+static func _grass_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i in 7:   # a tuft: a handful of leaning blades
+		var a := rng.randf() * TAU
+		var d := Vector3(cos(a), 0, sin(a))
+		var side := d.cross(Vector3.UP) * 0.05
+		var base := d * rng.randf_range(0.0, 0.25)
+		var tip := base + d * rng.randf_range(0.05, 0.2) + Vector3.UP * rng.randf_range(0.4, 0.8)
+		st.set_color(Color(0.55, 0.5, 0.3))
+		st.add_vertex(base - side)
+		st.add_vertex(base + side)
+		st.set_color(Color(1.0, 1.0, 0.8))
+		st.add_vertex(tip)
+	st.generate_normals()
+	return st.commit()
