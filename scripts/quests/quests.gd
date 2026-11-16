@@ -234,7 +234,7 @@ func target_position() -> Vector3:
 	return Vector3.INF
 
 func party_coop() -> bool:
-	return NetworkSession.is_active() and NetworkSession.session_mode == "coop"
+	return NetworkSession.is_active() and NetworkSession.session_mode == "coop" and NetworkSession.host_here()
 
 # ------------------------------------------------------------------ actions
 func accept(id: String) -> void:

@@ -16,7 +16,7 @@ const BTN := Color(0.22, 0.62, 0.12)
 const BODY_TEXT := Color(0.16, 0.1, 0.05)
 const SCROLL_SIZE := Vector2(900, 580)
 const TABS := ["Stats", "Ninja Tools", "Element", "Bloodline", "Sub-Ability", "Companions",
-	"Travel", "Mastery", "Cheats", "Customs", "Controls", "Party"]
+	"Travel", "Mastery", "Cheats", "Bloodline Bag", "Controls", "Party"]
 const MODE_NAMES := {"fight": "Arena", "world": "Open World", "kurama": "Kurama Boss Fight", "uchiha": "Uchiha Boss Fight", "akatsuki": "Akatsuki Canyon"}
 const MODE_ORDER := ["fight", "world", "kurama", "uchiha", "akatsuki"]
 
@@ -815,7 +815,7 @@ func _build_items(i: int) -> Array:
 		"Travel": return _page_travel()
 		"Mastery": return _page_mastery()
 		"Cheats": return _page_cheats()
-		"Customs": return _page_customs()
+		"Bloodline Bag": return _page_customs()
 		"Controls": return _page_controls()
 		"Party": return _page_party()
 	return []
@@ -1331,9 +1331,34 @@ func _page_companions() -> Array:
 		_locked("More companions", "No other companions exist yet."),
 	]
 
+## Shindo-style travel: the places you can go (your whole party comes along - only the party
+## leader chooses), the main menu, then fast-travel spots on this map.
+const TRAVEL_INFO := {
+	"world": ["W", Color(0.35, 0.65, 0.3), "Konoha and its quests, villagers and the Uchiha gate."],
+	"fight": ["A", Color(0.75, 0.35, 0.2), "The arena village: waves of rogue ninjas."],
+	"akatsuki": ["C", Color(0.55, 0.3, 0.35), "The Akatsuki canyon hideout and its members."],
+	"kurama": ["K", Color(0.95, 0.4, 0.1), "Fight the Nine-Tailed Beast."],
+	"uchiha": ["U", Color(0.8, 0.15, 0.15), "Claudiu Uchiha's arena."],
+}
+
 func _page_travel() -> Array:
 	var out: Array = []
 	var mode: String = GameData.mode
+	var online := NetworkSession.is_active()
+	var party_n := NetworkSession.party_member_count() if online else 1
+	var leader := not online or NetworkSession._is_party_leader()
+	var who := "Your party (%d) travels with you." % party_n if party_n > 1 else "You travel alone."
+	if not leader:
+		who = "Only your party leader can choose where the party goes. Leave the party to travel alone."
+	for m in MODE_ORDER:
+		var info: Array = TRAVEL_INFO.get(m, ["?", Color.GRAY, ""])
+		var here: bool = m == mode
+		out.append(_item(MODE_NAMES[m], "YOU ARE HERE" if here else ("Party travel" if party_n > 1 else "Travel"), info[1], info[0],
+			"%s\n\n%s" % [info[2], who],
+			{"actions": [_act("HERE" if here else "TRAVEL", _travel.bind(m), "", here or not leader)]}))
+	out.append(_item("Main Menu", "Party travel" if party_n > 1 else "Travel", Color(0.6, 0.55, 0.45), "M",
+		"Back to the main menu. %s\nOnline you stay connected and in your party: pick a mode there and the party follows." % who,
+		{"actions": [_act("TRAVEL", _travel.bind("menu"), "", not leader)]}))
 	var spots: Array = []     # [name, glyph, colour, position, blurb]
 	match mode:
 		"world":
@@ -1364,17 +1389,21 @@ func _page_travel() -> Array:
 			spots.append(["Water Tower", "W", Color(0.4, 0.6, 0.8), Vector3(-24, 1, -12), "The water tower in the north-west."])
 			spots.append(["Cliffs", "C", Color(0.55, 0.5, 0.45), Vector3(0, 1, -36), "The cliffs behind the village."])
 	for s in spots:
-		out.append(_item(s[0], "Teleport", s[2], s[1], s[4],
+		out.append(_item(s[0], "Fast travel (this map)", s[2], s[1], s[4],
 			{"actions": [_act("TELEPORT", _teleport.bind(s[3]), "[Select Location]")]}))
-	var next_mode: String = MODE_ORDER[(MODE_ORDER.find(mode) + 1) % MODE_ORDER.size()]
 	var qpos := _quest_target()
 	extras = [
-		_act("TELEPORT", _to_title, "[Main-Menu]"),
-		_act("GO", _switch_mode.bind(next_mode), "[Switch Mode: %s]" % MODE_NAMES[next_mode]),
 		_act("TELEPORT", _teleport.bind(qpos), "[Quest Target]", qpos == Vector3.INF),
 		_act("ABANDON", _abandon_quest, "[Abandon Quest]", GameData.quest_active == ""),
 	]
 	return out
+
+## Travel button: the whole party goes (NetworkSession sends everyone); offline just you.
+func _travel(dest: String) -> void:
+	close()
+	UiPause.reset(self)
+	if not NetworkSession.travel(dest) and p != null:
+		p._toast("Only your party leader can travel")
 
 ## Drops the current quest (the giver offers it again later). In a party: the whole party's.
 func _abandon_quest() -> void:
@@ -1433,7 +1462,7 @@ func _page_cheats() -> Array:
 			"Knocks out every enemy on the map, bosses too." + note, {"actions": [_act("DEFEAT", _kill_all)]}),
 	]
 
-## Customs: the Bloodline Bag - every bloodline you've rolled; put any of them in a slot.
+## Bloodline Bag: every bloodline you've rolled; put any of them in a slot.
 func _page_customs() -> Array:
 	var ids: Array = []
 	for id in GameData.owned:
@@ -1579,8 +1608,9 @@ func _quest_target() -> Vector3:
 func _to_title() -> void:
 	UiPause.reset(self)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	if NetworkSession.is_active():
-		NetworkSession.disconnect_session()
+	if NetworkSession.is_active():   # online: just you go to the menu, still connected and in your party
+		NetworkSession._go_to("menu")
+		return
 	get_tree().change_scene_to_file("res://scenes/menu.tscn")
 
 func _switch_mode(mode: String) -> void:

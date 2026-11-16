@@ -82,7 +82,7 @@ func _setup() -> void:
 	label.position.y = 2.5
 	add_child(label)
 	display_name = "Claudiu Uchiha"
-	mirror = NetworkSession.is_active() and not multiplayer.is_server()
+	mirror = NetworkSession.is_active() and not multiplayer.is_server() and NetworkSession.host_here()   # host elsewhere: your party runs him
 	if NetworkSession.is_active():
 		NetworkSession.register_uchiha(self)
 	_update_label()

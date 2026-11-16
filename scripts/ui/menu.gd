@@ -64,9 +64,10 @@ func _ready() -> void:
 	var creator_btn := UiStyle.green_button(row, "CHARACTER")
 	creator_btn.pressed.connect(_open_character_creator)
 	_describe(creator_btn, "Your look - hair, colours, shirt and pants   [6]")
-	var multi_btn := UiStyle.green_button(row, "MULTIPLAYER")
+	var online := NetworkSession.is_active()
+	var multi_btn := UiStyle.green_button(row, "LEAVE SESSION" if online else "MULTIPLAYER")
 	multi_btn.pressed.connect(_open_multiplayer)
-	_describe(multi_btn, "Host or join friends over Radmin VPN   [5]")
+	_describe(multi_btn, "Disconnect from the multiplayer session   [5]" if online else "Host or join friends over Radmin VPN   [5]")
 	for b in [custom_btn, creator_btn, multi_btn]:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -88,6 +89,12 @@ func _ready() -> void:
 	vb.create_tween().tween_property(vb, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	_refresh_info()
+	if online:   # travelled here with the party: picking a mode takes the whole party there
+		var n := NetworkSession.party_member_count()
+		hint.text = ("ONLINE - party of %d. Pick a mode and your party travels with you." % n) if NetworkSession._is_party_leader() \
+			else "ONLINE - in a party. Your party leader picks where you go next."
+		if not NetworkSession.travel_refused.is_connected(_on_travel_refused):
+			NetworkSession.travel_refused.connect(_on_travel_refused)
 	spin = SpinMenu.new()   # bloodline + element spins live here, not in-game
 	add_child(spin)
 	spin.closed.connect(_refresh_info)
@@ -118,7 +125,15 @@ func _open_character_creator() -> void:
 		spin.open("look")
 
 func _open_multiplayer() -> void:
+	if NetworkSession.is_active():   # in a session (came here with the party): leave it
+		NetworkSession.disconnect_session()
+		get_tree().reload_current_scene()
+		return
 	get_tree().change_scene_to_file("res://scenes/multiplayer_lobby.tscn")
+
+func _on_travel_refused(message: String) -> void:
+	if is_instance_valid(hint):
+		hint.text = message
 
 func _open_customize() -> void:
 	if spin != null:
@@ -126,6 +141,9 @@ func _open_customize() -> void:
 
 func _play(mode: String) -> void:
 	GameData.boss_from_world = false
+	if NetworkSession.is_active():   # online: the party travels together (leader's choice)
+		NetworkSession.travel(mode)
+		return
 	GameData.mode = mode
 	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 

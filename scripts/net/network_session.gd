@@ -28,6 +28,8 @@ var _sent_level := -1   # last level we told the others about
 var _known_clans: Dictionary = {}   # peer id -> equipped bloodline id (shown next to the name)
 var _known_appearances: Dictionary = {}
 var _party_leader: Dictionary = {}
+var _known_maps: Dictionary = {}   # peer id -> where they are: "world", "fight", "akatsuki", "kurama", "uchiha" or "menu"
+var in_menu := false               # this player travelled to the main menu (still connected, still in the party)
 var _pending_party_invites: Dictionary = {}
 var _avatars: Dictionary = {}
 const ABILITY_HIT_RANGE := 45.0    # furthest a jutsu hit on another player is accepted from
@@ -70,6 +72,8 @@ func host(port: int = DEFAULT_PORT, mode: String = "coop", display_name: String 
 	_known_levels[1] = GameData.level
 	_known_appearances[1] = _sanitize_appearance(GameData.character_appearance)
 	_party_leader[1] = 1
+	_known_maps[1] = GameData.mode
+	in_menu = false
 	return OK
 
 func join(address: String, port: int = DEFAULT_PORT, display_name: String = "Shinobi") -> Error:
@@ -106,6 +110,8 @@ func disconnect_session() -> void:
 	_known_clans.clear()
 	_known_appearances.clear()
 	_party_leader.clear()
+	_known_maps.clear()
+	in_menu = false
 	_pending_party_invites.clear()
 	arena_ninja.clear()
 	arena_pvp.clear()
@@ -131,6 +137,8 @@ func is_online() -> bool:
 func bind_local_player(player: Player, game_root: Node) -> void:
 	_local_player = player
 	_game_root = game_root
+	in_menu = false
+	_report_map(GameData.mode)
 	for id in _known_players:
 		if int(id) != multiplayer.get_unique_id():
 			_spawn_remote_local(int(id), str(_known_players[id]), int(_known_levels.get(id, 1)), _known_appearances.get(id, {}))
@@ -282,7 +290,7 @@ func _apply_villager_event(index: int, kind: String, dir: Vector3, finisher: boo
 		"free": v.held_by_other = false
 
 func _process(delta: float) -> void:
-	if not is_active() or _local_player == null:
+	if not is_active() or _local_player == null or not is_instance_valid(_local_player):
 		return
 	if multiplayer.is_server():   # villagers' shared clock (Konoha)
 		_villager_timer += delta
@@ -349,7 +357,7 @@ func _request_join(requested_name: String, requested_level: int, requested_appea
 		safe_name = "Shinobi %d" % sender
 	var roster: Array = []
 	for id in _known_players:
-		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id)), "appearance": _known_appearances.get(id, {}), "clan": str(_known_clans.get(id, "none"))})
+		roster.append({"id": int(id), "name": str(_known_players[id]), "level": int(_known_levels.get(id, 1)), "party_leader": int(_party_leader.get(id, id)), "appearance": _known_appearances.get(id, {}), "clan": str(_known_clans.get(id, "none")), "map": str(_known_maps.get(id, ""))})
 	_receive_roster.rpc_id(sender, roster)
 	_known_players[sender] = safe_name
 	_known_levels[sender] = clampi(requested_level, 1, 9999)
@@ -372,6 +380,8 @@ func _receive_roster(roster: Array) -> void:
 		_known_appearances[id] = _sanitize_appearance(entry.get("appearance", {}))
 		_known_clans[id] = _safe_clan(str(entry.get("clan", "none")))
 		_party_leader[id] = int(entry.get("party_leader", id))
+		if str(entry.get("map", "")) != "":
+			_known_maps[id] = str(entry.get("map", ""))
 		if id != multiplayer.get_unique_id():
 			_spawn_remote_local(id, nm, lv, _known_appearances[id])
 	party_updated.emit()
@@ -404,6 +414,8 @@ func _spawn_remote_local(peer_id: int, display_name: String, level: int = 1, app
 	avatar.set("is_party_member", _same_party(multiplayer.get_unique_id(), peer_id))
 	_game_root.add_child(avatar)
 	_avatars[peer_id] = avatar
+	if not same_map(peer_id):   # they're on another map / in the main menu
+		_hide_avatar(peer_id)
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
 func _submit_state(pos: Vector3, yaw: float, look: Vector2, stick: Vector4, feet: Vector3, hp := 1.0) -> void:
@@ -423,6 +435,10 @@ func _apply_remote_state(peer_id: int, pos: Vector3, yaw: float, look := Vector2
 	if peer_id == multiplayer.get_unique_id():
 		return
 	if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+		if not same_map(peer_id):   # somewhere else (another map / the main menu): not here
+			_hide_avatar(peer_id)
+			return
+		(_avatars[peer_id] as Node3D).visible = true
 		_avatars[peer_id].set_network_transform(pos, yaw, look)
 		_avatars[peer_id].set_stick_pose(stick, feet)
 		var m = _avatars[peer_id].get("model")
@@ -488,6 +504,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_known_clans.erase(peer_id)
 	_known_appearances.erase(peer_id)
 	_party_leader.erase(peer_id)
+	_known_maps.erase(peer_id)
 	if arena_ninja.has(peer_id) or arena_pvp.has(peer_id):
 		arena_ninja.erase(peer_id)
 		arena_pvp.erase(peer_id)
@@ -1054,7 +1071,7 @@ func register_uchiha(boss: Node) -> void:
 
 @rpc("authority", "call_remote", "unreliable_ordered")
 func _uchiha_snapshot(pos: Vector3, yaw: float, hp: float, ph: int) -> void:
-	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha) and bool(_uchiha.get("mirror")):
 		_uchiha.apply_snapshot(pos, yaw, hp, ph)
 
 ## Host: an attack / phase change / death - every client plays it on its copy.
@@ -1064,7 +1081,7 @@ func uchiha_event(kind: String, pos: Vector3, fwd: Vector3, aim: Vector3, extra 
 
 @rpc("authority", "call_remote", "reliable")
 func _uchiha_event(kind: String, pos: Vector3, fwd: Vector3, aim: Vector3, extra: int) -> void:
-	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
+	if not multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha) and bool(_uchiha.get("mirror")):
 		_uchiha.mirror_event(kind, pos, fwd, aim, extra)
 
 func request_uchiha_damage(amount: float) -> void:
@@ -1077,13 +1094,11 @@ func _request_uchiha_damage(amount: float) -> void:
 		_uchiha.take_damage(clampf(amount, 1.0, 120.0))
 
 ## Main game: the boss gate takes the whole session into Claudiu's arena (anyone can start it).
-func request_uchiha_arena() -> void:
+func request_uchiha_arena() -> void:   # (now: your party travels there, like the Travel menu)
 	if not is_active():
 		return
-	if multiplayer.is_server():
-		_go_uchiha_arena.rpc()
-	else:
-		_request_uchiha_arena.rpc_id(1)
+	GameData.boss_from_world = true
+	travel("uchiha")
 
 @rpc("any_peer", "call_remote", "reliable")
 func _request_uchiha_arena() -> void:
@@ -1098,9 +1113,9 @@ func _go_uchiha_arena() -> void:
 	LoadingScreen.go(get_tree(), "res://scenes/main.tscn")
 
 ## Host after the win: everyone back to the open world (by the gate).
-func return_party_to_world() -> void:
-	if is_active() and multiplayer.is_server():
-		_return_raid_party_to_world.rpc()
+func return_party_to_world() -> void:   # after Claudiu: the party travels back (the leader sends it)
+	if is_active() and _is_party_leader():
+		travel("world")
 
 ## Shared Kurama raid. Host simulates the boss; clients receive authoritative snapshots.
 func register_raid_boss(boss: Kurama) -> void:
@@ -1220,7 +1235,7 @@ func _request_projectile_player_hit(attacker_id: int, damage: float, impact_posi
 func _server_projectile_player_hit(attacker_id: int, target_id: int, damage: float, impact_position: Vector3) -> void:
 	if attacker_id == target_id or not _known_players.has(attacker_id) or not _known_players.has(target_id) or _same_party(attacker_id, target_id):
 		return
-	if not pvp_allowed(attacker_id, target_id):
+	if not pvp_allowed(attacker_id, target_id) or str(_known_maps.get(attacker_id, "")) != str(_known_maps.get(target_id, "")):
 		return
 	var target_pos: Vector3
 	if target_id == 1 and _local_player != null:
@@ -1793,3 +1808,138 @@ func _arena_flags(ninja: Dictionary, pvp: Dictionary) -> void:
 		if bool(pvp[id]):
 			arena_pvp[int(id)] = true
 	arena_flags_changed.emit()
+
+
+# ---------------------------------------------------------------- party travel (Shindo-style)
+## Where every player is, so you only see the ones on your map. The party leader picks a
+## destination (a map or the main menu) and the whole party goes there together; other
+## parties stay where they are. Members follow their leader - they can't travel on their own.
+signal travel_refused(message: String)
+
+const TRAVEL_DESTS := ["world", "fight", "akatsuki", "kurama", "uchiha", "menu"]
+
+func local_map() -> String:
+	return "menu" if in_menu else GameData.mode
+
+## True when this player is on the same map as me.
+func same_map(peer_id: int) -> bool:
+	return str(_known_maps.get(peer_id, local_map())) == local_map()
+
+## The host runs the shared bosses / quest enemies - only when it is on this map with you.
+func host_here() -> bool:
+	return not is_active() or multiplayer.is_server() or same_map(1)
+
+func _is_party_leader() -> bool:
+	var me := multiplayer.get_unique_id()
+	return int(_party_leader.get(me, me)) == me
+
+func party_member_count() -> int:
+	var me := multiplayer.get_unique_id()
+	return _party_size(int(_party_leader.get(me, me)))
+
+## Travel menu / main menu: take my party to `dest`. Returns false (and says why) if only the
+## leader may choose. Offline it just goes.
+func travel(dest: String) -> bool:
+	if not TRAVEL_DESTS.has(dest):
+		return false
+	if not is_active():
+		_go_to(dest)
+		return true
+	if not _is_party_leader():
+		travel_refused.emit("Only your party leader can travel. Leave the party to travel alone.")
+		return false
+	if multiplayer.is_server():
+		_server_party_travel(1, dest, GameData.boss_from_world)
+	else:
+		_request_party_travel.rpc_id(1, dest, GameData.boss_from_world)
+	return true
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_party_travel(dest: String, from_world: bool) -> void:
+	if multiplayer.is_server():
+		_server_party_travel(multiplayer.get_remote_sender_id(), dest, from_world)
+
+func _server_party_travel(sender: int, dest: String, from_world: bool) -> void:
+	if not TRAVEL_DESTS.has(dest) or int(_party_leader.get(sender, sender)) != sender:
+		return
+	for id in _party_leader.keys():   # everyone learns the party's new map first (so bosses know if the host is coming)
+		if int(_party_leader[id]) == sender:
+			_known_maps[int(id)] = dest
+			_map_changed.rpc(int(id), dest)
+	for id in _party_leader.keys():
+		if int(_party_leader[id]) != sender:
+			continue
+		if int(id) == multiplayer.get_unique_id():
+			_party_travel(dest, from_world)
+		else:
+			_party_travel.rpc_id(int(id), dest, from_world)
+
+@rpc("authority", "call_remote", "reliable")
+func _party_travel(dest: String, from_world: bool) -> void:
+	GameData.boss_from_world = from_world and dest == "uchiha"
+	_go_to(dest)
+
+func _go_to(dest: String) -> void:
+	var tree := get_tree()
+	if tree.paused:
+		tree.paused = false
+	if dest == "menu":
+		if is_active():
+			in_menu = true
+			_report_map("menu")
+			_local_player = null
+			_game_root = null
+			_avatars.clear()
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		tree.change_scene_to_file("res://scenes/menu.tscn")
+		return
+	in_menu = false
+	_uchiha = null
+	_raid_boss = null
+	GameData.mode = dest
+	if is_active():
+		_report_map(dest)
+	LoadingScreen.go(tree, "res://scenes/main.tscn")
+
+## Tell everyone where I am now.
+func _report_map(map: String) -> void:
+	if not is_active():
+		return
+	var me := multiplayer.get_unique_id()
+	_known_maps[me] = map
+	if multiplayer.is_server():
+		_map_changed.rpc(me, map)
+	else:
+		_request_map.rpc_id(1, map)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_map(map: String) -> void:
+	if not multiplayer.is_server() or not (TRAVEL_DESTS.has(map) or MODE_MAPS.has(map)):
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	_known_maps[sender] = map
+	_map_changed.rpc(sender, map)
+	_apply_map_changed(sender)
+
+const MODE_MAPS := ["world", "fight", "akatsuki", "kurama", "uchiha"]
+
+@rpc("authority", "call_remote", "reliable")
+func _map_changed(peer_id: int, map: String) -> void:
+	_known_maps[peer_id] = map
+	_apply_map_changed(peer_id)
+
+func _apply_map_changed(peer_id: int) -> void:
+	if same_map(peer_id):
+		if _avatars.has(peer_id) and is_instance_valid(_avatars[peer_id]):
+			(_avatars[peer_id] as Node3D).visible = true
+	else:
+		_hide_avatar(peer_id)
+	party_updated.emit()
+
+func _hide_avatar(peer_id: int) -> void:
+	if not _avatars.has(peer_id) or not is_instance_valid(_avatars[peer_id]):
+		return
+	var av = _avatars[peer_id]
+	av.visible = false
+	av.set_network_transform(Vector3(0, -5000, 0), 0.0)   # parked far below: no collisions, no hits
+	av.global_position = Vector3(0, -5000, 0)
