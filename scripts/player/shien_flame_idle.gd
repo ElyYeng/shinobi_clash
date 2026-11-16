@@ -3,23 +3,11 @@ extends Node
 ## Re-targets the imported Flame Idle glTF animation onto a character's Mixamo Skeleton3D.
 ## The source GLB is stored gzip-compressed to keep the repository asset small.
 
-const SOURCE_PARTS := [
-	"res://assets/character/FlameIdleParts/part_00.txt",
-	"res://assets/character/FlameIdleParts/part_01.txt",
-	"res://assets/character/FlameIdleParts/part_02.txt",
-	"res://assets/character/FlameIdleParts/part_03.txt",
-	"res://assets/character/FlameIdleParts/part_04.txt",
-	"res://assets/character/FlameIdleParts/part_05.txt",
-	"res://assets/character/FlameIdleParts/part_06.txt",
-	"res://assets/character/FlameIdleParts/part_07.txt",
-	"res://assets/character/FlameIdleParts/part_08.txt",
-	"res://assets/character/FlameIdleParts/part_09.txt",
-	"res://assets/character/FlameIdleParts/part_10.txt",
-	"res://assets/character/FlameIdleParts/part_11.txt"
-]
+const PARTS_DIR := "res://assets/character/FlameIdleParts/"   # part_00.txt, part_01.txt ... read until one is missing
 
 var _target: Skeleton3D
 var _source_root: Node3D
+var _source_skel: Skeleton3D
 var _source_player: AnimationPlayer
 var _animation_name: StringName = &""
 var _bone_tracks: Array[Dictionary] = []
@@ -50,11 +38,10 @@ func _ready() -> void:
 
 func _load_source() -> bool:
 	var encoded := ""
-	for part_path in SOURCE_PARTS:
-		if not FileAccess.file_exists(part_path):
-			push_warning("[ShienFlameIdle] Missing animation data part: %s" % part_path)
-			return false
-		encoded += FileAccess.get_file_as_string(part_path).strip_edges()
+	var part := 0
+	while FileAccess.file_exists("%spart_%02d.txt" % [PARTS_DIR, part]):
+		encoded += FileAccess.get_file_as_string("%spart_%02d.txt" % [PARTS_DIR, part]).strip_edges()
+		part += 1
 	if encoded.is_empty():
 		push_warning("[ShienFlameIdle] Compressed animation asset is empty.")
 		return false
@@ -109,28 +96,31 @@ func _load_source() -> bool:
 	clip.loop_mode = Animation.LOOP_LINEAR
 	_source_player.stop()
 
-	var source_nodes: Dictionary = {}
-	if _source_root is Node3D:
-		source_nodes[_bone_key(_source_root.name)] = _source_root
-	for child in _source_root.find_children("*", "Node3D", true, false):
-		var source_node := child as Node3D
-		var key := _bone_key(source_node.name)
-		if key != "":
-			source_nodes[key] = source_node
-
+	# The clip rig (with the claw mesh skinned to it) is a Skeleton3D now. It sits exactly on the
+	# character's skeleton, hidden until the idle plays, so the claw follows the retargeted pose.
+	var skels := _source_root.find_children("*", "Skeleton3D", true, false)
+	if skels.is_empty():
+		push_warning("[ShienFlameIdle] Imported Flame Idle has no Skeleton3D.")
+		return false
+	_source_skel = skels[0] as Skeleton3D
+	_source_root.global_transform = _target.global_transform
+	_source_root.visible = false
+	var source_bones: Dictionary = {}
+	for si in _source_skel.get_bone_count():
+		source_bones[_bone_key(str(_source_skel.get_bone_name(si)))] = si
 	_bone_tracks.clear()
 	for bone_index in _target.get_bone_count():
 		var key := _bone_key(str(_target.get_bone_name(bone_index)))
-		if not source_nodes.has(key):
+		if not source_bones.has(key):
 			continue
-		var source_node := source_nodes[key] as Node3D
-		var rel := _source_root.global_transform.affine_inverse() * source_node.global_transform
+		var sidx: int = source_bones[key]
+		var rest := _source_skel.get_bone_global_rest(sidx)
 		_bone_tracks.append({
 			"index": bone_index,
-			"node": source_node,
+			"src": sidx,
 			"key": key,
-			"rest_q": rel.basis.orthonormalized().get_rotation_quaternion(),   # clip rest, in the clip's own model space
-			"rest_pos": rel.origin
+			"rest_q": rest.basis.orthonormalized().get_rotation_quaternion(),
+			"rest_pos": rest.origin
 		})
 	if _bone_tracks.is_empty():
 		push_warning("[ShienFlameIdle] No matching Mixamo bones were found in the imported animation.")
@@ -149,6 +139,8 @@ func set_active(enabled: bool) -> void:
 	if enabled == _active:
 		return
 	_active = enabled
+	if is_instance_valid(_source_root):
+		_source_root.visible = enabled   # shows the claw mesh
 	if _active:
 		if is_instance_valid(_source_player):
 			_source_player.play(_animation_name, 0.12)
@@ -160,18 +152,13 @@ func set_active(enabled: bool) -> void:
 		_restore_target_pose()
 
 func _process(_delta: float) -> void:
-	if not _active or not is_instance_valid(_target) or not is_instance_valid(_source_player):
+	if not _active or not is_instance_valid(_target) or not is_instance_valid(_source_skel):
 		return
-	var inv_root := _source_root.global_transform.affine_inverse()
 	for track in _bone_tracks:
-		var source_node := track["node"] as Node3D
-		if not is_instance_valid(source_node):
-			continue
 		var idx := int(track["index"])
-		# The clip's rig and the character's have different local bone axes, so retarget in model
-		# space: how far the clip turned this bone from its rest, applied on the character's rest.
-		var rel := inv_root * source_node.global_transform
-		var turn := rel.basis.orthonormalized().get_rotation_quaternion() * (track["rest_q"] as Quaternion).inverse()
+		# model-space retarget: how far the clip turned this bone from its rest, on the character's rest
+		var cur := _source_skel.get_bone_global_pose(int(track["src"]))
+		var turn := cur.basis.orthonormalized().get_rotation_quaternion() * (track["rest_q"] as Quaternion).inverse()
 		var want := turn * _target.get_bone_global_rest(idx).basis.get_rotation_quaternion()
 		var parent := _target.get_bone_parent(idx)
 		var parent_q := Quaternion.IDENTITY
@@ -183,7 +170,7 @@ func _process(_delta: float) -> void:
 			var s := 1.0
 			if absf(rest_pos.y) > 0.001:
 				s = _target.get_bone_global_rest(idx).origin.y / rest_pos.y
-			_target.set_bone_pose_position(idx, _target.get_bone_rest(idx).origin + (rel.origin - rest_pos) * s)
+			_target.set_bone_pose_position(idx, _target.get_bone_rest(idx).origin + (cur.origin - rest_pos) * s)
 
 func _restore_target_pose() -> void:
 	if not is_instance_valid(_target):
