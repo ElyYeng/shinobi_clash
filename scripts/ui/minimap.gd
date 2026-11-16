@@ -11,6 +11,7 @@ const SHOT := 1024          # snapshot resolution
 
 var player: Player
 var world: Node3D
+var center := Vector2.ZERO   # world x, z the snapshot is centred on (maps that are not centred on the origin)
 var half := 246.0           # the map's half-size (metres)
 var _tex: Texture2D
 var _vp: SubViewport
@@ -81,7 +82,7 @@ func _snapshot() -> void:
 	cam.far = 900.0
 	_vp.add_child(cam)
 	add_child(_vp)
-	cam.global_transform = Transform3D(Basis.from_euler(Vector3(-PI * 0.5, 0.0, 0.0)), Vector3(0, 400, 0))
+	cam.global_transform = Transform3D(Basis.from_euler(Vector3(-PI * 0.5, 0.0, 0.0)), Vector3(center.x, 400, center.y))
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
 	if not is_instance_valid(_vp):
@@ -93,7 +94,7 @@ func _snapshot() -> void:
 	_mat.set_shader_parameter("has_map", true)
 
 func _uv(p: Vector3) -> Vector2:   # world -> map uv (top-down camera: x right, -z up)
-	return Vector2((p.x + half) / (half * 2.0), (p.z + half) / (half * 2.0))
+	return Vector2((p.x - center.x + half) / (half * 2.0), (p.z - center.y + half) / (half * 2.0))
 
 func _process(_delta: float) -> void:
 	if player == null or not is_instance_valid(player):

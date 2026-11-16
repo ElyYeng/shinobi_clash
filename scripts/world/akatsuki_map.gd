@@ -13,6 +13,9 @@ extends Node3D
 
 func _ready() -> void:
 	_dress.call_deferred()
+	if get_parent() != null:   # the minimap photographs the canyon, not the empty square round the origin
+		get_parent().set_meta("minimap_center", Vector2(-76, 155))
+		get_parent().set_meta("minimap_half", 500.0)
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"
 	body.set_meta("no_wall_walk", true)
