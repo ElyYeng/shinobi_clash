@@ -31,6 +31,8 @@ func _ready() -> void:
 	if not MapBuilder.MAP_FILES.has(mode):
 		mode = "fight"
 	_load_map()
+	if mode == "fight":   # build the arena ninjas' models now, during the loading screen
+		Hero.prewarm(FIGHT_ENEMIES + 6)
 	# looping ambience: village life in Konoha, forest everywhere else
 	Sfx.ambient(self, "village" if mode == "world" else "forest_1")
 	if mode == "world":
@@ -138,6 +140,8 @@ func _fight_spawner(delta: float) -> void:
 	if respawn_timer <= 0.0:
 		respawn_timer = 1.5
 		_spawn_enemy()
+	elif respawn_timer < 0.8 and Hero.pool_size() < 2:   # top the pool up between spawns, not on them
+		Hero.prewarm(Hero.pool_size() + 1)
 
 func _spawn_enemy() -> void:
 	var e := Enemy.new()

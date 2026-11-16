@@ -555,7 +555,11 @@ func _physics_process(delta: float) -> void:
 		if GameData.key_scheme == "modern" and k == "Z":
 			# Wait until release to tell a Z jutsu tap from a Z + number cloak chord.
 			if Input.is_action_just_released("slot_Z") and not _modern_z_chord_used:
-				use_key("Z")
+				if kurama:   # in Tailed Beast mode a plain Z tap leaves it
+					_end_mode()
+					_toast("Tailed Beast Mode released")
+				else:
+					use_key("Z")
 			continue
 		if Input.is_action_just_pressed("slot_" + k) and not (klink != null and kl_keys().has(k)):
 			use_key(k)
@@ -2606,7 +2610,7 @@ func _tick_biju_hold(delta: float) -> void:
 				break
 
 	# Holding the Kurama key by itself still triggers the cinematic on Cloak 1.
-	if Input.is_action_pressed("biju") and not _z_done:
+	if Input.is_action_pressed("biju") and not _z_done and not kurama:
 		if not GameData.beast_unlocked(GameData.tailed_beast) or (not kurama and mode_meter < KURAMA_MIN_MD):
 			if _z_hold == 0.0:
 				_toast("Defeat Kurama first" if not GameData.kurama_defeated else "Not enough MD for Kurama Mode")
@@ -2619,8 +2623,9 @@ func _tick_biju_hold(delta: float) -> void:
 				_z_done = true
 				_set_kurama_tails(1)
 	if Input.is_action_just_released("biju"):
-		if kurama and not _z_done and not _z_selected and _z_hold < 0.3:
+		if kurama and not _z_done and not _z_selected:   # tap or hold, no tail picked: leave the mode
 			_end_mode()
+			_toast("%s released" % ("Kurama Mode" if kurama_beast == "kurama" else "Tailed Beast Mode"))
 		_z_hold = 0.0
 		_z_done = false
 		_z_selected = false

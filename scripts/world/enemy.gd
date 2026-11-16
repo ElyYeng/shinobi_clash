@@ -75,7 +75,7 @@ func _setup() -> void:
 	col.position.y = 0.95 * k
 	add_child(col)
 	if not is_boss:
-		var hero_model := Hero.create(Hero.DEFAULT_APPEARANCE)
+		var hero_model := Hero.take_default()   # pre-built while the map loaded (no spawn hitch)
 		if hero_model != null:
 			if network_quest_mirror:
 				character_appearance = Hero.sanitize_appearance(Hero.DEFAULT_APPEARANCE)

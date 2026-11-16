@@ -127,6 +127,28 @@ static var credit := ""
 static var _stride_speed := {}   # animation name -> metres/second its feet move (model space, measured once)
 
 ## Returns a Node3D wrapper (forward = -Z, feet at y=0) or null if no model found.
+# ---- ready-made ninja models: built while the map loads, so a spawn mid-fight doesn't hitch
+static var _pool: Array[Node3D] = []
+
+## Builds `count` default-look models ahead of time (call during loading).
+static func prewarm(count: int) -> void:
+	while _pool.size() < count:
+		var m := create(DEFAULT_APPEARANCE)
+		if m == null:
+			return
+		_pool.append(m)
+
+static func pool_size() -> int:
+	return _pool.size()
+
+## A default-look model: from the ready-made pool if there is one, else built now.
+static func take_default() -> Node3D:
+	while not _pool.is_empty():
+		var m: Node3D = _pool.pop_back()
+		if is_instance_valid(m) and not m.is_inside_tree():
+			return m
+	return create(DEFAULT_APPEARANCE)
+
 static func create(appearance: Dictionary = {}) -> Node3D:
 	if not _searched or _scene == null:
 		_searched = true
