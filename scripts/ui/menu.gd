@@ -160,7 +160,7 @@ func _build_settings(page: VBoxContainer) -> void:
 	var gfx := UiStyle.ribbon_button(page, "", 24)
 	var refresh_gfx := func() -> void: gfx.text = "GRAPHICS: %s" % Graphics.label(GameData.graphics)
 	refresh_gfx.call()
-	gfx.pressed.connect(func() -> void:   # Auto -> Low -> Medium -> High -> Auto
+	gfx.pressed.connect(func() -> void:   # High -> Medium -> Low -> Auto -> High
 		GameData.graphics = Graphics.PRESETS[(Graphics.PRESETS.find(GameData.graphics) + 1) % Graphics.PRESETS.size()]
 		GameData.save()
 		Graphics.apply(get_tree())
