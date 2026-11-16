@@ -7,7 +7,7 @@ const OUTER := Color("#7627D8")
 const VIOLET := Color("#B45BFF")
 const HOT := Color("#E7C7FF")
 
-var _grip: Node3D
+var _model: Node3D
 var _embers: Array[MeshInstance3D] = []
 var _ember_origins: Array[Vector3] = []
 var _flames: Array[Node3D] = []
@@ -43,134 +43,17 @@ static func attach(model: Node3D) -> ShienClaw:
 
 	var claw := ShienClaw.new()
 	claw.name = "ShienVioletClaw"
-	claw._build(skeleton, hand_idx, hand_side)
 	skeleton.add_child(claw)
 	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
-	# the rig is imported ~5 m tall and scaled down: size the flame in world metres (x1.6 so it reads)
-	var s := skeleton.global_transform.basis.get_scale().x
-	if s > 0.0001:
-		claw._grip.scale = Vector3.ONE * (1.6 / s)
+	# The claw itself is the mesh from the Flame Idle clip, drawn in the aura material on the hand.
+	var drv := ShienFlameIdle.attach(model)
+	if drv != null:
+		drv.set_claw(true)
+	claw._model = model
 	return claw
 
 static func _clean_bone_name(value: String) -> String:
 	return value.to_lower().replace("mixamorig:", "").replace("mixamorig_", "").replace("_", "").replace(" ", "")
-
-func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
-	var hand_rest := skeleton.get_bone_global_rest(hand_idx)
-	var finger_direction := Vector3.ZERO
-	for i in skeleton.get_bone_count():
-		var bone := _clean_bone_name(str(skeleton.get_bone_name(i)))
-		if bone.begins_with(side + "hand") and (bone.contains("middle") or bone.contains("index") or bone.contains("ring")):
-			var delta: Vector3 = skeleton.get_bone_global_rest(i).origin - hand_rest.origin
-			finger_direction = hand_rest.basis.inverse() * delta
-			if finger_direction.length_squared() > 0.0001:
-				break
-	if finger_direction.length_squared() < 0.0001:
-		finger_direction = Vector3(0.0, 0.0, -1.0)
-	finger_direction = finger_direction.normalized()
-	var up := Vector3.UP
-	if absf(finger_direction.dot(up)) > 0.92:
-		up = Vector3.RIGHT
-
-	_grip = Node3D.new()
-	_grip.name = "VioletClawGeometry"
-	_grip.basis = Basis.looking_at(finger_direction, up)
-	add_child(_grip)
-
-	var outer := _aura_material(OUTER, VIOLET)   # the same Aura 3D shader as the body aura
-	var violet := _aura_material(VIOLET, HOT)
-	var hot := _aura_material(HOT, Color.WHITE)
-
-	# Violet flame wrapped round the forearm and fist (the grip's -Z points along the fingers, +Z back up the arm).
-	var glow := MeshInstance3D.new()
-	var glow_mesh := SphereMesh.new()
-	glow_mesh.radius = 0.16
-	glow_mesh.height = 0.32
-	glow_mesh.radial_segments = 14
-	glow_mesh.rings = 8
-	glow.mesh = glow_mesh
-	glow.scale = Vector3(1.0, 0.9, 1.3)
-	glow.position = Vector3(0.0, 0.0, -0.06)
-	glow.material_override = outer
-	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_grip.add_child(glow)
-
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242
-	# Ragged flame sleeve: tongues start on a ring round the forearm and lick toward the fingers.
-	for i in 22:
-		var z := rng.randf_range(0.02, 0.42)
-		var ang := rng.randf() * TAU
-		var ring := 0.085 + z * 0.06
-		var base := Vector3(cos(ang) * ring, sin(ang) * ring, z)
-		var out := Vector3(cos(ang), sin(ang), 0.0)
-		var len := rng.randf_range(0.16, 0.34)
-		var curl := rng.randf_range(0.5, 1.0)
-		var pts: Array[Vector3] = [
-			Vector3.ZERO,
-			out * 0.035 + Vector3(0, 0, -len * 0.3),
-			out * 0.075 * curl + Vector3(0, 0, -len * 0.65) + Vector3(0, 0.02, 0),
-			out * 0.06 * curl + Vector3(0, 0.05, -len)
-		]
-		var w := rng.randf_range(0.032, 0.05)
-		_add_flame(base, pts, [w, w * 0.8, w * 0.4, 0.001], outer if i % 3 != 0 else violet, rng)
-	# Long wisps streaming off the fist and past the fingertips, hot cores inside.
-	for i in 9:
-		var ang := float(i) / 9.0 * TAU + rng.randf_range(-0.2, 0.2)
-		var base := Vector3(cos(ang) * 0.09, sin(ang) * 0.09, rng.randf_range(-0.12, 0.0))
-		var out := Vector3(cos(ang), sin(ang), 0.0)
-		var len := rng.randf_range(0.3, 0.5)
-		var pts: Array[Vector3] = [
-			Vector3.ZERO,
-			out * 0.06 + Vector3(0, 0.02, -len * 0.3),
-			out * 0.11 + Vector3(0, 0.07, -len * 0.65),
-			out * 0.07 + Vector3(0, 0.15, -len)
-		]
-		_add_flame(base, pts, [0.05, 0.04, 0.02, 0.001], violet, rng)
-		var core: Array[Vector3] = []
-		for q in pts:
-			core.append(q * 0.8)
-		_add_flame(base, core, [0.02, 0.016, 0.008, 0.0006], hot, rng)
-
-	# Small moving sparks keep the aura alive while the hand follows its animation.
-	for i in 7:
-		var spark := MeshInstance3D.new()
-		var spark_mesh := SphereMesh.new()
-		spark_mesh.radius = 0.018 if i % 2 == 0 else 0.024
-		spark_mesh.height = spark_mesh.radius * 2.0
-		spark_mesh.radial_segments = 7
-		spark_mesh.rings = 4
-		spark.mesh = spark_mesh
-		spark.material_override = hot if i % 3 == 0 else violet
-		spark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_grip.add_child(spark)
-		_embers.append(spark)
-		_ember_origins.append(Vector3(cos(float(i) * TAU / 7.0) * 0.17, sin(float(i) * TAU / 7.0) * 0.13, 0.03 + float(i % 3) * 0.09))
-		spark.position = _ember_origins[-1]
-
-## One flame tongue: a tapering tube on its own pivot at `base`, so it can sway from its root.
-func _add_flame(base: Vector3, pts: Array[Vector3], radii: Array[float], mat: Material, rng: RandomNumberGenerator) -> void:
-	var pivot := Node3D.new()
-	pivot.position = base
-	_grip.add_child(pivot)
-	var fat: Array[float] = []
-	for r in radii:
-		fat.append(maxf(r * 1.5, 0.0015))   # thin tubes vanish in the aura shader
-	_add_tube(pivot, pts, fat, mat, 6)
-	_flames.append(pivot)
-	_flame_phase.append(rng.randf() * TAU)
-
-func _process(delta: float) -> void:
-	_time += delta
-	for i in _flames.size():
-		if is_instance_valid(_flames[i]):
-			var f := _time * 7.0 + _flame_phase[i]
-			_flames[i].rotation = Vector3(sin(f) * 0.12, cos(f * 0.8) * 0.12, 0.0)
-			_flames[i].scale = Vector3.ONE * (1.0 + sin(f * 1.3) * 0.12)
-	for i in _embers.size():
-		if is_instance_valid(_embers[i]):
-			var angle := _time * (1.2 + float(i) * 0.12) + float(i) * TAU / 7.0
-			_embers[i].position = _ember_origins[i] + Vector3(cos(angle) * 0.035, sin(angle * 1.3) * 0.04, sin(angle) * 0.045)
 
 static func _aura_material(col: Color, rim: Color) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
@@ -243,3 +126,9 @@ static func _add_tube(parent: Node3D, points: Array[Vector3], radii: Array[float
 	instance.material_override = material
 	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(instance)
+
+func _exit_tree() -> void:
+	if is_instance_valid(_model):
+		var drv := _model.get_node_or_null("ShienFlameIdle") as ShienFlameIdle
+		if drv != null:
+			drv.set_claw(false)

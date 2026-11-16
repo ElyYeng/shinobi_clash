@@ -8,6 +8,7 @@ const PARTS_DIR := "res://assets/character/FlameIdleParts/"   # part_00.txt, par
 var _target: Skeleton3D
 var _source_root: Node3D
 var _source_skel: Skeleton3D
+var _claw: BoneAttachment3D
 var _source_player: AnimationPlayer
 var _animation_name: StringName = &""
 var _bone_tracks: Array[Dictionary] = []
@@ -104,7 +105,8 @@ func _load_source() -> bool:
 		return false
 	_source_skel = skels[0] as Skeleton3D
 	_source_root.global_transform = _target.global_transform
-	_source_root.visible = false
+	_source_root.visible = false   # only its bones are used; the claw mesh is copied onto the hand below
+	_build_claw()
 	var source_bones: Dictionary = {}
 	for si in _source_skel.get_bone_count():
 		source_bones[_bone_key(str(_source_skel.get_bone_name(si)))] = si
@@ -139,8 +141,6 @@ func set_active(enabled: bool) -> void:
 	if enabled == _active:
 		return
 	_active = enabled
-	if is_instance_valid(_source_root):
-		_source_root.visible = enabled   # shows the claw mesh
 	if _active:
 		if is_instance_valid(_source_player):
 			_source_player.play(_animation_name, 0.12)
@@ -179,7 +179,54 @@ func _restore_target_pose() -> void:
 		_target.reset_bone_pose(int(track["index"]))
 
 func _exit_tree() -> void:
+	if is_instance_valid(_claw):
+		_claw.queue_free()
 	_active = false
 	if is_instance_valid(_source_player):
 		_source_player.stop()
 	_restore_target_pose()
+
+
+## The claw mesh from the clip, copied rigidly onto the character's hand (aura material), hidden
+## until set_claw(true). It sits where the clip put it relative to the nearer hand bone.
+func _build_claw() -> void:
+	var src: MeshInstance3D = null
+	for n in _source_root.find_children("*", "MeshInstance3D", true, false):
+		src = n as MeshInstance3D
+		break
+	if src == null or src.mesh == null:
+		return
+	var rel := _source_skel.global_transform.affine_inverse() * src.global_transform
+	var centre := rel * src.get_aabb().get_center()
+	var best_name := ""
+	var best_d := INF
+	for side in ["lefthand", "righthand"]:
+		for si in _source_skel.get_bone_count():
+			if _bone_key(str(_source_skel.get_bone_name(si))) == side:
+				var d := _source_skel.get_bone_global_rest(si).origin.distance_to(centre)
+				if d < best_d:
+					best_d = d
+					best_name = side
+	if best_name == "":
+		return
+	var hand := -1
+	for ti in _target.get_bone_count():
+		if _bone_key(str(_target.get_bone_name(ti))) == best_name:
+			hand = ti
+	if hand < 0:
+		return
+	_claw = BoneAttachment3D.new()
+	_claw.name = "ShienClawMesh"
+	_target.add_child(_claw)
+	_claw.bone_name = str(_target.get_bone_name(hand))
+	var mi := MeshInstance3D.new()
+	mi.mesh = src.mesh
+	mi.material_override = ShienClaw._aura_material(ShienClaw.OUTER, ShienClaw.VIOLET)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.transform = _target.get_bone_global_rest(hand).affine_inverse() * rel
+	_claw.add_child(mi)
+	_claw.visible = false
+
+func set_claw(on: bool) -> void:
+	if is_instance_valid(_claw):
+		_claw.visible = on
