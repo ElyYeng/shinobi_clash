@@ -4,3 +4,11 @@
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Game and launcher build outputs
+build/
+release/
+Game EXPORT/
+__pycache__/
+*.pyc
+*.spec

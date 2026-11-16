@@ -1,5 +1,13 @@
 # Shinobi Clash (Godot 4 prototype)
 
+## Launcher and automatic game updates
+
+The Windows launcher installs the game and automatically downloads new releases.
+After the first successful release, players only need to download
+[ShinobiClashLauncher.exe](https://github.com/ElyYeng/shinobi_clash/releases/latest/download/ShinobiClashLauncher.exe)
+once. Every successful build of `main` publishes the next update automatically.
+See [launcher setup and release instructions](docs/LAUNCHER.md).
+
 ## Run
 1. Open project.godot in Godot 4.x and WAIT for the first import to finish (assets/naruto and assets/kurama).
 2. Press F5 - you start at the main menu. The Output panel prints the model's measured height and which animations were matched.
