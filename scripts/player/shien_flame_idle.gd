@@ -8,7 +8,7 @@ const PARTS_DIR := "res://assets/character/FlameIdleParts/"   # part_00.txt, par
 var _target: Skeleton3D
 var _source_root: Node3D
 var _source_skel: Skeleton3D
-var _claw: BoneAttachment3D
+var _claw: Node3D
 var _source_player: AnimationPlayer
 var _animation_name: StringName = &""
 var _bone_tracks: Array[Dictionary] = []
@@ -215,20 +215,16 @@ func _build_claw() -> void:
 			hand = ti
 	if hand < 0:
 		return
+	if _build_skinned_claw(src):   # the claw arm bends with the character's own arm bones
+		return
 	_claw = BoneAttachment3D.new()
 	_claw.name = "ShienClawMesh"
 	_target.add_child(_claw)
-	_claw.bone_name = str(_target.get_bone_name(hand))
+	(_claw as BoneAttachment3D).bone_name = str(_target.get_bone_name(hand))
 	var mi := MeshInstance3D.new()
 	mi.mesh = src.mesh
 	# solid glowing core (so it reads clearly) with a bigger flickering aura shell over it
-	var core := ShaderMaterial.new()   # the Susanoo flame-body material, in Shien violet
-	core.shader = load("res://shaders/susanoo.gdshader")
-	core.set_shader_parameter("color", Color("#8A3CFF"))
-	core.set_shader_parameter("detail", CharToon._white())
-	core.set_shader_parameter("noise", Susanoo.fire_noise())
-	core.set_shader_parameter("fade", 1.0)
-	mi.material_override = core
+	mi.material_override = _core_mat()
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# Rigs differ in size and bone axes, so don't reuse the clip's skeleton space on the character
 	# directly: move the claw so the clip's hand lands on the character's hand, scale it by the
@@ -258,15 +254,79 @@ func _build_claw() -> void:
 	_claw.add_child(mi)
 	var shell := MeshInstance3D.new()
 	shell.mesh = src.mesh
-	var am := ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
-	am.set_shader_parameter("_Brightness", 1.6)
-	var sc := maxf(_target.global_transform.basis.get_scale().x, 0.01)
-	am.set_shader_parameter("_Push", 0.03 / sc)   # the shader's default push inflated the claw into a huge ball
-	shell.material_override = am
+	shell.material_override = _shell_mat()
 	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	shell.transform = base_t.scaled_local(Vector3.ONE * 1.06)
 	_claw.add_child(shell)
 	_claw.visible = false
+
+func _core_mat() -> ShaderMaterial:   # solid glowing core: the Susanoo flame-body material, in Shien violet
+	var core := ShaderMaterial.new()
+	core.shader = load("res://shaders/susanoo.gdshader")
+	core.set_shader_parameter("color", Color("#8A3CFF"))
+	core.set_shader_parameter("detail", CharToon._white())
+	core.set_shader_parameter("noise", Susanoo.fire_noise())
+	core.set_shader_parameter("fade", 1.0)
+	return core
+
+func _shell_mat(push := 0.03) -> ShaderMaterial:   # flickering aura shell over the core
+	var am := ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
+	am.set_shader_parameter("_Brightness", 1.6)
+	var sc := maxf(_target.global_transform.basis.get_scale().x, 0.01)
+	am.set_shader_parameter("_Push", push / sc)   # the shader's default push inflated the claw into a huge ball
+	return am
+
+## Re-skin the clip's claw mesh onto the character's skeleton: every bind (forearm, hand, fingers)
+## is remapped to the character's bone of the same name, with the clip -> character offset and size
+## ratio baked into the bind pose. So the arm follows the elbow / wrist / fingers instead of being
+## glued rigidly to the hand (which left it floating off the arm). False = no skin, use the rigid copy.
+func _build_skinned_claw(src: MeshInstance3D) -> bool:
+	var skin := src.skin
+	if skin == null or skin.get_bind_count() == 0:
+		return false
+	var tgt_by_key := {}
+	for ti in _target.get_bone_count():
+		tgt_by_key[_bone_key(str(_target.get_bone_name(ti)))] = ti
+	var src_hips := -1
+	for si in _source_skel.get_bone_count():
+		if _bone_key(str(_source_skel.get_bone_name(si))) == "hips":
+			src_hips = si
+	var ratio := 1.0
+	if src_hips >= 0 and tgt_by_key.has("hips"):
+		var sy := _source_skel.get_bone_global_rest(src_hips).origin.y
+		if absf(sy) > 0.001:
+			ratio = _target.get_bone_global_rest(int(tgt_by_key["hips"])).origin.y / sy
+	var scale_b := Basis.IDENTITY.scaled(Vector3.ONE * ratio)
+	var new_skin := Skin.new()
+	for b in skin.get_bind_count():
+		var sname := str(skin.get_bind_name(b))
+		var sidx: int = _source_skel.find_bone(sname) if sname != "" else skin.get_bind_bone(b)
+		if sidx < 0:
+			return false
+		var key := _bone_key(str(_source_skel.get_bone_name(sidx)))
+		if not tgt_by_key.has(key):
+			push_warning("[ShienFlameIdle] Claw bone '%s' has no match on this rig." % key)
+			return false
+		var ti: int = tgt_by_key[key]
+		var s_rest := _source_skel.get_bone_global_rest(sidx)
+		var t_rest := _target.get_bone_global_rest(ti)
+		# mesh vertex -> clip skeleton space at rest -> moved onto this bone of the character, scaled
+		var at_rest := s_rest * skin.get_bind_pose(b)
+		var mapped := Transform3D(scale_b, t_rest.origin) * Transform3D(Basis.IDENTITY, -s_rest.origin) * at_rest
+		new_skin.add_named_bind(str(_target.get_bone_name(ti)), t_rest.affine_inverse() * mapped)
+	_claw = Node3D.new()
+	_claw.name = "ShienClawMesh"
+	_target.add_child(_claw)
+	for shell in [false, true]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = src.mesh
+		mi.skin = new_skin
+		mi.material_override = _shell_mat(0.06) if shell else _core_mat()
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_claw.add_child(mi)
+		mi.skeleton = mi.get_path_to(_target)
+	_claw.visible = false
+	return true
 
 func set_claw(on: bool) -> void:
 	if is_instance_valid(_claw):
