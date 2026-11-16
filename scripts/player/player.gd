@@ -626,6 +626,7 @@ var susanoo: Susanoo
 const SHIEN_FORM2_MIN_CHAKRA := 25.0
 const SHIEN_FORM2_DRAIN := 6.0
 var shien_claw: ShienClaw
+var shien_flame_idle: ShienFlameIdle
 var _sus_charge_fx: Node3D
 var _sus_cd := 0.0
 var _sus_slam_cd := 0.0
@@ -1200,6 +1201,15 @@ func _update_anim() -> void:
 	if _floating():
 		st = "idle"
 		ground = 0.0
+	var use_shien_flame_idle := powered and str(GameData.equipped) == "shien" and st == "idle"
+	if use_shien_flame_idle:
+		if shien_flame_idle == null or not is_instance_valid(shien_flame_idle):
+			shien_flame_idle = ShienFlameIdle.attach(model)
+		if is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(true)
+			return
+	if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
 	Hero.play_move(model, st, ground)
 
 func _play_once(state: String, max_lock: float, variant := 0) -> bool:
@@ -1818,6 +1828,8 @@ func _toggle_power() -> void:
 
 func _power_off() -> void:
 	_shien_form2_off()
+	if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
 	_susanoo_off()   # the Susanoo needs the Sharingan
 	_klink_off()     # Kurama Link needs Ink Mode
 	if not powered:
