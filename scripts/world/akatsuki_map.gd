@@ -11,6 +11,44 @@ extends Node3D
 @export var water_wave_speed := 1.2
 @export var water_alpha := 0.85
 
+var _floor_y := INF
+var _lo := Vector2(INF, INF)
+var _hi := Vector2(-INF, -INF)
+var _spot := Vector3.INF
+
+## A standing place on the ground: the PlayerSpawn marker's x/z if there is ground under it, else
+## the first solid flat ground found on a grid over the map (so a re-imported / moved map never
+## drops you through the floor).
+func _safe_spot() -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var cands: Array[Vector2] = []
+	var marker := get_parent().get_node_or_null("Markers/PlayerSpawn") as Node3D if get_parent() != null else null
+	if marker != null:
+		cands.append(Vector2(marker.global_position.x, marker.global_position.z))
+	if _lo.x < INF:
+		cands.append((_lo + _hi) * 0.5)
+		for i in 15:
+			for j in 15:
+				cands.append(Vector2(lerpf(_lo.x, _hi.x, (i + 0.5) / 15.0), lerpf(_lo.y, _hi.y, (j + 0.5) / 15.0)))
+	for c in cands:
+		var q := PhysicsRayQueryParameters3D.create(Vector3(c.x, _floor_y + 2000.0, c.y), Vector3(c.x, _floor_y - 50.0, c.y), 1)
+		var h := space.intersect_ray(q)
+		if not h.is_empty() and (h["normal"] as Vector3).y > 0.9:
+			return (h["position"] as Vector3) + Vector3.UP * 1.5
+	return Vector3.INF
+
+func _physics_process(_delta: float) -> void:
+	if _floor_y == INF:
+		return
+	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	if pl != null and pl.global_position.y < _floor_y - 25.0:   # fell through: back onto the ground
+		if _spot == Vector3.INF:
+			_spot = _safe_spot()
+		if _spot != Vector3.INF:
+			pl.global_position = _spot
+			if pl is CharacterBody3D:
+				(pl as CharacterBody3D).velocity = Vector3.ZERO
+
 func _ready() -> void:
 	_dress.call_deferred()
 	if get_parent() != null:   # the minimap photographs the canyon, not the empty square round the origin
@@ -55,6 +93,10 @@ func _ready() -> void:
 					for i in (idx as PackedInt32Array):
 						out.append(xf * v[i])
 	if faces.size() >= 3:
+		for v3 in faces:   # the ground's extent (for the fall rescue below)
+			_floor_y = minf(_floor_y, v3.y)
+			_lo.x = minf(_lo.x, v3.x); _lo.y = minf(_lo.y, v3.z)
+			_hi.x = maxf(_hi.x, v3.x); _hi.y = maxf(_hi.y, v3.z)
 		var shape := ConcavePolygonShape3D.new()
 		shape.set_faces(faces)
 		var cs := CollisionShape3D.new()
@@ -85,6 +127,10 @@ func _ready() -> void:
 func _dress() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	var marker := get_parent().get_node_or_null("Markers/PlayerSpawn") as Node3D if get_parent() != null else null
+	var spot := _safe_spot()   # keep the spawn marker on the ground for next time
+	if marker != null and spot != Vector3.INF and absf(marker.global_position.y - spot.y) > 4.0:
+		marker.global_position = spot
 	var rng := RandomNumberGenerator.new()
 	rng.seed = dress_seed
 	var space := get_world_3d().direct_space_state
