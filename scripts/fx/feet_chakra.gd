@@ -20,6 +20,17 @@ static func attach(model: Node3D) -> void:
 		at.name = "FeetChakra"
 		sk.add_child(at)
 		Vfx.aura_flames(at, Vector3.ZERO, 0.12, COL, 14, true)
+		# Keep the flames small in WORLD size whatever the rig's import scale is (a rescaled
+		# character turned them into one huge glowing ball).
+		var ws := maxf(at.global_transform.basis.get_scale().x, 0.001)
+		for c in at.find_children("*", "CPUParticles3D", true, false):
+			var cp := c as CPUParticles3D
+			cp.amount = 8
+			cp.emission_sphere_radius = 0.05 / ws
+			cp.scale_amount_min = 0.03 / ws
+			cp.scale_amount_max = 0.07 / ws
+			cp.initial_velocity_min = 0.1
+			cp.initial_velocity_max = 0.35
 		made.append(at)
 	model.set_meta("feet_chakra", made)
 
