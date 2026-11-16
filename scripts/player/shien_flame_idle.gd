@@ -3,7 +3,20 @@ extends Node
 ## Re-targets the imported Flame Idle glTF animation onto a character's Mixamo Skeleton3D.
 ## The source GLB is stored gzip-compressed to keep the repository asset small.
 
-const SOURCE_PATH := "res://assets/character/FlameIdle.glb.gz.b64"
+const SOURCE_PARTS := [
+	"res://assets/character/FlameIdleParts/part_00.txt",
+	"res://assets/character/FlameIdleParts/part_01.txt",
+	"res://assets/character/FlameIdleParts/part_02.txt",
+	"res://assets/character/FlameIdleParts/part_03.txt",
+	"res://assets/character/FlameIdleParts/part_04.txt",
+	"res://assets/character/FlameIdleParts/part_05.txt",
+	"res://assets/character/FlameIdleParts/part_06.txt",
+	"res://assets/character/FlameIdleParts/part_07.txt",
+	"res://assets/character/FlameIdleParts/part_08.txt",
+	"res://assets/character/FlameIdleParts/part_09.txt",
+	"res://assets/character/FlameIdleParts/part_10.txt",
+	"res://assets/character/FlameIdleParts/part_11.txt"
+]
 const TEMP_GZIP_PATH := "user://FlameIdle.glb.gz"
 
 var _target: Skeleton3D
@@ -40,7 +53,12 @@ func _load_source() -> bool:
 	if not FileAccess.file_exists(SOURCE_PATH):
 		push_warning("[ShienFlameIdle] Missing animation asset: %s" % SOURCE_PATH)
 		return false
-	var encoded := FileAccess.get_file_as_string(SOURCE_PATH).strip_edges()
+	var encoded := ""
+	for part_path in SOURCE_PARTS:
+		if not FileAccess.file_exists(part_path):
+			push_warning("[ShienFlameIdle] Missing animation data part: %s" % part_path)
+			return false
+		encoded += FileAccess.get_file_as_string(part_path).strip_edges()
 	if encoded.is_empty():
 		push_warning("[ShienFlameIdle] Compressed animation asset is empty.")
 		return false
