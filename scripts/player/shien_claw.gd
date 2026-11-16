@@ -53,8 +53,8 @@ static func attach(model: Node3D) -> ShienClaw:
 	claw._aura = AuraShell.make(claw, model, OUTER, HOT, 0.4, 0.05)   # Form 1: a stronger violet aura over the body
 	return claw
 
-static func _clean_bone_name(value: String) -> String:
-	return value.to_lower().replace("mixamorig:", "").replace("mixamorig_", "").replace("_", "").replace(" ", "")
+static func _clean_bone_name(value: String) -> String:   # same rule as the Flame Idle retarget (handles mixamorig1:, mixamorig_ ...)
+	return ShienFlameIdle._bone_key(value)
 
 static func _aura_material(col: Color, rim: Color) -> ShaderMaterial:
 	var m := ShaderMaterial.new()

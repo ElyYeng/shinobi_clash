@@ -230,7 +230,30 @@ func _build_claw() -> void:
 	core.set_shader_parameter("fade", 1.0)
 	mi.material_override = core
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var base_t := _target.get_bone_global_rest(hand).affine_inverse() * rel
+	# Rigs differ in size and bone axes, so don't reuse the clip's skeleton space on the character
+	# directly: move the claw so the clip's hand lands on the character's hand, scale it by the
+	# rig-size ratio (hips height), then express it relative to the character's hand bone.
+	var src_hand := -1
+	var src_hips := -1
+	for si in _source_skel.get_bone_count():
+		var k := _bone_key(str(_source_skel.get_bone_name(si)))
+		if k == best_name:
+			src_hand = si
+		elif k == "hips":
+			src_hips = si
+	var tgt_hips := -1
+	for ti in _target.get_bone_count():
+		if _bone_key(str(_target.get_bone_name(ti))) == "hips":
+			tgt_hips = ti
+	var ratio := 1.0
+	if src_hips >= 0 and tgt_hips >= 0:
+		var sy := _source_skel.get_bone_global_rest(src_hips).origin.y
+		if absf(sy) > 0.001:
+			ratio = _target.get_bone_global_rest(tgt_hips).origin.y / sy
+	var src_origin := _source_skel.get_bone_global_rest(src_hand).origin if src_hand >= 0 else Vector3.ZERO
+	var tgt_rest := _target.get_bone_global_rest(hand)
+	var on_target := Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * ratio), tgt_rest.origin) * Transform3D(Basis.IDENTITY, -src_origin) * rel
+	var base_t := tgt_rest.affine_inverse() * on_target
 	mi.transform = base_t
 	_claw.add_child(mi)
 	var shell := MeshInstance3D.new()
