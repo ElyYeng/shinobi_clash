@@ -17,7 +17,6 @@ const SOURCE_PARTS := [
 	"res://assets/character/FlameIdleParts/part_10.txt",
 	"res://assets/character/FlameIdleParts/part_11.txt"
 ]
-const TEMP_GZIP_PATH := "user://FlameIdle.glb.gz"
 
 var _target: Skeleton3D
 var _source_root: Node3D
@@ -63,21 +62,18 @@ func _load_source() -> bool:
 	if compressed.is_empty():
 		push_warning("[ShienFlameIdle] Could not decode the compressed animation asset.")
 		return false
-	var temp_file := FileAccess.open(TEMP_GZIP_PATH, FileAccess.WRITE)
-	if temp_file == null:
-		push_warning("[ShienFlameIdle] Could not cache the compressed animation asset.")
+	# Read the uncompressed byte count from the final 4-byte GZIP trailer.
+	# Use Godot Compression directly instead of the unavailable GZIPReader class.
+	if compressed.size() < 18:
+		push_warning("[ShienFlameIdle] Compressed animation data is too short to be a valid GZIP stream.")
 		return false
-	temp_file.store_buffer(compressed)
-	temp_file.close()
-	var reader := GZIPReader.new()
-	var open_error := reader.open(TEMP_GZIP_PATH)
-	if open_error != OK:
-		push_warning("[ShienFlameIdle] Could not unpack the compressed animation asset (%d)." % open_error)
+	var uncompressed_size := int(compressed.decode_u32(compressed.size() - 4))
+	if uncompressed_size <= 0:
+		push_warning("[ShienFlameIdle] GZIP animation reports an invalid uncompressed size.")
 		return false
-	var bytes := reader.get_buffer()
-	reader.close()
+	var bytes := Compression.decompress(compressed, uncompressed_size, Compression.MODE_GZIP)
 	if bytes.is_empty():
-		push_warning("[ShienFlameIdle] Animation asset is empty.")
+		push_warning("[ShienFlameIdle] Could not decompress the animation asset.")
 		return false
 
 	var document := GLTFDocument.new()
