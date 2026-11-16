@@ -3,7 +3,8 @@ extends Node
 ## Re-targets the imported Flame Idle glTF animation onto a character's Mixamo Skeleton3D.
 ## The source GLB is stored gzip-compressed to keep the repository asset small.
 
-const SOURCE_PATH := "res://assets/character/FlameIdle.glb.gz"
+const SOURCE_PATH := "res://assets/character/FlameIdle.glb.gz.b64"
+const TEMP_GZIP_PATH := "user://FlameIdle.glb.gz"
 
 var _target: Skeleton3D
 var _source_root: Node3D
@@ -39,10 +40,24 @@ func _load_source() -> bool:
 	if not FileAccess.file_exists(SOURCE_PATH):
 		push_warning("[ShienFlameIdle] Missing animation asset: %s" % SOURCE_PATH)
 		return false
+	var encoded := FileAccess.get_file_as_string(SOURCE_PATH).strip_edges()
+	if encoded.is_empty():
+		push_warning("[ShienFlameIdle] Compressed animation asset is empty.")
+		return false
+	var compressed := Marshalls.base64_to_raw(encoded)
+	if compressed.is_empty():
+		push_warning("[ShienFlameIdle] Could not decode the compressed animation asset.")
+		return false
+	var temp_file := FileAccess.open(TEMP_GZIP_PATH, FileAccess.WRITE)
+	if temp_file == null:
+		push_warning("[ShienFlameIdle] Could not cache the compressed animation asset.")
+		return false
+	temp_file.store_buffer(compressed)
+	temp_file.close()
 	var reader := GZIPReader.new()
-	var open_error := reader.open(SOURCE_PATH)
+	var open_error := reader.open(TEMP_GZIP_PATH)
 	if open_error != OK:
-		push_warning("[ShienFlameIdle] Could not open compressed animation asset (%d)." % open_error)
+		push_warning("[ShienFlameIdle] Could not unpack the compressed animation asset (%d)." % open_error)
 		return false
 	var bytes := reader.get_buffer()
 	reader.close()
