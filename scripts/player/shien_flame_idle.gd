@@ -222,7 +222,13 @@ func _build_claw() -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = src.mesh
 	# solid glowing core (so it reads clearly) with a bigger flickering aura shell over it
-	mi.material_override = ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
+	var core := ShaderMaterial.new()   # the Susanoo flame-body material, in Shien violet
+	core.shader = load("res://shaders/susanoo.gdshader")
+	core.set_shader_parameter("color", Color("#8A3CFF"))
+	core.set_shader_parameter("detail", CharToon._white())
+	core.set_shader_parameter("noise", Susanoo.fire_noise())
+	core.set_shader_parameter("fade", 1.0)
+	mi.material_override = core
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var base_t := _target.get_bone_global_rest(hand).affine_inverse() * rel
 	mi.transform = base_t
