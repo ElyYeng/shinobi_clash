@@ -14,6 +14,9 @@ var spin: SpinMenu
 var stat: Label
 var custom_btn: Button
 var hint: Label
+var modes_page: VBoxContainer
+var settings_page: VBoxContainer
+var _main_page: VBoxContainer
 
 func _ready() -> void:
 	GameData.load_data()
@@ -42,41 +45,56 @@ func _ready() -> void:
 
 	UiStyle.title(vb, "SHINOBI CLASH")
 	UiStyle.spacer(vb, 14)
-
-	var first: Button
-	for i in MODES.size():
-		var m: Array = MODES[i]
-		var b := UiStyle.ribbon_button(vb, m[0], 28)
-		b.pressed.connect(_play.bind(m[1]))
-		_describe(b, "%s   [%d]" % [m[2], _key_for(m[1])])
-		if first == null:
-			first = b
-
-	hint = UiStyle.label(vb, "", 16, Color(1.0, 0.86, 0.6), 6)
-	hint.custom_minimum_size = Vector2(0, 24)
-	UiStyle.spacer(vb, 4)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	vb.add_child(row)
-	custom_btn = UiStyle.green_button(row, "CUSTOMIZE")
-	custom_btn.pressed.connect(_open_customize)
-	var creator_btn := UiStyle.green_button(row, "CHARACTER")
-	creator_btn.pressed.connect(_open_character_creator)
-	_describe(creator_btn, "Your look - hair, colours, shirt and pants   [6]")
 	var online := NetworkSession.is_active()
-	var multi_btn := UiStyle.green_button(row, "LEAVE SESSION" if online else "MULTIPLAYER")
+
+	# three pages in the same column: the main buttons, the single-player modes, settings
+	var main_page := _page(vb)
+	var sp_btn := UiStyle.ribbon_button(main_page, "PLAY (PARTY)" if online else "SINGLE PLAYER", 30)
+	sp_btn.pressed.connect(func() -> void: _show(modes_page))
+	_describe(sp_btn, "Pick a mode - your party travels with you" if online else "Play alone: Konoha, the Arena, bosses, the Akatsuki canyon")
+	var multi_btn := UiStyle.ribbon_button(main_page, "LEAVE SESSION" if online else "MULTIPLAYER", 30)
 	multi_btn.pressed.connect(_open_multiplayer)
 	_describe(multi_btn, "Disconnect from the multiplayer session   [5]" if online else "Host or join friends over Radmin VPN   [5]")
-	for b in [custom_btn, creator_btn, multi_btn]:
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var set_btn := UiStyle.ribbon_button(main_page, "SETTINGS", 30)
+	set_btn.pressed.connect(func() -> void: _show(settings_page))
+	_describe(set_btn, "Volume, keybinds, fullscreen")
+	hint = UiStyle.label(vb, "", 16, Color(1.0, 0.86, 0.6), 6)
+	hint.custom_minimum_size = Vector2(0, 24)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	main_page.add_child(row)
+	main_page.move_child(row, main_page.get_child_count() - 1)
+	custom_btn = UiStyle.text_button(row, "CUSTOMIZE")
+	custom_btn.pressed.connect(_open_customize)
+	var creator_btn := UiStyle.text_button(row, "CHARACTER")
+	creator_btn.pressed.connect(_open_character_creator)
+	_describe(creator_btn, "Your look - hair, colours, shirt and pants   [6]")
+	var quit := UiStyle.text_button(row, "QUIT")
+	quit.pressed.connect(get_tree().quit)
+	_describe(quit, "")
+
+	modes_page = _page(vb)
+	for i in MODES.size():
+		var m: Array = MODES[i]
+		var b := UiStyle.ribbon_button(modes_page, m[0], 26)
+		b.pressed.connect(_play.bind(m[1]))
+		_describe(b, "%s   [%d]" % [m[2], _key_for(m[1])])
+	var back1 := UiStyle.text_button(modes_page, "< BACK")
+	back1.pressed.connect(func() -> void: _show(main_page))
+	_describe(back1, "")
+
+	settings_page = _page(vb)
+	_build_settings(settings_page)
+	var back2 := UiStyle.text_button(settings_page, "< BACK")
+	back2.pressed.connect(func() -> void: _show(main_page))
+	_describe(back2, "")
+	_main_page = main_page
+	_show(main_page)
+	vb.move_child(hint, vb.get_child_count() - 1)
 
 	UiStyle.spacer(vb, 6)
 	stat = UiStyle.label(vb, "", 15, Color(0.86, 0.84, 0.8), 6)
-	var quit := UiStyle.text_button(vb, "QUIT")
-	quit.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	quit.pressed.connect(get_tree().quit)
-	_describe(quit, "")
+	var first := sp_btn
 
 	var cred := UiStyle.label(self, Hero.CREDIT + "\n" + Kurama.CREDIT, 11, Color(0.6, 0.6, 0.65), 4)
 	cred.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -102,6 +120,59 @@ func _ready() -> void:
 		GameData.open_customize = false
 		_open_customize.call_deferred()
 	first.grab_focus()
+
+func _page(parent: Node) -> VBoxContainer:
+	var page := VBoxContainer.new()
+	page.add_theme_constant_override("separation", 10)
+	parent.add_child(page)
+	return page
+
+## Shows one page (main / modes / settings) and focuses its first button.
+func _show(page: VBoxContainer) -> void:
+	for pg in [_main_page, modes_page, settings_page]:
+		if pg != null:
+			pg.visible = pg == page
+	if page == null:
+		return
+	page.visible = true
+	hint.text = ""
+	for c in page.get_children():
+		if c is Button:
+			(c as Button).grab_focus.call_deferred()
+			break
+
+func _build_settings(page: VBoxContainer) -> void:
+	var vol_row := HBoxContainer.new()
+	vol_row.add_theme_constant_override("separation", 12)
+	page.add_child(vol_row)
+	var vol_lbl := UiStyle.label(vol_row, "VOLUME", 22, Color(1, 1, 1), 6)
+	vol_lbl.custom_minimum_size = Vector2(150, 0)
+	var vol := HSlider.new()
+	vol.min_value = 0.0
+	vol.max_value = 100.0
+	vol.step = 1.0
+	vol.value = db_to_linear(AudioServer.get_bus_volume_db(0)) * 100.0
+	vol.custom_minimum_size = Vector2(260, 28)
+	vol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	vol.value_changed.connect(func(v: float) -> void: AudioServer.set_bus_volume_db(0, linear_to_db(maxf(v, 0.001) / 100.0)))
+	vol_row.add_child(vol)
+	var keys := UiStyle.ribbon_button(page, "", 24)
+	var refresh_keys := func() -> void: keys.text = "KEYBINDS: %s" % ("MODERN" if GameData.key_scheme == "modern" else "CLASSIC")
+	refresh_keys.call()
+	keys.pressed.connect(func() -> void:
+		GameData.key_scheme = "classic" if GameData.key_scheme == "modern" else "modern"
+		GameData.save()
+		Fx.setup_inputs()
+		refresh_keys.call())
+	_describe(keys, "Classic: Q dash, C charge, Z beast.  Modern: hotbar on 1-6 / Z X C V B N / Q E R F T G")
+	var fs := UiStyle.ribbon_button(page, "", 24)
+	var refresh_fs := func() -> void: fs.text = "FULLSCREEN: %s" % ("ON" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "OFF")
+	refresh_fs.call()
+	fs.pressed.connect(func() -> void:
+		var on := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if on else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		refresh_fs.call())
+	_describe(fs, "Switch between fullscreen and a window")
 
 ## Hovering or focusing a button shows its one-line description under the mode list.
 func _describe(b: Button, text: String) -> void:
