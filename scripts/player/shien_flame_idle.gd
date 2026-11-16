@@ -164,8 +164,13 @@ func _process(_delta: float) -> void:
 		if not is_instance_valid(source_node):
 			continue
 		var source_rest: Transform3D = track["source_rest"]
-		var pose_delta := source_rest.affine_inverse() * source_node.transform
-		_target.set_bone_pose(int(track["index"]), pose_delta)
+		# bone pose = the character's own rest pose turned by how far the clip moved this bone from
+		# its rest (rotation only: the clip's units / proportions differ from the character's)
+		var idx := int(track["index"])
+		var rest := _target.get_bone_rest(idx)
+		var turn := source_rest.basis.get_rotation_quaternion().inverse() * source_node.transform.basis.get_rotation_quaternion()
+		_target.set_bone_pose_rotation(idx, rest.basis.get_rotation_quaternion() * turn)
+		_target.set_bone_pose_position(idx, rest.origin)
 
 func _restore_target_pose() -> void:
 	if not is_instance_valid(_target):
