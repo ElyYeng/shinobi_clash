@@ -1750,6 +1750,13 @@ func _toggle_power() -> void:
 		Vfx.burst(get_parent(), global_position + Vector3.UP, col, 32, 8.0, 0.22, 0.6, 0.0)
 		Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.2, col, 4.0, 0.35)
 		Vfx.shake(cam, 0.2, 0.35)
+	match str(m.get("cutscene", "")):
+		"eyes":
+			SharinganEffect.play_cutscene(self, id)
+		"hatake":
+			HatakeCutscene.play(self)
+		"body":
+			TransformCutscene.play(self, m)
 	_toast("KURAMA MODE + %s!" % str(m["name"]).to_upper() if kurama else "%s!" % str(m["name"]).to_upper())
 	_play_once("jutsu", 0.6)
 
