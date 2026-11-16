@@ -46,6 +46,10 @@ static func attach(model: Node3D) -> ShienClaw:
 	claw._build(skeleton, hand_idx, hand_side)
 	skeleton.add_child(claw)
 	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
+	# the rig is imported ~5 m tall and scaled down: size the flame in world metres (x1.6 so it reads)
+	var s := skeleton.global_transform.basis.get_scale().x
+	if s > 0.0001:
+		claw._grip.scale = Vector3.ONE * (1.6 / s)
 	return claw
 
 static func _clean_bone_name(value: String) -> String:
@@ -73,9 +77,9 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 	_grip.basis = Basis.looking_at(finger_direction, up)
 	add_child(_grip)
 
-	var outer := _material(OUTER, 0.62, 2.6)
-	var violet := _material(VIOLET, 0.8, 3.6)
-	var hot := _material(HOT, 0.9, 4.6)
+	var outer := _aura_material(OUTER, VIOLET)   # the same Aura 3D shader as the body aura
+	var violet := _aura_material(VIOLET, HOT)
+	var hot := _aura_material(HOT, Color.WHITE)
 
 	# Violet flame wrapped round the forearm and fist (the grip's -Z points along the fingers, +Z back up the arm).
 	var glow := MeshInstance3D.new()
@@ -149,7 +153,10 @@ func _add_flame(base: Vector3, pts: Array[Vector3], radii: Array[float], mat: Ma
 	var pivot := Node3D.new()
 	pivot.position = base
 	_grip.add_child(pivot)
-	_add_tube(pivot, pts, radii, mat, 6)
+	var fat: Array[float] = []
+	for r in radii:
+		fat.append(maxf(r * 1.5, 0.0015))   # thin tubes vanish in the aura shader
+	_add_tube(pivot, pts, fat, mat, 6)
 	_flames.append(pivot)
 	_flame_phase.append(rng.randf() * TAU)
 
@@ -164,6 +171,21 @@ func _process(delta: float) -> void:
 		if is_instance_valid(_embers[i]):
 			var angle := _time * (1.2 + float(i) * 0.12) + float(i) * TAU / 7.0
 			_embers[i].position = _ember_origins[i] + Vector3(cos(angle) * 0.035, sin(angle * 1.3) * 0.04, sin(angle) * 0.045)
+
+static func _aura_material(col: Color, rim: Color) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/aura.gdshader")
+	m.set_shader_parameter("_NoiseTex", AuraShell.noise())
+	m.set_shader_parameter("_ColorAura", col)
+	m.set_shader_parameter("_ColorRim", rim)
+	m.set_shader_parameter("_RimPower2", 2.2)
+	m.set_shader_parameter("_Scale", 0.035)
+	m.set_shader_parameter("_SpeedY", 4.0)
+	m.set_shader_parameter("_Brightness", 0.8)
+	m.set_shader_parameter("_Opacity", 3.0)
+	m.set_shader_parameter("_OutlineFixed", 0.8)
+	m.set_shader_parameter("_OffsetFade", 10.0)
+	return m
 
 static func _material(col: Color, alpha: float, energy: float) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
