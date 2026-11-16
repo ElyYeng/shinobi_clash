@@ -51,9 +51,10 @@ func _physics_process(_delta: float) -> void:
 
 var _noise_tex: NoiseTexture2D
 var dirt_tex: Texture2D
+var grass_tex: Texture2D
 
 ## Tiling-free ground (shaders/akatsuki_ground.gdshader) from a surface's own texture.
-func _ground_material(src: BaseMaterial3D, dirt: Texture2D) -> ShaderMaterial:
+func _ground_material(src: BaseMaterial3D, dirt: Texture2D, base: Texture2D) -> ShaderMaterial:
 	if _noise_tex == null:
 		var fn := FastNoiseLite.new()
 		fn.frequency = 0.01
@@ -65,12 +66,11 @@ func _ground_material(src: BaseMaterial3D, dirt: Texture2D) -> ShaderMaterial:
 		_noise_tex.noise = fn
 	var m := ShaderMaterial.new()
 	m.shader = load("res://shaders/akatsuki_ground.gdshader")
-	m.set_shader_parameter("tex_a", src.albedo_texture)
+	m.set_shader_parameter("tex_a", base if base != null else src.albedo_texture)
 	m.set_shader_parameter("tex_b", dirt if dirt != null else src.albedo_texture)
 	m.set_shader_parameter("use_b", 1.0 if dirt != null else 0.0)
 	m.set_shader_parameter("noise", _noise_tex)
 	m.set_shader_parameter("tint", src.albedo_color)
-	m.set_shader_parameter("uv_scale", Vector2(src.uv1_scale.x, src.uv1_scale.y))
 	return m
 
 func _ready() -> void:
@@ -95,6 +95,8 @@ func _ready() -> void:
 				var m0 := mi0.mesh.surface_get_material(s0)
 				if m0 is BaseMaterial3D and m0.resource_name.to_lower() == "patchgrass":
 					dirt_tex = (m0 as BaseMaterial3D).albedo_texture
+				elif m0 is BaseMaterial3D and m0.resource_name.to_lower() == "grass":
+					grass_tex = (m0 as BaseMaterial3D).albedo_texture
 	var faces := PackedVector3Array()
 	var wfaces := PackedVector3Array()
 	for mi: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
@@ -109,7 +111,7 @@ func _ready() -> void:
 					water.set_shader_parameter("base_tex", (mat as BaseMaterial3D).albedo_texture)
 				mi.set_surface_override_material(s, water)
 			if mat is BaseMaterial3D and (nm.contains("grass") or nm.contains("sand") or nm.contains("path")):
-				mi.set_surface_override_material(s, _ground_material(mat as BaseMaterial3D, dirt_tex if nm == "grass" else null))
+				mi.set_surface_override_material(s, _ground_material(mat as BaseMaterial3D, dirt_tex, grass_tex) if nm.contains("grass") else _ground_material(mat as BaseMaterial3D, null, null))
 			if nm.contains("foliage") and mat is BaseMaterial3D:   # trees: no shiny highlights
 				(mat as BaseMaterial3D).metallic_specular = 0.0
 				(mat as BaseMaterial3D).roughness = 1.0

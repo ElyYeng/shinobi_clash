@@ -7,7 +7,7 @@ uniform sampler2D tex_a : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D tex_b : source_color, filter_linear_mipmap, repeat_enable;   // dirt / patch texture
 uniform sampler2D noise : filter_linear_mipmap, repeat_enable;
 uniform vec4 tint : source_color = vec4(1.0);
-uniform vec2 uv_scale = vec2(1.0);
+uniform float tex_scale = 0.12;   // world-space tiling (1 / metres per tile): no UV stretching, no seams between surfaces
 uniform float use_b : hint_range(0.0, 1.0) = 0.0;   // how much of tex_b patches in
 uniform float macro_scale = 0.004;     // size of the big light/dark areas (per metre)
 uniform float detail_scale = 0.015;    // size of the patches
@@ -26,7 +26,7 @@ vec2 rot(vec2 p, float a) {
 }
 
 void fragment() {
-	vec2 uv = UV * uv_scale;
+	vec2 uv = wpos.xz * tex_scale;
 	float n_macro = texture(noise, wpos.xz * macro_scale).r;
 	float n_det = texture(noise, wpos.xz * detail_scale + 0.37).r;
 	float n_fine = texture(noise, wpos.xz * detail_scale * 3.1 + 0.71).r;
