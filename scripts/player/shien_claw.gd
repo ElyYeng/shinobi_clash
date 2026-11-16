@@ -9,6 +9,7 @@ const HOT := Color("#E7C7FF")
 
 var _model: Node3D
 var _aura: AuraShell
+var _hidden_shells: Array[MeshInstance3D] = []   # body aura shells hidden while the claw is out
 var _embers: Array[MeshInstance3D] = []
 var _ember_origins: Array[Vector3] = []
 var _flames: Array[Node3D] = []
@@ -50,8 +51,18 @@ static func attach(model: Node3D) -> ShienClaw:
 	var drv := ShienFlameIdle.attach(model)   # the claw arm from the Flame Idle clip, in aura material
 	if drv != null:
 		drv.set_claw(true)
-	claw._aura = AuraShell.make(claw, model, OUTER, HOT, 0.4, 0.05)   # Form 1: a stronger violet aura over the body
+	claw._hide_body_aura()   # the aura lives on the claw arm only, not over the whole body
 	return claw
+
+## Hides the body-wide aura shells (Violet Awakening's) while the claw is out; restored on release.
+func _hide_body_aura() -> void:
+	if not is_instance_valid(_model):
+		return
+	for n in _model.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.has_meta("aura_shell") and mi.visible:
+			mi.visible = false
+			_hidden_shells.append(mi)
 
 static func _clean_bone_name(value: String) -> String:   # same rule as the Flame Idle retarget (handles mixamorig1:, mixamorig_ ...)
 	return ShienFlameIdle._bone_key(value)
@@ -130,6 +141,10 @@ static func _add_tube(parent: Node3D, points: Array[Vector3], radii: Array[float
 	parent.add_child(instance)
 
 func _exit_tree() -> void:
+	for mi in _hidden_shells:
+		if is_instance_valid(mi):
+			mi.visible = true
+	_hidden_shells.clear()
 	if is_instance_valid(_model):
 		var drv := _model.get_node_or_null("ShienFlameIdle") as ShienFlameIdle
 		if drv != null:

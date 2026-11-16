@@ -144,7 +144,7 @@ func _spawn_enemy() -> void:
 	e.health = 60.0
 	e.speed = 4.8
 	e.damage = 8.0
-	var arena := NetworkSession.is_active() and NetworkSession.session_mode == "pvp"
+	var arena := NetworkSession.mp_arena()
 	var center := _arena_spawn_center() if arena else player.global_position
 	var pos := Vector3.ZERO
 	for _t in 12:
@@ -523,7 +523,7 @@ const ARENA_NPC_DIR := "res://data/arena_npcs"
 const ARENA_NPCS := {"ninja_battle": "ninja", "pvp_battle": "pvp"}
 
 func _is_pvp_arena() -> bool:
-	return mode == "fight" and NetworkSession.is_active() and NetworkSession.session_mode == "pvp"
+	return mode == "fight" and NetworkSession.mp_arena()
 
 func _start_arena() -> void:
 	dialog = DialogBox.new()

@@ -142,7 +142,7 @@ func bind_local_player(player: Player, game_root: Node) -> void:
 	for id in _known_players:
 		if int(id) != multiplayer.get_unique_id():
 			_spawn_remote_local(int(id), str(_known_players[id]), int(_known_levels.get(id, 1)), _known_appearances.get(id, {}))
-	if session_mode == "pvp" and GameData.mode == "fight":
+	if mp_arena():
 		if multiplayer.is_server():
 			# The host's arena restarted (e.g. after it died): its old ninjas are gone everywhere.
 			_clear_arena_enemies.rpc()
@@ -302,7 +302,7 @@ func _process(delta: float) -> void:
 		return
 	_sync_timer = 0.0
 	_sync_shadow_clone_transforms()
-	if multiplayer.is_server() and (session_mode == "coop" or session_mode == "pvp"):
+	if multiplayer.is_server() and (session_mode == "coop" or session_mode == "pvp" or GameData.mode == "fight"):
 		_sync_quest_enemy_states()   # co-op quest enemies and PvP arena ninjas
 	if multiplayer.is_server() and _uchiha != null and is_instance_valid(_uchiha):
 		_uchiha_sync += delta
@@ -938,7 +938,7 @@ func damage_quest_party_member(peer_id: int, leader_id: int, amount: float, knoc
 		_apply_player_damage.rpc_id(peer_id, safe_damage, knockback)
 
 func request_quest_enemy_damage(enemy_id: String, amount: float, knock: Vector3) -> void:
-	if not is_active() or not (session_mode == "coop" or session_mode == "pvp") or enemy_id == "":
+	if not is_active() or not (session_mode == "coop" or session_mode == "pvp" or mp_arena()) or enemy_id == "":
 		return
 	if multiplayer.is_server():
 		_server_quest_enemy_damage(1, enemy_id, amount, knock)
@@ -1638,7 +1638,7 @@ var _arena_counter := 0
 
 ## Host: gives a freshly spawned arena ninja its network id and shows it to everyone.
 func register_arena_enemy(enemy: Enemy) -> void:
-	if not is_active() or session_mode != "pvp" or not multiplayer.is_server():
+	if not mp_arena() or not multiplayer.is_server():
 		return
 	_arena_counter += 1
 	enemy.network_quest_id = "arena:%d" % _arena_counter
@@ -1725,13 +1725,13 @@ func arena_flag(peer_id: int, kind: String) -> bool:
 ## In the PvP arena two players can only hurt each other if both joined PvP Battle; on the main
 ## map (co-op) only if both turned PvP on (M > Party).
 func pvp_allowed(a_id: int, b_id: int) -> bool:
-	if session_mode == "pvp":
+	if session_mode == "pvp" or (str(_known_maps.get(a_id, "")) == "fight" and str(_known_maps.get(b_id, "")) == "fight"):   # the multiplayer arena
 		return arena_flag(a_id, "pvp") and arena_flag(b_id, "pvp")
 	return bool(world_pvp.get(a_id, false)) and bool(world_pvp.get(b_id, false))
 
 ## Can players hurt each other at all here? (PvP sessions, or the main map with PvP turned on)
 func pvp_possible() -> bool:
-	return is_active() and (session_mode == "pvp" or world_pvp.size() >= 2)
+	return is_active() and (session_mode == "pvp" or mp_arena() or world_pvp.size() >= 2)
 
 # ---------------------------------------------------------------- main-map PvP (opt-in)
 var world_pvp := {}   # peer id -> true: has PvP turned on
@@ -1774,7 +1774,7 @@ func _apply_world_pvp_tags() -> void:
 
 ## Local player talks to an arena NPC: join or leave that battle.
 func request_arena_toggle(kind: String) -> void:
-	if not is_active() or session_mode != "pvp":
+	if not mp_arena():
 		return
 	if multiplayer.is_server():
 		_server_arena_toggle(1, kind)
@@ -1943,3 +1943,9 @@ func _hide_avatar(peer_id: int) -> void:
 	av.visible = false
 	av.set_network_transform(Vector3(0, -5000, 0), 0.0)   # parked far below: no collisions, no hits
 	av.global_position = Vector3(0, -5000, 0)
+
+
+## The Arena is the multiplayer arena (Ninja Battle / PvP Battle NPCs, shared ninjas) whenever
+## you're online and the host is in it too - any session type, e.g. after a party travels there.
+func mp_arena() -> bool:
+	return is_active() and GameData.mode == "fight" and (session_mode == "pvp" or host_here())
