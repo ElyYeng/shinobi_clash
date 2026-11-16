@@ -3,6 +3,8 @@ extends Node
 ## Re-targets the imported Flame Idle glTF animation onto a character's Mixamo Skeleton3D.
 ## The source GLB is stored gzip-compressed to keep the repository asset small.
 
+## Play the clip mirrored left <-> right (its arm reach then lands on the claw arm).
+const MIRROR := true
 const PARTS_DIR := "res://assets/character/FlameIdleParts/"   # part_00.txt, part_01.txt ... read until one is missing
 
 var _target: Skeleton3D
@@ -113,9 +115,10 @@ func _load_source() -> bool:
 	_bone_tracks.clear()
 	for bone_index in _target.get_bone_count():
 		var key := _bone_key(str(_target.get_bone_name(bone_index)))
-		if not source_bones.has(key):
+		var skey := _mirror_key(key) if MIRROR else key   # mirrored: the left arm copies the clip's right arm
+		if not source_bones.has(skey):
 			continue
-		var sidx: int = source_bones[key]
+		var sidx: int = source_bones[skey]
 		var rest := _source_skel.get_bone_global_rest(sidx)
 		_bone_tracks.append({
 			"index": bone_index,
@@ -136,6 +139,9 @@ static func _bone_key(value: String) -> String:
 	key = key.replace("mixamorig:", "").replace("mixamorig_", "")
 	key = key.replace(":", "").replace("_", "").replace(" ", "")
 	return key
+
+static func _mirror_key(key: String) -> String:
+	return key.replace("left", "#").replace("right", "left").replace("#", "right")
 
 func set_active(enabled: bool) -> void:
 	if enabled == _active:
@@ -159,6 +165,8 @@ func _process(_delta: float) -> void:
 		# model-space retarget: how far the clip turned this bone from its rest, on the character's rest
 		var cur := _source_skel.get_bone_global_pose(int(track["src"]))
 		var turn := cur.basis.orthonormalized().get_rotation_quaternion() * (track["rest_q"] as Quaternion).inverse()
+		if MIRROR:   # reflect the turn across the character's left/right (X) plane
+			turn = Quaternion(turn.x, -turn.y, -turn.z, turn.w)
 		var want := turn * _target.get_bone_global_rest(idx).basis.get_rotation_quaternion()
 		var parent := _target.get_bone_parent(idx)
 		var parent_q := Quaternion.IDENTITY
@@ -170,7 +178,10 @@ func _process(_delta: float) -> void:
 			var s := 1.0
 			if absf(rest_pos.y) > 0.001:
 				s = _target.get_bone_global_rest(idx).origin.y / rest_pos.y
-			_target.set_bone_pose_position(idx, _target.get_bone_rest(idx).origin + (cur.origin - rest_pos) * s)
+			var sway := cur.origin - rest_pos
+			if MIRROR:
+				sway.x = -sway.x
+			_target.set_bone_pose_position(idx, _target.get_bone_rest(idx).origin + sway * s)
 
 func _restore_target_pose() -> void:
 	if not is_instance_valid(_target):
