@@ -26,6 +26,7 @@ func _ready() -> void:
 	rng.seed = 1234
 	GameData.load_data()
 	Fx.setup_inputs()   # (after loading: the saved keybind scheme decides the keys)
+	Graphics.apply(get_tree())   # graphics preset (also tunes the map's environment as it loads)
 	Enemy.time_scale = 1.0
 	mode = GameData.mode
 	if not MapBuilder.MAP_FILES.has(mode):

@@ -101,6 +101,7 @@ static var keybinds := {}
 ## "classic" (R T Y F G H / V B N, you assign moves) or "modern" (1-6 element skills, Z X C V B N
 ## jutsu, Q E R F T G buffs - filled automatically from what you have equipped).
 static var key_scheme := "classic"
+static var graphics := "auto"   # graphics preset: auto / low / medium / high (see Graphics)
 static var keybinds_modern := {}   # the modern layout's own binds (auto-filled the first time)
 static var boss_from_world := false   # in the Uchiha arena via the main-game gate: go back to Konoha after
 static var world_return_pos := Vector3.ZERO   # where to put the player when the open world loads (0 = spawn)
@@ -190,6 +191,7 @@ static func load_data() -> void:
 				if Bloodline.DEFS.has(mk) or (mk.begins_with("el:") and ELEMENTS.has(mk.substr(3))) or (mk.begins_with("biju:") and BEASTS.has(mk.substr(5))):
 					mastery[mk] = maxi(int(m[k]), 0)
 		key_scheme = "modern" if str(d.get("key_scheme", "classic")) == "modern" else "classic"
+		graphics = str(d.get("graphics", "auto")) if str(d.get("graphics", "auto")) in ["auto", "low", "medium", "high"] else "auto"
 		var km = d.get("keybinds_modern", {})
 		keybinds_modern = {}
 		if km is Dictionary:
@@ -324,7 +326,7 @@ static func save() -> void:
 			"slots": slots, "slot_unlocked": slot_unlocked, "active_slot": active_slot,
 			"total_spins_used": total_spins_used,
 			"level": level, "xp": xp, "stat_points": stat_points, "stats": stats, "mastery": mastery,
-			"keybinds": keybinds, "key_scheme": key_scheme, "keybinds_modern": keybinds_modern, "character_appearance": character_appearance, "look_presets": look_presets}))
+			"keybinds": keybinds, "key_scheme": key_scheme, "graphics": graphics, "keybinds_modern": keybinds_modern, "character_appearance": character_appearance, "look_presets": look_presets}))
 
 # ------------------------------------------------------------------ keybinds
 ## Fills any missing hotbar key with its default move.

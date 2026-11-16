@@ -21,6 +21,7 @@ var _main_page: VBoxContainer
 func _ready() -> void:
 	GameData.load_data()
 	Fx.setup_inputs()   # (after loading: the saved keybind scheme decides the keys)
+	Graphics.apply(get_tree())   # saved graphics preset (Settings)
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -156,6 +157,16 @@ func _build_settings(page: VBoxContainer) -> void:
 	vol.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	vol.value_changed.connect(func(v: float) -> void: AudioServer.set_bus_volume_db(0, linear_to_db(maxf(v, 0.001) / 100.0)))
 	vol_row.add_child(vol)
+	var gfx := UiStyle.ribbon_button(page, "", 24)
+	var refresh_gfx := func() -> void: gfx.text = "GRAPHICS: %s" % Graphics.label(GameData.graphics)
+	refresh_gfx.call()
+	gfx.pressed.connect(func() -> void:   # Auto -> Low -> Medium -> High -> Auto
+		GameData.graphics = Graphics.PRESETS[(Graphics.PRESETS.find(GameData.graphics) + 1) % Graphics.PRESETS.size()]
+		GameData.save()
+		Graphics.apply(get_tree())
+		refresh_gfx.call()
+		hint.text = _gfx_desc())
+	_describe(gfx, _gfx_desc())
 	var keys := UiStyle.ribbon_button(page, "", 24)
 	var refresh_keys := func() -> void: keys.text = "KEYBINDS: %s" % ("MODERN" if GameData.key_scheme == "modern" else "CLASSIC")
 	refresh_keys.call()
@@ -173,6 +184,12 @@ func _build_settings(page: VBoxContainer) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if on else DisplayServer.WINDOW_MODE_FULLSCREEN)
 		refresh_fs.call())
 	_describe(fs, "Switch between fullscreen and a window")
+
+func _gfx_desc() -> String:
+	return {"low": "Low: lower resolution (sharpened), hard shadows, no ambient occlusion / fog / glow - fastest",
+		"medium": "Medium: slightly lower resolution, softer shadows, light ambient occlusion and glow",
+		"high": "High: full resolution, 2x anti-aliasing, sharp long-range shadows, all effects"}.get(Graphics.resolved(), "") \
+		+ ("   (Auto picked this for your graphics card)" if GameData.graphics == "auto" else "")
 
 ## Hovering or focusing a button shows its one-line description under the mode list.
 func _describe(b: Button, text: String) -> void:
