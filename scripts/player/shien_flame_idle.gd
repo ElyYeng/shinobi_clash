@@ -50,9 +50,6 @@ func _ready() -> void:
 	set_process(false)
 
 func _load_source() -> bool:
-	if not FileAccess.file_exists(SOURCE_PATH):
-		push_warning("[ShienFlameIdle] Missing animation asset: %s" % SOURCE_PATH)
-		return false
 	var encoded := ""
 	for part_path in SOURCE_PARTS:
 		if not FileAccess.file_exists(part_path):
