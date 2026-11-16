@@ -63,7 +63,7 @@ func _load_source() -> bool:
 		push_warning("[ShienFlameIdle] Could not decode the compressed animation asset.")
 		return false
 	# Read the uncompressed byte count from the final 4-byte GZIP trailer.
-	# Use Godot Compression directly instead of the unavailable GZIPReader class.
+	# Use PackedByteArray.decompress() with FileAccess's GZIP compression mode.
 	if compressed.size() < 18:
 		push_warning("[ShienFlameIdle] Compressed animation data is too short to be a valid GZIP stream.")
 		return false
@@ -71,7 +71,7 @@ func _load_source() -> bool:
 	if uncompressed_size <= 0:
 		push_warning("[ShienFlameIdle] GZIP animation reports an invalid uncompressed size.")
 		return false
-	var bytes := Compression.decompress(compressed, uncompressed_size, Compression.MODE_GZIP)
+	var bytes := compressed.decompress(uncompressed_size, FileAccess.COMPRESSION_GZIP)
 	if bytes.is_empty():
 		push_warning("[ShienFlameIdle] Could not decompress the animation asset.")
 		return false
