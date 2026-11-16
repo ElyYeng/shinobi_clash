@@ -14,10 +14,19 @@ uniform float detail_scale = 0.015;    // size of the patches
 uniform float variation = 0.22;        // brightness variation strength
 uniform vec3 dry_color = vec3(1.18, 1.05, 0.7);
 uniform float dry_amount = 0.5;
+uniform float tri_sharpness = 4.0;     // how fast the projections hand over on slopes (higher = tighter blend)
 varying vec3 wpos;
+varying vec3 wnrm;
 
 void vertex() {
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnrm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+}
+
+// Triplanar weights: how much each projection (side X, top Y, side Z) faces the surface.
+vec3 tri_w(vec3 n) {
+	vec3 w = pow(abs(normalize(n)), vec3(tri_sharpness));
+	return w / max(w.x + w.y + w.z, 1e-4);
 }
 
 vec2 rot(vec2 p, float a) {
@@ -25,18 +34,34 @@ vec2 rot(vec2 p, float a) {
 	return vec2(c * p.x - s * p.y, s * p.x + c * p.y);
 }
 
+// Triplanar sample: projects from the top on flat ground and from the sides on slopes / cliffs,
+// so the texture never gets smeared down a steep face (the old top-down wpos.xz projection did).
+// a / o rotate + offset each plane's UV (the anti-tiling variant).
+vec3 tri_rgb(sampler2D t, vec3 p, vec3 w, float a, vec2 o) {
+	vec3 c = vec3(0.0);
+	c += texture(t, rot(p.zy, a) + o).rgb * w.x;
+	c += texture(t, rot(p.xz, a) + o).rgb * w.y;
+	c += texture(t, rot(p.xy, a) + o).rgb * w.z;
+	return c;
+}
+
+float tri_r(sampler2D t, vec3 p, vec3 w, vec2 o) {
+	return texture(t, p.zy + o).r * w.x + texture(t, p.xz + o).r * w.y + texture(t, p.xy + o).r * w.z;
+}
+
 void fragment() {
-	vec2 uv = wpos.xz * tex_scale;
-	float n_macro = texture(noise, wpos.xz * macro_scale).r;
-	float n_det = texture(noise, wpos.xz * detail_scale + 0.37).r;
-	float n_fine = texture(noise, wpos.xz * detail_scale * 3.1 + 0.71).r;
+	vec3 w = tri_w(wnrm);
+	vec3 p = wpos * tex_scale;
+	float n_macro = tri_r(noise, wpos * macro_scale, w, vec2(0.0));
+	float n_det = tri_r(noise, wpos * detail_scale, w, vec2(0.37));
+	float n_fine = tri_r(noise, wpos * detail_scale * 3.1, w, vec2(0.71));
 	// anti-tiling: a second, rotated + rescaled sample fades in over the first
-	vec3 c1 = texture(tex_a, uv).rgb;
-	vec3 c2 = texture(tex_a, rot(uv, 0.9) * 0.73 + 0.31).rgb;
+	vec3 c1 = tri_rgb(tex_a, p, w, 0.0, vec2(0.0));
+	vec3 c2 = tri_rgb(tex_a, p * 0.73, w, 0.9, vec2(0.31));
 	vec3 col = mix(c1, c2, smoothstep(0.38, 0.62, n_macro));
 	// dirt patches
 	if (use_b > 0.0) {
-		vec3 d = texture(tex_b, uv * 0.8).rgb;
+		vec3 d = tri_rgb(tex_b, p * 0.8, w, 0.0, vec2(0.0));
 		col = mix(col, d, smoothstep(0.62, 0.7, n_det) * use_b);
 	}
 	// macro variation: lighter / darker areas, dry-yellow patches
