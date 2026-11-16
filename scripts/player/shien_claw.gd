@@ -151,7 +151,9 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 		[Vector3(0.12, -0.035, 0.03), Vector3(0.19, 0.015, 0.13), Vector3(0.22, 0.10, 0.24), Vector3(0.16, 0.18, 0.34)]
 	]
 	for i in flame_paths.size():
-		var path: Array[Vector3] = flame_paths[i]
+		var path: Array[Vector3] = []
+		for point in flame_paths[i]:
+			path.append(point)
 		_add_tube(_grip, path, [0.075, 0.062, 0.034, 0.001], outer if i % 2 == 0 else violet, 7)
 
 	# Small moving sparks keep the aura alive while the hand follows its animation.
@@ -168,7 +170,7 @@ func _build(skeleton: Skeleton3D, hand_idx: int, side: String) -> void:
 		_grip.add_child(spark)
 		_embers.append(spark)
 		_ember_origins.append(Vector3(cos(float(i) * TAU / 7.0) * 0.17, sin(float(i) * TAU / 7.0) * 0.13, 0.03 + float(i % 3) * 0.09))
-		 spark.position = _ember_origins[-1]
+		spark.position = _ember_origins[-1]
 
 func _process(delta: float) -> void:
 	_time += delta
