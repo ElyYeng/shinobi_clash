@@ -41,9 +41,9 @@ static func attach(model: Node3D) -> ShienClaw:
 
 	var claw := ShienClaw.new()
 	claw.name = "ShienVioletClaw"
-	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
 	claw._build(skeleton, hand_idx, hand_side)
 	skeleton.add_child(claw)
+	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
 	return claw
 
 static func _clean_bone_name(value: String) -> String:
@@ -199,7 +199,7 @@ static func _add_tube(parent: Node3D, points: Array[Vector3], radii: Array[float
 		return
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in points.size() - 1:
+	for i in range(points.size() - 1):
 		var tangent := (points[i + 1] - points[i]).normalized()
 		var side := tangent.cross(Vector3.UP).normalized()
 		if side.length_squared() < 0.001:
