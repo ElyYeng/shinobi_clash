@@ -2,7 +2,8 @@ class_name Graphics
 extends RefCounted
 ## Graphics presets (Settings in the main menu): Low / Medium / High, or Auto (picked from the GPU).
 ## Applies render scale, anti-aliasing, shadow quality and the heavy environment effects
-## (SSAO, SSIL, SDFGI, volumetric fog, glow) to every map as it loads. High = the maps as authored.
+## (SSAO, SSIL, SDFGI, volumetric fog, glow) to every map as it loads. High = exactly the old default
+## settings (nothing heavier than before); Low / Medium only take things away.
 
 const PRESETS := ["auto", "low", "medium", "high"]
 
@@ -37,7 +38,7 @@ static func apply(tree: SceneTree) -> void:
 			vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 			vp.mesh_lod_threshold = 1.0
 			RenderingServer.directional_shadow_atlas_set_size(4096, true)
-			RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM)
+			RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_LOW)   # = the engine default (what the game always had)
 			RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_HIGH, true, 0.5, 2, 50, 300)
 	if not tree.node_added.is_connected(_on_node_added):
 		tree.node_added.connect(_on_node_added)
