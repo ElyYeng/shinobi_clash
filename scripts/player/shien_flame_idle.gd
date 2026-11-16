@@ -221,10 +221,26 @@ func _build_claw() -> void:
 	_claw.bone_name = str(_target.get_bone_name(hand))
 	var mi := MeshInstance3D.new()
 	mi.mesh = src.mesh
-	mi.material_override = ShienClaw._aura_material(ShienClaw.OUTER, ShienClaw.VIOLET)
+	# solid glowing core (so it reads clearly) with a bigger flickering aura shell over it
+	var core := StandardMaterial3D.new()
+	core.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	core.albedo_color = Color("#8A3CFF")
+	core.emission_enabled = true
+	core.emission = Color("#8A3CFF")
+	core.emission_energy_multiplier = 1.6
+	mi.material_override = core
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mi.transform = _target.get_bone_global_rest(hand).affine_inverse() * rel
+	var base_t := _target.get_bone_global_rest(hand).affine_inverse() * rel
+	mi.transform = base_t
 	_claw.add_child(mi)
+	var shell := MeshInstance3D.new()
+	shell.mesh = src.mesh
+	var am := ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
+	am.set_shader_parameter("_Brightness", 1.6)
+	shell.material_override = am
+	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shell.transform = base_t.scaled_local(Vector3.ONE * 1.18)
+	_claw.add_child(shell)
 	_claw.visible = false
 
 func set_claw(on: bool) -> void:
