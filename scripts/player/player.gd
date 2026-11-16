@@ -370,6 +370,7 @@ func _physics_process(delta: float) -> void:
 		cam.look_at(pivot.global_position)
 		return
 	if is_dead:
+		_shien_form2_off()
 		if spectating and is_instance_valid(spectate_target):   # camera follows who you're watching
 			var tall := 3.0 if spectate_target is Kurama else 1.6
 			pivot.global_position = pivot.global_position.lerp(spectate_target.global_position + Vector3.UP * tall, 6.0 * delta)
@@ -430,6 +431,7 @@ func _physics_process(delta: float) -> void:
 			_toast("Out of MD - %s ended" % ("both modes" if both else "power-up"))
 	elif mode_meter < GameData.md_max():
 		mode_meter = minf(GameData.md_max(), mode_meter + 1.0 * delta * _md_mult())
+	_shien_form2_update(delta)
 	invuln = maxf(0.0, invuln - delta)
 	_update_buffs(delta)
 	# slow natural healing: 0.5% of max HP a second, 2% once you've gone 5 s without being hit
@@ -621,6 +623,10 @@ const SUS_DRAIN := 4.0            # chakra per second while it's out
 const SUS_PUNCH := {"cd": 0.8, "ck": 6.0, "dmg": 55.0, "ahead": 6.5, "r": 4.5, "knock": 12.0}
 const SUS_SLAM := {"cd": 5.0, "ck": 20.0, "dmg": 120.0, "ahead": 5.0, "r": 7.5, "knock": 9.0}
 var susanoo: Susanoo
+const SHIEN_FORM2_MIN_CHAKRA := 25.0
+const SHIEN_FORM2_DRAIN := 6.0
+var shien_claw: ShienClaw
+var shien_flame_idle: ShienFlameIdle
 var _sus_charge_fx: Node3D
 var _sus_cd := 0.0
 var _sus_slam_cd := 0.0
@@ -630,9 +636,12 @@ var _sus_zoom := -1.0             # your camera distance before the Susanoo (res
 func _susanoo_ready() -> bool:
 	return Susanoo.USERS.has(str(GameData.equipped)) and _bl_level() >= Bloodline.MODE_LEVEL
 
-## Hold C and press 1-4: bloodline forms. Uchiha form 2 = Susanoo; the others are coming.
+## Hold C and press 1-4: bloodline forms. Shien / Uzumaki / Uchiha each have their own Form 2.
 func _activate_form(n: int) -> void:
 	if is_dead:
+		return
+	if GameData.equipped == "shien" and n == 2:
+		_shien_form2_toggle()
 		return
 	if GameData.equipped == "uzumaki" and n == 2:
 		if klink != null:
@@ -673,6 +682,54 @@ func _activate_form(n: int) -> void:
 			_susanoo_on()
 		return
 	_toast("Form %d - coming soon" % n)
+
+## Shien Form 2: hold C + 2 while Shien is equipped. The violet aura gathers around the left arm
+## and sharpens into a set of long chakra talons. It remains active until toggled off or chakra runs out.
+func _shien_form2_toggle() -> void:
+	if shien_claw != null and is_instance_valid(shien_claw):
+		_shien_form2_off()
+		_toast("VIOLET CLAW RELEASED")
+		return
+	if not powered:
+		_toggle_power()   # Violet Awakening first; Form 2 builds on its aura
+		if not powered:
+			return
+	if chakra < SHIEN_FORM2_MIN_CHAKRA:
+		_toast("Not enough chakra for Violet Claw  (%d / %d)" % [int(chakra), int(SHIEN_FORM2_MIN_CHAKRA)])
+		return
+	shien_claw = ShienClaw.attach(model)
+	if shien_claw == null:
+		_toast("Violet Claw could not find a hand bone on this character rig")
+		return
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("shien_claw_on")
+	Sfx.play(self, "power", -2.0)
+	Vfx.burst(get_parent(), global_position + Vector3.UP * 1.15, Shien.COL, 34, 8.0, 0.22, 0.55, 0.0)
+	Vfx.shockwave(get_parent(), global_position + Vector3.UP * 0.85, Shien.EDGE, 2.4, 0.35)
+	Vfx.shake(cam, 0.16, 0.28)
+	_toast("SHIEN • VIOLET CLAW - FORM 2")
+
+func _shien_form2_update(delta: float) -> void:
+	if shien_claw == null or not is_instance_valid(shien_claw):
+		shien_claw = null
+		return
+	if is_dead or not powered or str(GameData.equipped) != "shien":
+		_shien_form2_off()
+		return
+	if not inf_chakra:
+		chakra = maxf(0.0, chakra - SHIEN_FORM2_DRAIN * delta)
+	if chakra <= 0.0:
+		_shien_form2_off()
+		_toast("Violet Claw faded - out of chakra")
+
+func _shien_form2_off() -> void:
+	if shien_claw == null:
+		return
+	if is_instance_valid(shien_claw):
+		shien_claw.queue_free()
+	shien_claw = null
+	if NetworkSession.is_active():
+		NetworkSession.broadcast_combat_animation("shien_claw_off")
 
 # ---------------------------------------------------------------- Kurama Link Mode (Uzumaki form 2)
 ## Hold C + 2 as an Uzumaki (LV 1000): Kurama appears under you and you ride on its head.
@@ -1106,9 +1163,13 @@ func _floating() -> bool:
 
 func _update_anim() -> void:
 	if klink != null:   # riding Kurama: just stand on its head
+		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(false)
 		Hero.play_move(model, "idle", 0.0)
 		return
 	if anim_lock > 0.0:
+		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(false)
 		if sitting:
 			sitting = false
 			NetworkSession.broadcast_combat_animation("sit", 0)
@@ -1128,6 +1189,8 @@ func _update_anim() -> void:
 			sitting = false
 			NetworkSession.broadcast_combat_animation("sit", 0)
 		else:
+			if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+				shien_flame_idle.set_active(false)
 			return
 	if not is_on_floor():
 		st = "jump" if velocity.y > 0.5 else "fall"
@@ -1144,6 +1207,15 @@ func _update_anim() -> void:
 	if _floating():
 		st = "idle"
 		ground = 0.0
+	var use_shien_flame_idle := powered and str(GameData.equipped) == "shien" and st == "idle"
+	if use_shien_flame_idle:
+		if shien_flame_idle == null or not is_instance_valid(shien_flame_idle):
+			shien_flame_idle = ShienFlameIdle.attach(model)
+		if is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(true)
+			return
+	if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
 	Hero.play_move(model, st, ground)
 
 func _play_once(state: String, max_lock: float, variant := 0) -> bool:
@@ -1761,6 +1833,9 @@ func _toggle_power() -> void:
 	_play_once("jutsu", 0.6)
 
 func _power_off() -> void:
+	_shien_form2_off()
+	if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
 	_susanoo_off()   # the Susanoo needs the Sharingan
 	_klink_off()     # Kurama Link needs Ink Mode
 	if not powered:
