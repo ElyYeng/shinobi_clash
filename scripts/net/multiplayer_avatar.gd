@@ -73,6 +73,8 @@ func set_kurama_visual(enabled: bool, tails := 1, beast := "kurama") -> void:
 
 var susanoo: Susanoo
 var shien_claw: ShienClaw
+var shien_flame_idle: ShienFlameIdle
+var _shien_powered := false
 
 var _kd_rag: Ragdoll   # knocked down (ragdoll / getting up)
 var sitting := false   # sitting on the floor (P); held until they stand or move
@@ -215,6 +217,8 @@ func apply_network_ragdoll_state(state: PackedFloat32Array) -> void:
 ## clears every ragdoll bone pose and restarts its AnimationPlayer cleanly.
 func reset_network_ragdoll(position: Vector3, yaw: float) -> void:
 	shien_claw = null
+	shien_flame_idle = null
+	_shien_powered = false
 	if ragdoll != null and is_instance_valid(ragdoll):
 		ragdoll.set_process(false)
 		ragdoll.queue_free()
@@ -295,6 +299,12 @@ func set_powered_visual(enabled: bool, color: Color, bloodline := "") -> void:
 	if network_ragdoll_started:
 		return
 	var look: Dictionary = Bloodline.personal_mode(bloodline, Bloodline.mode(bloodline), color).get("look", {}) if enabled and bloodline != "" else {}
+	_shien_powered = enabled and bloodline == "shien"
+	if _shien_powered:
+		if shien_flame_idle == null or not is_instance_valid(shien_flame_idle):
+			shien_flame_idle = ShienFlameIdle.attach(model)
+	elif shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
 	if model != null and is_instance_valid(model):
 		Hero.apply_mode_look(model, look, character_appearance)
 	if enabled:
@@ -347,7 +357,10 @@ func _process(delta: float) -> void:
 			speed = 0.0   # floating: idle pose only
 		if sitting and speed > 1.0:
 			sitting = false
-		if animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink)):
+		var use_shien_flame_idle := _shien_powered and speed <= 1.0 and animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink))
+		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(use_shien_flame_idle)
+		if animation_lock <= 0.0 and not sitting and (klink == null or not is_instance_valid(klink)) and not use_shien_flame_idle:
 			Hero.play_move(model, Hero.move_state(speed), speed)
 		if _kd_rag == null or not is_instance_valid(_kd_rag):
 			HeadLook.drive(model, target_look.x, target_look.y, delta, not stuck)
