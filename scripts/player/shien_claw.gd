@@ -47,6 +47,9 @@ static func attach(model: Node3D) -> ShienClaw:
 	skeleton.add_child(claw)
 	claw.bone_name = str(skeleton.get_bone_name(hand_idx))
 	claw._model = model
+	var drv := ShienFlameIdle.attach(model)   # the claw arm from the Flame Idle clip, in aura material
+	if drv != null:
+		drv.set_claw(true)
 	claw._aura = AuraShell.make(claw, model, OUTER, HOT, 0.4, 0.05)   # Form 1: a stronger violet aura over the body
 	return claw
 

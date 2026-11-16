@@ -106,6 +106,7 @@ func _load_source() -> bool:
 	_source_skel = skels[0] as Skeleton3D
 	_source_root.global_transform = _target.global_transform
 	_source_root.visible = false   # only its bones are used; the claw mesh is copied onto the hand below
+	_build_claw()
 	var source_bones: Dictionary = {}
 	for si in _source_skel.get_bone_count():
 		source_bones[_bone_key(str(_source_skel.get_bone_name(si)))] = si
@@ -221,13 +222,7 @@ func _build_claw() -> void:
 	var mi := MeshInstance3D.new()
 	mi.mesh = src.mesh
 	# solid glowing core (so it reads clearly) with a bigger flickering aura shell over it
-	var core := ShaderMaterial.new()   # the Susanoo flame-body material, in Shien violet
-	core.shader = load("res://shaders/susanoo.gdshader")
-	core.set_shader_parameter("color", Color("#8A3CFF"))
-	core.set_shader_parameter("detail", CharToon._white())
-	core.set_shader_parameter("noise", Susanoo.fire_noise())
-	core.set_shader_parameter("fade", 1.0)
-	mi.material_override = core
+	mi.material_override = ShienClaw._aura_material(ShienClaw.VIOLET, ShienClaw.HOT)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var base_t := _target.get_bone_global_rest(hand).affine_inverse() * rel
 	mi.transform = base_t
@@ -238,7 +233,7 @@ func _build_claw() -> void:
 	am.set_shader_parameter("_Brightness", 1.6)
 	shell.material_override = am
 	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	shell.transform = base_t.scaled_local(Vector3.ONE * 1.18)
+	shell.transform = base_t.scaled_local(Vector3.ONE * 1.06)
 	_claw.add_child(shell)
 	_claw.visible = false
 
