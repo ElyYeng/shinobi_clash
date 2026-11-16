@@ -287,7 +287,7 @@ const DEFS := {
 				"desc": "Three violet flame wolves launch in a spread and chase briefly. Each hits once."},
 			{"name": "Murasaki no Metsubo", "kind": "custom", "fn": "_fx_shien_calamity", "lvl": 1000, "cost": 70.0, "cd": 45.0, "dmg": 210.0, "r": 30.0, "blast": 9.0, "charge": 1.3, "stun": 1.0,
 				"desc": "Charge overhead, then a flame serpent crashes onto the marked area for one huge explosion."}],
-		"mode": {"name": "Violet Awakening", "dmg": 1.05, "speed": 1.05, "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Shien.png", "aura": true},
+		"mode": {"name": "Violet Awakening", "dmg": 1.05, "speed": 1.05, "cutscene": "eyes", "look": {"eyes": "res://assets/character/character_main_T_CHR_Eye_Shien.png", "aura": true},
 			"desc": "+5% damage and speed. Your moves become Demon Rush, Phantom Wolves and Murasaki no Metsubo."}},
 
 	# ================================================================ Mythic (1.5%)
