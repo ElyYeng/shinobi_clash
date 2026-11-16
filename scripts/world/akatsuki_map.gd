@@ -81,7 +81,7 @@ func _ready() -> void:
 			if nm.contains("foliage") and mat is BaseMaterial3D:   # trees: no shiny highlights
 				(mat as BaseMaterial3D).metallic_specular = 0.0
 				(mat as BaseMaterial3D).roughness = 1.0
-			if nm.contains("water") or not (nm.contains("foliage") or nm.contains("leaf") or nm.contains("grass") or nm.contains("tree")):   # everything but cut-out plants is solid (rock, path, sand...)
+			if nm.contains("water") or not (nm.contains("foliage") or nm.contains("leaf") or nm.contains("tree")):   # everything but cut-out plants is solid (rock, path, sand...)
 				var out := wfaces if nm.contains("water") else faces
 				var arr := mi.mesh.surface_get_arrays(s)
 				var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
