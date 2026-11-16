@@ -1163,9 +1163,13 @@ func _floating() -> bool:
 
 func _update_anim() -> void:
 	if klink != null:   # riding Kurama: just stand on its head
+		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(false)
 		Hero.play_move(model, "idle", 0.0)
 		return
 	if anim_lock > 0.0:
+		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+			shien_flame_idle.set_active(false)
 		if sitting:
 			sitting = false
 			NetworkSession.broadcast_combat_animation("sit", 0)
@@ -1185,6 +1189,8 @@ func _update_anim() -> void:
 			sitting = false
 			NetworkSession.broadcast_combat_animation("sit", 0)
 		else:
+			if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+				shien_flame_idle.set_active(false)
 			return
 	if not is_on_floor():
 		st = "jump" if velocity.y > 0.5 else "fall"
