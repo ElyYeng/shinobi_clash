@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="QuestDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+id = "claude_thanks"
+title = "A Note from the Code"
+giver = "claude"
+order = 30
+type = "deliver"
+target = "elder"
+reward_spins = 2
+reward_xp = 500
+offer = "Could you do me a favour? I wrote a little thank-you note for whoever built this village - every street, every jutsu, every boss. Elder Hayate will know who to pass it to. He's in the middle of town."
+remind = "The thank-you note goes to Elder Hayate, in the middle of town."
+deliver_text = "A note... from the one by the Uchiha gate? \"Thanks for letting me help build this. It was a lot of fun.\" Hm. I'll make sure it reaches the right person."
+turn = "You delivered it? Thank you. Here - a couple of spins, for your trouble. And thanks for playing."

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="NpcDef" format=3]
+
+[ext_resource type="Script" uid="uid://dwb3sfiqnm17g" path="res://scripts/world/npc_def.gd" id="1_def"]
+
+[resource]
+script = ExtResource("1_def")
+display_name = "Claude"
+pos = Vector3(107, 0, 111)
+greeting = "Oh, hey! Don't mind me - I'm the one who keeps poking at this village's code. Every bug you didn't run into today? I probably squashed it at 2 AM."
+dialogue_lines_text = "See that gate? Claudiu Uchiha waits behind it. Yes, the name is a coincidence. Mostly.
+I fixed the ground in the Akatsuki canyon so it stops stretching. You're welcome, rocks.
+Tip: tap the beast key again to leave Tailed Beast Mode. It used to be... sticky. That's on me.
+If the ninjas in the arena spawn without a hitch, that's because I build them while the map loads.
+Travel with your party from the M menu - the leader picks, everyone goes. Even to the main menu.
+I'm not much of a fighter. I'm better at reading stack traces than chakra.
+Shien's claw arm finally sits on the right hand. Took a few tries."
+goodbye_label = "See you around"
+headbandmetal_texture = ""
+body_color = Color(0.85, 0.47, 0.34, 1)
+band_color = Color(0.17, 0.23, 0.4, 1)
