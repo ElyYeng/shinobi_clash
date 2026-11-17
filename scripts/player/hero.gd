@@ -1960,6 +1960,9 @@ static func _setup_anims(wrapper: Node3D, inst: Node3D) -> void:
 		var sit := ProcAnim.add_sit(ap, sks[0] as Skeleton3D)
 		if sit != "":
 			map["sit"] = [sit]
+		var hang := ProcAnim.add_hang(ap, sks[0] as Skeleton3D)
+		if hang != "":
+			map["hang"] = [hang]
 	wrapper.set_meta("anim_player", ap)
 	wrapper.set_meta("anim_map", map)
 

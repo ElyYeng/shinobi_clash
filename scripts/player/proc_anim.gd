@@ -5,6 +5,16 @@ extends RefCounted
 ## S = the bone's own side, + = outward); every bone is keyed, the rest stay in their rest pose.
 
 const SIT := "proc_sit"
+const HANG := "proc_hang"
+
+## Ledge hang: both arms reaching up to the edge in front of you, a slight lean into the wall,
+## legs hanging loose with the knees a little bent.
+const HANG_POSE := {
+	"Spine": [0.12, 1.0, 0.0], "Spine1": [0.1, 1.0, 0.0], "Spine2": [0.08, 1.0, 0.0],
+	"Neck": [0.15, 1.0, 0.0], "Head": [0.1, 1.0, 0.0],
+	"Arm": [0.3, 1.0, 0.28], "ForeArm": [0.35, 1.0, 0.08], "Hand": [0.55, 0.85, 0.0],
+	"UpLeg": [0.12, -1.0, 0.06], "Leg": [-0.18, -1.0, 0.0], "Foot": [1.0, -0.6, 0.0],
+}
 
 ## Ninja sit: right knee up with the forearm draped over it, left leg folded flat in front,
 ## leaning back on the left hand with the palm flat on the ground. Keys can be generic ("Arm",
@@ -39,6 +49,23 @@ static func add_sit(ap: AnimationPlayer, sk: Skeleton3D) -> String:
 		ap.add_animation_library("", lib)
 	lib.add_animation(SIT, a)
 	return SIT
+
+## Adds the ledge-hang pose (looping) to the character's AnimationPlayer; returns its name.
+static func add_hang(ap: AnimationPlayer, sk: Skeleton3D) -> String:
+	if ap.has_animation(HANG):
+		return HANG
+	var a := _pose_anim(ap, sk, HANG_POSE, 0.53)
+	if a == null:
+		return ""
+	a.loop_mode = Animation.LOOP_LINEAR
+	var lib: AnimationLibrary
+	if ap.has_animation_library(""):
+		lib = ap.get_animation_library("")
+	else:
+		lib = AnimationLibrary.new()
+		ap.add_animation_library("", lib)
+	lib.add_animation(HANG, a)
+	return HANG
 
 ## mixamo name ("LeftUpLeg") -> bone index, ignoring the Ctrl_/IK copies some rigs carry.
 static func _bones(sk: Skeleton3D) -> Dictionary:

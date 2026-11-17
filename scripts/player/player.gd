@@ -454,6 +454,10 @@ func _physics_process(delta: float) -> void:
 			move_and_slide()
 			return
 
+	if ledge:   # hanging on / climbing up a ledge
+		_ledge_step(delta)
+		return
+
 	# Gravity / jumping
 	if is_on_floor():
 		jumps_left = 2
@@ -470,6 +474,8 @@ func _physics_process(delta: float) -> void:
 	var inp := Input.get_vector("left", "right", "forward", "back")
 	var dir := Basis(Vector3.UP, yaw) * Vector3(inp.x, 0.0, inp.y)
 	var moving := dir.length() > 0.1
+	if _try_ledge(dir):   # falling past an edge in front of you: grab it
+		return
 
 	# Dash (brief invulnerability)
 	if Input.is_action_just_pressed("dash") and chakra >= dash_cost and dash_time <= 0.0:
@@ -973,6 +979,103 @@ const STICK_SPRINT := 10.0
 const STICK_CHAKRA_WALL := 4.0      # chakra per second on walls
 const STICK_CHAKRA_CEILING := 7.0   # ... upside down
 const STICK_REACH := 1.35           # how far the feet look for the surface
+# ---------------------------------------------------------------- ledge hang / climb
+## Falling or jumping past the top of a wall in front of you grabs its edge. While hanging:
+## W (towards the wall) or Space climbs up, S (away from the wall) lets go.
+const HANG_DROP := 2.12      # feet this far below the ledge top while hanging (hands on the edge)
+const LEDGE_REACH := 0.9     # how far in front of your chest a wall counts
+const CLIMB_TIME := 0.6
+var ledge := false
+var _ledge_top := Vector3.ZERO   # the edge (on the top surface, above the wall face)
+var _ledge_n := Vector3.ZERO     # wall normal, pointing out towards you
+var _ledge_cd := 0.0             # just let go / climbed: don't grab again straight away
+var _climb := -1.0               # >= 0 while climbing up (seconds in)
+var _climb_from := Vector3.ZERO
+
+func _ledge_ray(space: PhysicsDirectSpaceState3D, a: Vector3, b: Vector3) -> Dictionary:
+	var q := PhysicsRayQueryParameters3D.create(a, b)
+	q.exclude = [get_rid()]
+	return space.intersect_ray(q)
+
+func _try_ledge(dir: Vector3) -> bool:
+	_ledge_cd = maxf(0.0, _ledge_cd - get_physics_process_delta_time())
+	if ledge or _ledge_cd > 0.0 or is_on_floor() or velocity.y > 1.0 or wall_walking or dash_time > 0.0 \
+			or attack_lock > 0.0 or susanoo != null or klink != null or Input.is_action_pressed("sprint"):
+		return false   # (sprinting into a wall is the chakra wall-run instead)
+	var fwd := Vector3(velocity.x, 0.0, velocity.z)
+	if fwd.length() < 0.5:
+		fwd = dir if dir.length() > 0.1 else facing
+	fwd.y = 0.0
+	if fwd.length() < 0.1:
+		return false
+	fwd = fwd.normalized()
+	var space := get_world_3d().direct_space_state
+	var chest := global_position + Vector3.UP * 1.45
+	var wall := _ledge_ray(space, chest, chest + fwd * LEDGE_REACH)
+	if wall.is_empty() or absf((wall["normal"] as Vector3).y) > 0.35 or not (wall["collider"] is StaticBody3D):
+		return false
+	var n: Vector3 = wall["normal"]
+	n.y = 0.0
+	n = n.normalized()
+	var head := global_position + Vector3.UP * (HANG_DROP + 0.45)
+	if not _ledge_ray(space, head, head - n * (LEDGE_REACH + 0.25)).is_empty():
+		return false   # the wall keeps going up: nothing to grab
+	var wp: Vector3 = wall["position"]
+	var probe := wp - n * 0.25
+	var top := _ledge_ray(space, Vector3(probe.x, global_position.y + HANG_DROP + 0.45, probe.z), Vector3(probe.x, global_position.y + 1.2, probe.z))
+	if top.is_empty() or (top["normal"] as Vector3).y < 0.7:
+		return false
+	var ty: float = (top["position"] as Vector3).y
+	var stand := Vector3(probe.x, ty, probe.z) - n * 0.35
+	if not _ledge_ray(space, stand + Vector3.UP * 0.1, stand + Vector3.UP * 1.8).is_empty():
+		return false   # no room to stand up there
+	ledge = true
+	_climb = -1.0
+	_ledge_n = n
+	_ledge_top = Vector3(wp.x, ty, wp.z)
+	velocity = Vector3.ZERO
+	facing = -n
+	jumps_left = 2
+	global_position = _hang_pos()
+	Sfx.play(self, "jump", -10.0)
+	return true
+
+func _hang_pos() -> Vector3:
+	return _ledge_top + _ledge_n * 0.42 - Vector3.UP * HANG_DROP
+
+func _ledge_step(delta: float) -> void:
+	velocity = Vector3.ZERO
+	facing = -_ledge_n
+	if is_dead or downed > 0.0:
+		ledge = false
+		return
+	if _climb >= 0.0:   # pull up over the edge, then step onto the top
+		_climb += delta
+		var k := clampf(_climb / CLIMB_TIME, 0.0, 1.0)
+		var up_end := _ledge_top + _ledge_n * 0.3 + Vector3.UP * 0.05
+		var on_top := _ledge_top - _ledge_n * 0.6 + Vector3.UP * 0.05
+		if k < 0.6:
+			global_position = _climb_from.lerp(up_end, smoothstep(0.0, 1.0, k / 0.6))
+		else:
+			global_position = up_end.lerp(on_top, smoothstep(0.0, 1.0, (k - 0.6) / 0.4))
+		if k >= 1.0:
+			ledge = false
+			_climb = -1.0
+			_ledge_cd = 0.3
+		return
+	global_position = _hang_pos()
+	var inp := Input.get_vector("left", "right", "forward", "back")
+	var dir := Basis(Vector3.UP, yaw) * Vector3(inp.x, 0.0, inp.y)
+	var toward := dir.normalized().dot(-_ledge_n) if dir.length() > 0.5 else 0.0
+	if Input.is_action_just_pressed("jump") or toward > 0.5:
+		_climb = 0.0
+		_climb_from = global_position
+		Sfx.play(self, "jump", -8.0)
+	elif toward < -0.5 or Input.is_action_just_pressed("dash"):   # away from the wall: let go
+		ledge = false
+		_ledge_cd = 0.6
+		velocity = _ledge_n * 2.0
+
 var wall_walking := false           # true while stuck to a wall / ceiling
 var wall_n := Vector3.ZERO          # normal of the surface we stand on (points away from it)
 var _wall_cd := 0.0
@@ -1167,6 +1270,9 @@ func _floating() -> bool:
 	return powered and bool(pmode.get("look", {}).get("float", false)) and not is_dead and not wall_walking
 
 func _update_anim() -> void:
+	if ledge:   # hanging: the hang pose; climbing: the jump clip
+		Hero.play(model, "jump" if _climb >= 0.0 else "hang", false, 0, 0.0, 0.12)
+		return
 	if klink != null:   # riding Kurama: just stand on its head
 		if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
 			shien_flame_idle.set_active(false)
