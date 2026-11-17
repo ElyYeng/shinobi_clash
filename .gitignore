@@ -12,3 +12,7 @@ Game EXPORT/
 __pycache__/
 *.pyc
 *.spec
+
+# Local-only test map (big ripped map, streamed in chunks) - never pushed or shipped
+maps/_test_map/
+tools/map_chunks/node_modules/

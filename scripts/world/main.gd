@@ -48,6 +48,8 @@ func _ready() -> void:
 			player.position.y = terrain.height_at(player.position.x, player.position.z) + 3.0
 			# The first collision mesh must exist before CharacterBody3D starts physics.
 			terrain.prepare_spawn(player.position)
+		if map is StreamedMap:
+			(map as StreamedMap).set_focus(player)   # stream chunks around the player
 	add_child(player)
 	if NetworkSession.is_active():
 		NetworkSession.bind_local_player(player, self)
@@ -99,6 +101,11 @@ func _give_spins(n: int, why: String) -> void:
 
 ## Loads the editable map scene for this mode (falls back to generating it if the file is missing).
 func _load_map() -> void:
+	if mode == "world" and StreamedMap.available():   # local test map (maps/_test_map, not in git)
+		map = StreamedMap.new()
+		add_child(map)
+		AnimePost.add_to(map)
+		return
 	var path: String = MapBuilder.MAP_FILES[mode]
 	var ps := load(path) as PackedScene if ResourceLoader.exists(path) else null
 	if ps != null:

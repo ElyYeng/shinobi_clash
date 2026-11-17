@@ -1,0 +1,13 @@
+{
+  "name": "shinobi-clash-map-chunks",
+  "private": true,
+  "type": "module",
+  "description": "Turns one big ripped .glb map into streamed chunks for StreamedMap (maps/_test_map/)",
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^0.22.0",
+    "sharp": "^0.34.0"
+  }
+}
