@@ -26,7 +26,8 @@ var to_id := ""
 var goal := Vector3.ZERO
 var pause := 0.0
 var rng := RandomNumberGenerator.new()
-var _far := false
+var _far := true                  # (starts "far": the model is only built once you come near)
+static var _built_frame := -1      # one villager model per frame at most (no load-time / walk-in hitch)
 var _leg_start := Vector3.ZERO    # current leg: walk from _leg_start (at _t0) to goal (at _t1),
 var _t0 := 0.0                    # then stand still until _t2
 var _t1 := 0.0
@@ -161,10 +162,6 @@ static func _build_adj() -> void:
 func _ready() -> void:
 	speed = rng.randf_range(1.15, 1.75)
 	lane_jitter = rng.randf_range(-1.0, 1.0)
-	model = Npc.character_look({}, "villager_%d" % rng.seed)
-	if model == null:
-		model = Fx.make_ninja(Color.from_hsv(rng.randf(), 0.4, 0.7), Color(0.2, 0.2, 0.25))
-	add_child(model)
 	_marker = Label3D.new()
 	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_marker.font_size = 96
@@ -199,16 +196,29 @@ func _next_segment() -> void:
 	_set_goal()
 	pause = rng.randf_range(1.5, 5.0) if rng.randf() < 0.3 else 0.0
 
+func _build_model() -> void:
+	model = Npc.character_look({}, "villager_%d" % rng.seed)
+	if model == null:
+		model = Fx.make_ninja(Color.from_hsv(rng.randf(), 0.4, 0.7), Color(0.2, 0.2, 0.25))
+	add_child(model)
+
 func _process(delta: float) -> void:
 	var p := get_tree().get_first_node_in_group("player") as Node3D
 	var to_p := (p.global_position - global_position) if p != null else Vector3(999, 0, 999)
 	to_p.y = 0.0
 	var pd := to_p.length()
 	var far := pd > ACTIVE_RANGE
+	if not far and model == null:   # first time you come near: build the character now
+		if Engine.get_process_frames() == _built_frame:
+			far = true                 # another villager built theirs this frame - next frame
+		else:
+			_built_frame = Engine.get_process_frames()
+			_build_model()
 	if far != _far:
 		_far = far
-		model.visible = not far
-		model.process_mode = Node.PROCESS_MODE_DISABLED if far else Node.PROCESS_MODE_INHERIT
+		if model != null:
+			model.visible = not far
+			model.process_mode = Node.PROCESS_MODE_DISABLED if far else Node.PROCESS_MODE_INHERIT
 
 	# walk along the timeline to the shared clock (same result on every machine)
 	var t := now()

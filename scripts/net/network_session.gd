@@ -55,6 +55,7 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	multiplayer.peer_connected.connect(_patient_peer)
 
 func host(port: int = DEFAULT_PORT, mode: String = "coop", display_name: String = "Shinobi") -> Error:
 	disconnect_session()
@@ -338,7 +339,20 @@ func _process(delta: float) -> void:
 		_sent_level = GameData.level
 		broadcast_level(GameData.level)
 
+## Loading a big map freezes the game for a while, and ENet drops a peer that's silent for ~30 s
+## (the host then loses you, and you see the host frozen). Give every connection 2 minutes.
+const PEER_TIMEOUT_MS := 120000
+
+func _patient_peer(peer_id: int) -> void:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet == null or (not multiplayer.is_server() and peer_id != 1):   # a client only has a link to the host
+		return
+	var p := enet.get_peer(peer_id)
+	if p != null:
+		p.set_timeout(64, 30000, PEER_TIMEOUT_MS)
+
 func _on_connected_to_server() -> void:
+	_patient_peer(1)
 	_request_join.rpc_id(1, player_name, GameData.level, _sanitize_appearance(GameData.character_appearance))
 
 @rpc("any_peer", "call_remote", "reliable")

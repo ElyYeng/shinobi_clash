@@ -87,25 +87,35 @@ func _ready() -> void:
 ## The map has no lighting of its own: borrow Konoha's Environment group (WorldEnvironment +
 ## Sun), so both maps look the same and editing Konoha's lighting changes this one too.
 func _take_lighting() -> void:
+	# Read just the two nodes out of Konoha's scene file (instancing all of Konoha was slow).
 	var ps := load(LIGHTING_FROM) as PackedScene if ResourceLoader.exists(LIGHTING_FROM) else null
 	if ps == null:
 		return
-	var konoha := ps.instantiate()
-	var env := konoha.get_node_or_null("Environment")
-	if env != null:
-		konoha.remove_child(env)
-		env.owner = null
-		for c in env.find_children("*", "", true, false):
-			c.owner = null
-		add_child(env)
-		var we := env.get_node_or_null("WorldEnvironment") as WorldEnvironment
-		if we != null and we.environment != null:   # Konoha's fog is tuned for a small map: thinner here
-			var e := we.environment.duplicate() as Environment
+	var state := ps.get_state()
+	var env_root := Node3D.new()
+	env_root.name = "Environment"
+	add_child(env_root)
+	for i in state.get_node_count():
+		var path := str(state.get_node_path(i))
+		var node: Node = null
+		if path.ends_with("Environment/WorldEnvironment"):
+			node = WorldEnvironment.new()
+		elif path.ends_with("Environment/Sun"):
+			node = DirectionalLight3D.new()
+		if node == null:
+			continue
+		for k in state.get_node_property_count(i):
+			var prop := state.get_node_property_name(i, k)
+			if prop != &"script":
+				node.set(prop, state.get_node_property_value(i, k))
+		node.name = path.get_file()
+		env_root.add_child(node)
+		if node is WorldEnvironment and (node as WorldEnvironment).environment != null:
+			var e := (node as WorldEnvironment).environment.duplicate() as Environment   # thinner fog: big map
 			e.fog_density *= 0.3
 			e.fog_aerial_perspective = 0.2
 			e.volumetric_fog_density *= 0.4
-			we.environment = e
-	konoha.free()
+			(node as WorldEnvironment).environment = e
 
 ## Stream around this node (the player). Without one, the spawn point is the centre.
 func set_focus(node: Node3D) -> void:
@@ -138,7 +148,7 @@ func _process(delta: float) -> void:
 			_loaded.erase(file)
 
 ## Loads every chunk near `pos` right now, with collision (so the player doesn't fall through).
-func load_around_now(pos: Vector3, radius := 200.0) -> void:
+func load_around_now(pos: Vector3, radius := 120.0) -> void:
 	for c in _chunks:
 		var file := str(c["file"])
 		if _dist_to(c, pos) < radius and not _loaded.has(file):
