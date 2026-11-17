@@ -1,4 +1,4 @@
-"""Standard-library updater. Downloads never replace the active installation in place."""
+"""Verified game updater. Downloads never replace the active installation in place."""
 from __future__ import annotations
 
 import hashlib
@@ -8,16 +8,20 @@ from pathlib import Path, PurePosixPath
 import re
 import shutil
 import stat
+import ssl
 import tempfile
 import threading
+import urllib.error
 import urllib.request
 import uuid
 import zipfile
 
+import certifi
+
 REPOSITORY = "ElyYeng/shinobi_clash"
 RELEASES_URL = f"https://github.com/{REPOSITORY}/releases"
 MANIFEST_URL = f"{RELEASES_URL}/latest/download/launcher-manifest.json"
-LAUNCHER_VERSION = "1.1.0"
+LAUNCHER_VERSION = "1.1.1"
 MAX_ARCHIVE_SIZE = 2 * 1024**3  # GitHub's per-asset limit
 MAX_INSTALL_SIZE = 8 * 1024**3
 MAX_MANIFEST_SIZE = 2 * 1024**2
@@ -106,6 +110,21 @@ class HTTPSRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+CERTIFICATE_ERROR = (
+    "Cannot verify GitHub's certificate. "
+    "Check Windows/network certificates. Details: launcher.log"
+)
+
+
+def create_tls_context():
+    # Retain Windows/system trust (including managed network roots), then add
+    # Mozilla's public roots so first installs do not depend on Windows having
+    # already downloaded the particular root needed by GitHub or its asset CDN.
+    context = ssl.create_default_context()
+    context.load_verify_locations(cafile=certifi.where())
+    return context
+
+
 def open_url(url):
     if not url.startswith("https://"):
         raise UpdateError("Updates require HTTPS.")
@@ -113,7 +132,18 @@ def open_url(url):
         "User-Agent": f"ShinobiClashLauncher/{LAUNCHER_VERSION}",
         "Cache-Control": "no-cache",
     })
-    return urllib.request.build_opener(HTTPSRedirectHandler()).open(request, timeout=30)
+    opener = urllib.request.build_opener(
+        HTTPSRedirectHandler(),
+        urllib.request.HTTPSHandler(context=create_tls_context()),
+    )
+    try:
+        return opener.open(request, timeout=30)
+    except ssl.SSLCertVerificationError as exc:
+        raise UpdateError(CERTIFICATE_ERROR) from exc
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise UpdateError(CERTIFICATE_ERROR) from exc
+        raise
 
 
 def fetch_manifest():
@@ -122,6 +152,19 @@ def fetch_manifest():
     if len(raw) > MAX_MANIFEST_SIZE:
         raise UpdateError("Update information is too large.")
     return validate_manifest(json.loads(raw))
+
+
+def check_update_connection(output_path):
+    """Probe the real manifest/CDN from the frozen EXE without installing a game."""
+    result = {"launcher_version": LAUNCHER_VERSION, "ok": False}
+    try:
+        manifest = fetch_manifest()
+        result.update(ok=True, release=manifest["version"])
+    except Exception as exc:
+        result["error"] = str(exc)
+        result["cause"] = repr(exc.__cause__ or exc)
+    Path(output_path).write_text(json.dumps(result, indent=2), encoding="utf-8")
+    return 0 if result["ok"] else 1
 
 
 def download(archive, destination, progress, cancel):
