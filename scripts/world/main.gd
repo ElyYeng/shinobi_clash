@@ -284,6 +284,10 @@ func _start_world() -> void:
 			map_position.y = terrain.height_at(map_position.x, map_position.z)
 		n.position = map_position
 		n.appearance = d.get("appearance", {})
+		n.model_path = str(d.get("model", ""))   # NPCs with a model of their own (Kakashi)
+		n.model_height = float(d.get("model_height", n.model_height))
+		n.model_yaw_deg = float(d.get("model_yaw", n.model_yaw_deg))
+		n.outline = bool(d.get("outline", n.outline))
 		map.add_child(n)
 		if placed.has(id):
 			n.global_rotation.y = (placed[id] as Node3D).global_rotation.y

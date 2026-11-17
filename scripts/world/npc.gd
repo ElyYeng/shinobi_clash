@@ -10,7 +10,7 @@ var greeting := "Hello."
 var dialogue_lines: Array[String] = []
 var goodbye_label := "Goodbye"
 var _dialogue_line_index := 0
-var model_path := ""        # Legacy field; world NPCs always use the shared Hero character.
+var model_path := ""        # NpcDef "model": a GLB / TSCN of the NPC's own (empty = the shared Hero character)
 var appearance: Dictionary = {}
 var model_height := 1.85
 var model_yaw_deg := 180.0
@@ -38,11 +38,14 @@ func _ready() -> void:
 	col.shape = cap
 	col.position.y = 0.95
 	add_child(col)
-	# All world NPCs use the same fully customizable character rig as the player.
-	# Their look comes only from the assigned NpcDef appearance settings, never a custom GLB.
-	model = Npc.character_look(appearance, npc_id if npc_id != "" else display_name)
-	if model != null:
-		label_y = 2.3
+	# An NPC with its own model file (NpcDef "model", e.g. Kakashi) uses it; everyone else the
+	# shared customizable character rig, dressed from the NpcDef appearance settings.
+	if model_path != "" and ResourceLoader.exists(model_path):
+		model = _load_model()
+	if model == null:
+		model = Npc.character_look(appearance, npc_id if npc_id != "" else display_name)
+		if model != null:
+			label_y = 2.3
 	if model == null:
 		model = Fx.make_ninja(body_color, band_color)
 	add_child(model)
@@ -67,7 +70,7 @@ func _ready() -> void:
 
 ## Loads a real character model (also used by NpcSpawn for its editor preview).
 func _load_model() -> Node3D:
-	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name, appearance)
+	var m := Npc.build_model(model_path, model_height, model_yaw_deg, outline, display_name)   # own model: no Hero look on it
 	if m != null:
 		label_y = float(m.get_meta("label_y", label_y))
 	return m

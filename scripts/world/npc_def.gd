@@ -17,8 +17,7 @@ func _validate_property(property: Dictionary) -> void:
 	var property_name := str(property.get("name", ""))
 	# Kept only so older NPC resources still load; world NPCs all use Hero's shared character.
 	if property_name in ["model", "model_height", "model_yaw_deg", "outline"]:
-		property["usage"] = PROPERTY_USAGE_STORAGE
-		return
+		return   # an NPC can use its own model file (e.g. Kakashi) - shown in the Inspector again
 	if property_name == "headband_texture":
 		# Legacy fabric-texture field: hidden because the folder contains plate atlases.
 		property["usage"] = PROPERTY_USAGE_STORAGE
