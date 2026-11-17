@@ -17,7 +17,7 @@ import zipfile
 REPOSITORY = "ElyYeng/shinobi_clash"
 RELEASES_URL = f"https://github.com/{REPOSITORY}/releases"
 MANIFEST_URL = f"{RELEASES_URL}/latest/download/launcher-manifest.json"
-LAUNCHER_VERSION = "1.0.0"
+LAUNCHER_VERSION = "1.1.0"
 MAX_ARCHIVE_SIZE = 2 * 1024**3  # GitHub's per-asset limit
 MAX_INSTALL_SIZE = 8 * 1024**3
 MAX_MANIFEST_SIZE = 2 * 1024**2
