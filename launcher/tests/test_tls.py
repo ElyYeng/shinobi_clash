@@ -52,7 +52,7 @@ class TLSUpdaterTests(unittest.TestCase):
                 error = urllib.error.URLError(cert_error) if wrapped else cert_error
                 with patch("updater.urllib.request.build_opener") as build:
                     build.return_value.open.side_effect = error
-                    with self.assertRaisesRegex(UpdateError, "Cannot verify the secure connection") as caught:
+                    with self.assertRaisesRegex(UpdateError, "Cannot verify GitHub's certificate") as caught:
                         open_url("https://github.com/example")
                     build.return_value.open.assert_called_once()
                 self.assertIs(caught.exception.__cause__, error)

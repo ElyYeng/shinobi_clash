@@ -111,9 +111,8 @@ class HTTPSRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 CERTIFICATE_ERROR = (
-    "Cannot verify the secure connection to GitHub. "
-    "Update Windows and check whether your network or security software "
-    "is inspecting HTTPS. Details: %LOCALAPPDATA%\\ShinobiClashLauncher\\launcher.log"
+    "Cannot verify GitHub's certificate. "
+    "Check Windows/network certificates. Details: launcher.log"
 )
 
 
