@@ -9,3 +9,4 @@ pos = Vector3(-65, 0, 35)
 greeting = "Strength is built one rep at a time."
 body_color = Color(0.8, 0.45, 0.1, 1)
 band_color = Color(0.2, 0.2, 0.25, 1)
+randomize_appearance = true

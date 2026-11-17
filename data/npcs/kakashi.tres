@@ -11,3 +11,4 @@ body_color = Color(0.2, 0.3, 0.25, 1)
 band_color = Color(0.75, 0.75, 0.8, 1)
 model = "res://assets/kakashi/kakashiwithidle.glb"
 outline = false
+hair_color = Color(0.82, 0.84, 0.88, 1)

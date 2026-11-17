@@ -9,3 +9,4 @@ pos = Vector3(-30, 0, -95)
 greeting = "Fast feet, light bag. That is the courier's way."
 body_color = Color(0.25, 0.45, 0.8, 1)
 band_color = Color(0.95, 0.95, 0.95, 1)
+randomize_appearance = true

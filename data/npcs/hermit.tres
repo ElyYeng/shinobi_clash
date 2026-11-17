@@ -10,3 +10,4 @@ greeting = "The wind carries old stories. Some of them still growl."
 headbandmetal_texture = ""
 body_color = Color(0.55, 0.15, 0.15, 1)
 band_color = Color(0.9, 0.7, 0.2, 1)
+randomize_appearance = true
