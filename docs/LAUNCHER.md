@@ -67,6 +67,32 @@ space for the download, extracted build, current build and previous build.
 GitHub limits each release asset to 2 GiB. This launcher targets **Windows x64**;
 macOS and Linux distributables are not included.
 
+## Certificate errors on a player's PC
+
+Launcher 1.1.1 includes Mozilla's public CA certificates through `certifi` while
+retaining the operating system's trusted certificates. Certificate and hostname
+verification remain enabled for the manifest, game archive and HTTPS redirects.
+This addresses machines missing a required public root certificate. It does not
+trust an unknown certificate injected by a proxy or security product.
+
+Players using 1.1.0 or older need to download the new launcher EXE once after its
+release is published; the game updater cannot patch the launcher itself. Existing
+game files and saved progress do not need to be removed.
+
+If verification still fails, inspect
+`%LOCALAPPDATA%\\ShinobiClashLauncher\\launcher.log`. Install Windows updates and
+check with the network/security software administrator if HTTPS inspection is in
+use. Do not disable certificate verification or import unverified certificates.
+
+The packaged launcher also supports a connection-only diagnostic, used by CI:
+
+```powershell
+.\\ShinobiClashLauncher.exe --check-update-connection "$env:TEMP\\launcher-https.json"
+```
+
+After it exits, open the report file. It tests the latest manifest download
+(including GitHub's asset redirect) without installing or launching the game.
+
 ## Troubleshooting publishing
 
 - **404 / no release yet:** check the Actions run. All three assets must exist on
@@ -92,6 +118,7 @@ macOS and Linux distributables are not included.
 Use Python 3.12 with Tk support:
 
 ```sh
+python -m pip install -r launcher/requirements.txt
 python launcher/main.py
 python -m unittest discover -s launcher/tests -v
 ```
@@ -100,7 +127,7 @@ Build the standalone launcher **on Windows**:
 
 ```powershell
 python -m pip install -r launcher/requirements-build.txt
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name ShinobiClashLauncher --distpath release --workpath build/pyinstaller --specpath build launcher/main.py
+python -m PyInstaller --noconfirm --clean --onefile --windowed --collect-data certifi --name ShinobiClashLauncher --distpath release --workpath build/pyinstaller --specpath build launcher/main.py
 ```
 
 To package a manually exported Windows game, put its EXE, matching PCK, and any

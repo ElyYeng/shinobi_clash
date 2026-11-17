@@ -15,7 +15,7 @@ import webbrowser
 
 from updater import (
     Cancelled, Installation, InstanceLock, LAUNCHER_VERSION, RELEASES_URL,
-    UpdateError, default_root, fetch_manifest,
+    UpdateError, default_root, fetch_manifest, check_update_connection,
 )
 
 from art import Art
@@ -383,4 +383,6 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--check-update-connection":
+        raise SystemExit(check_update_connection(sys.argv[2]))
     main()
