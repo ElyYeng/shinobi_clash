@@ -1,0 +1,139 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 8220,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1969,
+      "max": [
+        144.27285766601562,
+        91.1561279296875,
+        78.947021484375
+      ],
+      "min": [
+        -189.41250610351562,
+        -67.56560516357422,
+        -107.74642944335938
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1969,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 1969,
+      "bufferView": 1,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 16440,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 16440,
+      "byteLength": 63008,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "sa00z69.dds",
+      "mimeType": "image/png",
+      "uri": "tex/f7addb978f59958d.png"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "c_-3_-3.bin",
+      "byteLength": 79448
+    }
+  ],
+  "materials": [
+    {
+      "name": "sa00ztext69",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.690034806728363,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "sa00zrock00_mesh0306",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2,
+            "TEXCOORD_0": 3
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "sa00zrock00_001",
+      "translation": [
+        -283.95497703552246,
+        49.452239990234375,
+        -354.91341400146484
+      ],
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "c_-3_-3",
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}

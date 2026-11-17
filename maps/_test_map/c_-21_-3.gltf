@@ -1,0 +1,231 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 5838,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 810,
+      "bufferView": 0,
+      "byteOffset": 11676
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 5838,
+      "max": [
+        56.94140625,
+        0.9413585662841797,
+        47.397735595703125
+      ],
+      "min": [
+        -40.87841796875,
+        -0.7153530120849609,
+        -45.71173095703125
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 5838,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 5838,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 165,
+      "max": [
+        16.669677734375,
+        1.1244220733642578,
+        71.08270263671875
+      ],
+      "min": [
+        -10.938720703125,
+        -1.3324108123779297,
+        -36.006805419921875
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 165,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 165,
+      "bufferView": 2,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 13296,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 13296,
+      "byteLength": 186816,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 200112,
+      "byteLength": 5280,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 1,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "sm01bb07",
+      "mimeType": "image/png",
+      "uri": "tex/d2407abc03ca8685.png"
+    },
+    {
+      "name": "sm01bb06",
+      "mimeType": "image/png",
+      "uri": "tex/5a22cbf4a982aef3.png"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "c_-21_-3.bin",
+      "byteLength": 205392
+    }
+  ],
+  "materials": [
+    {
+      "name": "sm01bb07",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.690034806728363,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        }
+      }
+    },
+    {
+      "name": "sm01bb06",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.690034806728363,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 1
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "sm01bb_obj003_mesh0015",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    },
+    {
+      "name": "sm01bb_obj004_mesh0016",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 1
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "sm01bb_obj003",
+      "translation": [
+        -3009.876708984375,
+        -20.771041870117188,
+        -312.8782653808594
+      ],
+      "mesh": 0
+    },
+    {
+      "name": "sm01bb_obj004",
+      "translation": [
+        -3019.326171875,
+        -20.4876708984375,
+        -391.34875869750977
+      ],
+      "mesh": 1
+    }
+  ],
+  "scenes": [
+    {
+      "name": "c_-21_-3",
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ]
+}

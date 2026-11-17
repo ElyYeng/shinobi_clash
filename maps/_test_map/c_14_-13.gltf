@@ -1,0 +1,240 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 2097,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 2097,
+      "bufferView": 0,
+      "byteOffset": 4196
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 440,
+      "max": [
+        173.98388671875,
+        0.000064849853515625,
+        248.9520263671875
+      ],
+      "min": [
+        -184.55859375,
+        -0.009328842163085938,
+        -223.1014404296875
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 440,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 440,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 440,
+      "max": [
+        173.98388671875,
+        0.00005340576171875,
+        248.9520263671875
+      ],
+      "min": [
+        -184.55859375,
+        -0.009340286254882812,
+        -223.1014404296875
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 440,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 440,
+      "bufferView": 2,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC4",
+      "componentType": 5121,
+      "count": 440,
+      "normalized": true,
+      "bufferView": 2,
+      "byteOffset": 32
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 8392,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 8392,
+      "byteLength": 14080,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 22472,
+      "byteLength": 15840,
+      "byteStride": 36,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 1,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "suimen.png.002",
+      "mimeType": "image/png",
+      "uri": "tex/546dd0b9eec45f8f.png"
+    },
+    {
+      "name": "waterL.png.001",
+      "mimeType": "image/png",
+      "uri": "tex/066db349232bf0fe.png"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "c_14_-13.bin",
+      "byteLength": 38312
+    }
+  ],
+  "materials": [
+    {
+      "name": "River_Mesh_Training_Field",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.690034806728363,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 0
+        }
+      }
+    },
+    {
+      "name": "River_Mesh_Surface_Training_Field",
+      "alphaMode": "MASK",
+      "alphaCutoff": 0.5,
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "roughnessFactor": 0.690034806728363,
+        "metallicFactor": 0,
+        "baseColorTexture": {
+          "index": 1
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Mesh_1326Mesh.029",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    },
+    {
+      "name": "Mesh_1326Mesh.028",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7,
+            "COLOR_0": 8
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 1
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "River_Mesh.012",
+      "translation": [
+        2209.5587916374207,
+        -21.120201110839844,
+        -1832.5758056640625
+      ],
+      "mesh": 0
+    },
+    {
+      "name": "River_Mesh_Upper.012",
+      "translation": [
+        2209.5587916374207,
+        -21.06578826904297,
+        -1832.5758056640625
+      ],
+      "mesh": 1
+    }
+  ],
+  "scenes": [
+    {
+      "name": "c_14_-13",
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ]
+}

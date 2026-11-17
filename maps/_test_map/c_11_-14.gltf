@@ -1,0 +1,94 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 6,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 4,
+      "max": [
+        276.128662109375,
+        0.0000152587890625,
+        276.1286926269531
+      ],
+      "min": [
+        -276.128662109375,
+        0.0000152587890625,
+        -276.1286926269531
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 4,
+      "bufferView": 1,
+      "byteOffset": 12
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 12,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 12,
+      "byteLength": 96,
+      "byteStride": 24,
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "c_11_-14.bin",
+      "byteLength": 108
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Plane.053",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 1,
+            "NORMAL": 2
+          },
+          "mode": 4,
+          "indices": 0
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Grassy_Plains_Control",
+      "translation": [
+        1704.2471923828125,
+        -223.91458129882812,
+        -2011.5726318359375
+      ],
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "c_11_-14",
+      "nodes": [
+        0
+      ]
+    }
+  ]
+}
