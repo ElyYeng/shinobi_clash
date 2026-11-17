@@ -1037,6 +1037,9 @@ func _try_ledge(dir: Vector3) -> bool:
 	facing = -n
 	jumps_left = 2
 	global_position = _hang_pos()
+	if shien_flame_idle != null and is_instance_valid(shien_flame_idle):
+		shien_flame_idle.set_active(false)
+	Hero.play(model, "hang", true, 0, 0.0, 0.1)
 	Sfx.play(self, "jump", -10.0)
 	return true
 
@@ -1049,6 +1052,9 @@ func _ledge_step(delta: float) -> void:
 	if is_dead or downed > 0.0:
 		ledge = false
 		return
+	# (this replaces the rest of _physics_process, so turn to the wall and pick the clip here)
+	model.rotation.y = lerp_angle(model.rotation.y, atan2(-facing.x, -facing.z), 1.0 - exp(-18.0 * delta))
+	Hero.play(model, "jump" if _climb >= 0.0 else "hang", false, 0, 0.0, 0.12)
 	if _climb >= 0.0:   # pull up over the edge, then step onto the top
 		_climb += delta
 		var k := clampf(_climb / CLIMB_TIME, 0.0, 1.0)
