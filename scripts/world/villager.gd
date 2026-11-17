@@ -33,6 +33,20 @@ var _t1 := 0.0
 var _t2 := 0.0
 
 static var _adj: Dictionary = {}
+## Another map's street graph (StreamedMap): id -> Vector3 (with ground height) and [id, id] edges.
+## Empty = the greybox graph above.
+static var custom_nodes: Dictionary = {}
+static var custom_edges: Array = []
+
+static func _edges() -> Array:
+	return custom_edges if not custom_nodes.is_empty() else EDGES
+
+## A street node as a 3D point (greybox nodes sit at height 0).
+static func _pt(id: String) -> Vector3:
+	if not custom_nodes.is_empty():
+		return custom_nodes[id]
+	var v: Vector2 = NODES[id]
+	return Vector3(v.x, 0, v.y)
 static var _all: Array = []        # villagers by index (quest givers are looked up by it)
 const FIRST := ["Haruto", "Yui", "Sota", "Hina", "Ren", "Aoi", "Kaito", "Mei", "Riku", "Sakura",
 	"Takumi", "Nanami", "Daiki", "Emi", "Kenta", "Mio", "Shin", "Rika", "Yuto", "Kana"]
@@ -105,10 +119,11 @@ static func sync_clock(host_time: float) -> void:
 	_clock_base = want if absf(want - _clock_base) > 1.5 else lerpf(_clock_base, want, 0.3)
 
 static func populate(parent: Node, count: int, seed_base := 77) -> void:
+	_adj.clear()   # (the graph may have changed: greybox <-> streamed map)
 	_build_adj()
 	_clock_base = Time.get_ticks_msec() / 1000.0   # host / single player: start the clock now
 	_all.clear()
-	var edges := EDGES.duplicate()
+	var edges := _edges().duplicate()
 	for i in count:
 		var v := Villager.new()
 		v.name = "Villager%d" % i
@@ -116,11 +131,10 @@ static func populate(parent: Node, count: int, seed_base := 77) -> void:
 		_all.append(v)
 		v.rng.seed = seed_base * 1000 + i
 		var e: Array = edges[i % edges.size()]
-		var a := NODES[e[0]] as Vector2
-		var b := NODES[e[1]] as Vector2
+		var a := _pt(e[0])
+		var b := _pt(e[1])
 		var t := v.rng.randf_range(0.1, 0.9)
-		var p := a.lerp(b, t)
-		v.position = Vector3(p.x, 0, p.y)
+		v.position = a.lerp(b, t)
 		v.from_id = e[0] if v.rng.randf() < 0.5 else e[1]
 		v.to_id = e[1] if v.from_id == e[0] else e[0]
 		parent.add_child(v)
@@ -128,7 +142,7 @@ static func populate(parent: Node, count: int, seed_base := 77) -> void:
 static func _build_adj() -> void:
 	if not _adj.is_empty():
 		return
-	for e in EDGES:
+	for e in _edges():
 		for k in 2:
 			var a: String = e[k]
 			var b: String = e[1 - k]
@@ -159,15 +173,14 @@ func _ready() -> void:
 	_t2 = _t1
 
 func _lane_offset(a_id: String, b_id: String) -> Vector3:
-	var a: Vector2 = NODES[a_id]
-	var b: Vector2 = NODES[b_id]
-	var d := (b - a).normalized()
+	var a3 := _pt(a_id)
+	var b3 := _pt(b_id)
+	var d := Vector2(b3.x - a3.x, b3.z - a3.z).normalized()
 	var right := Vector2(-d.y, d.x)   # right-hand side of the direction of travel
 	return Vector3(right.x, 0, right.y) * (LANE + lane_jitter * 0.6)
 
 func _set_goal() -> void:
-	var b: Vector2 = NODES[to_id]
-	goal = Vector3(b.x, 0, b.y) + _lane_offset(from_id, to_id)
+	goal = _pt(to_id) + _lane_offset(from_id, to_id)
 
 func _next_segment() -> void:
 	var options: Array = (_adj[to_id] as Array).duplicate()

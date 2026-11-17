@@ -213,7 +213,7 @@ func _start_kurama() -> void:
 ## After Claudiu (main game): everyone back to Konoha, next to the gate.
 func _back_to_world() -> void:
 	GameData.boss_from_world = false
-	GameData.world_return_pos = UCHIHA_GATE + Vector3(0, 1, 5)
+	GameData.world_return_pos = uchiha_gate_pos() + Vector3(0, 1, 5)
 	if NetworkSession.is_active():
 		NetworkSession.return_party_to_world()   # host moves the party; clients wait for it
 		return
@@ -287,7 +287,9 @@ func _start_world() -> void:
 		if placed.has(id):
 			map_position = map.to_local((placed[id] as Node3D).global_position)
 		var terrain := map.get_node_or_null("WorldTerrain")
-		if terrain != null:
+		if map is StreamedMap and (map as StreamedMap).npc_spots.has(id):   # the big map has its own spots
+			map_position = (map as StreamedMap).npc_spots[id]
+		elif terrain != null:
 			map_position.y = terrain.height_at(map_position.x, map_position.z)
 		n.position = map_position
 		n.appearance = d.get("appearance", {})
@@ -303,16 +305,23 @@ func _start_world() -> void:
 		npcs[id] = n
 	quests.setup(player, hud, self)
 	quests.changed.connect(_refresh_markers)
-	if map.get_node_or_null("HokageRock") != null:   # Konoha greybox: villagers stroll the streets
+	Villager.custom_nodes = {}
+	Villager.custom_edges = []
+	if map is StreamedMap and not (map as StreamedMap).street_nodes.is_empty():   # big map: its own street graph
+		Villager.custom_nodes = (map as StreamedMap).street_nodes
+		Villager.custom_edges = (map as StreamedMap).street_edges
+	if map.get_node_or_null("HokageRock") != null or not Villager.custom_nodes.is_empty():   # villagers stroll the streets
 		var crowd := Node3D.new()
 		crowd.name = "Villagers"
 		map.add_child(crowd)
-		Villager.populate(crowd, 28)
+		Villager.populate(crowd, 60 if not Villager.custom_nodes.is_empty() else 28)
 	_refresh_markers()
 	_build_uchiha_gate()
 	_spawn_sparrers.call_deferred()
 	_spawn_training_logs.call_deferred()
 	if GameData.world_return_pos != Vector3.ZERO:   # back from the boss arena
+		if map is StreamedMap:
+			(map as StreamedMap).load_around_now(GameData.world_return_pos)   # ground there first
 		player.global_position = GameData.world_return_pos
 		GameData.world_return_pos = Vector3.ZERO
 	if TEST_NINJA:
@@ -321,14 +330,19 @@ func _start_world() -> void:
 ## Main-game boss: at the Uchiha District gate, [E] takes you (and your co-op party) to the
 ## arena to fight Claudiu Uchiha.
 const UCHIHA_GATE := Vector3(112, 0, 106)
+
+## Where the gate stands: the big test map's own spot when it's installed, else Konoha's.
+func uchiha_gate_pos() -> Vector3:
+	var g := StreamedMap.saved_gate()
+	return g if g != Vector3.INF else UCHIHA_GATE
 var _gate: Node3D
 func _build_uchiha_gate() -> void:
 	_gate = Node3D.new()
 	_gate.name = "UchihaBossGate"
 	add_child(_gate)
-	var pos := UCHIHA_GATE
+	var pos := uchiha_gate_pos()
 	var terrain := map.get_node_or_null("WorldTerrain")
-	if terrain != null:
+	if terrain != null and not (map is StreamedMap):
 		pos.y = terrain.height_at(pos.x, pos.z)
 	_gate.global_position = pos
 	Vfx.aura_flames(_gate, Vector3(0, 0.2, 0), 1.1, Color(0.7, 0.05, 0.08, 0.8), 30, true)

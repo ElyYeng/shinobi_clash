@@ -14,6 +14,10 @@ const CHECK_EVERY := 0.25
 
 var cell := 150.0
 var spawn_point := Vector3.ZERO
+var npc_spots := {}                # npc id -> Vector3 (chunks.json "npcs")
+var gate_pos := Vector3.INF        # the Uchiha gate (chunks.json "uchiha_gate")
+var street_nodes := {}             # walking villagers' street graph (chunks.json "streets")
+var street_edges: Array = []
 var _chunks: Array = []            # entries from chunks.json
 var _loaded := {}                  # file -> Node3D (instanced chunk)
 var _pending := {}                 # file -> true (threaded load in flight)
@@ -21,6 +25,16 @@ var _collision_queue: Array = []   # MeshInstance3D waiting for collision
 var _check_t := 0.0
 var _focus: Node3D
 static var toon := true   # (tests can turn the toon pass off)
+
+## The Uchiha gate spot from chunks.json (INF when the test map isn't installed / has none).
+static func saved_gate() -> Vector3:
+	if not available():
+		return Vector3.INF
+	var d = JSON.parse_string(FileAccess.get_file_as_string(DIR + "chunks.json"))
+	if typeof(d) != TYPE_DICTIONARY or not d.has("uchiha_gate"):
+		return Vector3.INF
+	var g: Array = d["uchiha_gate"]
+	return Vector3(float(g[0]), float(g[1]), float(g[2]))
 
 ## Is the test map on this PC? (chunks.json present)
 static func available() -> bool:
@@ -38,6 +52,17 @@ func _init() -> void:
 	_chunks = d.get("chunks", [])
 	var sp: Array = d.get("spawn", [0.0, 0.0, 0.0])
 	spawn_point = Vector3(float(sp[0]), float(sp[1]), float(sp[2]))
+	for id in d.get("npcs", {}):
+		var a: Array = d["npcs"][id]
+		npc_spots[str(id)] = Vector3(float(a[0]), float(a[1]), float(a[2]))
+	if d.has("uchiha_gate"):
+		var g: Array = d["uchiha_gate"]
+		gate_pos = Vector3(float(g[0]), float(g[1]), float(g[2]))
+	var st: Dictionary = d.get("streets", {})
+	for id in st.get("nodes", {}):
+		var a: Array = st["nodes"][id]
+		street_nodes[str(id)] = Vector3(float(a[0]), float(a[1]), float(a[2]))
+	street_edges = st.get("edges", [])
 	var heights := Node3D.new()   # answers height_at / prepare_spawn like the old WorldTerrain did
 	heights.name = "WorldTerrain"
 	heights.set_script(_HeightProbe)
