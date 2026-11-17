@@ -9,6 +9,7 @@ import { ALL_EXTENSIONS, KHRMaterialsSpecular } from '@gltf-transform/extensions
 import { copyToDocument, join, prune, dedup, weld, getBounds, unpartition } from '@gltf-transform/functions';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { plantMaterials } from './foliage.mjs';
 import path from 'node:path';
 
 const [src, outDir, cellArg] = process.argv.slice(2);
@@ -37,9 +38,10 @@ for (const node of scene.listChildren()) {
   add(`c_${cx}_${cz}`, node);
 }
 
-const index = { cell: CELL, spawn: [0, 0, 0], chunks: [] };
+const index = { cell: CELL, spawn: [0, 0, 0], chunks: [], no_collision: plantMaterials(doc.getRoot()) };
 try {   // keep a spawn point set by hand in an earlier chunks.json
-  index.spawn = JSON.parse(fs.readFileSync(path.join(outDir, 'chunks.json'), 'utf8')).spawn ?? index.spawn;
+  const old = JSON.parse(fs.readFileSync(path.join(outDir, 'chunks.json'), 'utf8'));
+  for (const k of ['spawn', 'npcs', 'uchiha_gate', 'streets']) if (old[k] !== undefined) index[k] = old[k];   // hand-placed things survive a rebuild
 } catch {}
 let i = 0;
 for (const [key, nodes] of groups) {

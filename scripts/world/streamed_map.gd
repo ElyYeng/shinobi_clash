@@ -18,6 +18,7 @@ var npc_spots := {}                # npc id -> Vector3 (chunks.json "npcs")
 var gate_pos := Vector3.INF        # the Uchiha gate (chunks.json "uchiha_gate")
 var street_nodes := {}             # walking villagers' street graph (chunks.json "streets")
 var street_edges: Array = []
+var no_collision := {}             # material names you walk through: grass, bushes, leaves (chunks.json "no_collision")
 var _chunks: Array = []            # entries from chunks.json
 var _loaded := {}                  # file -> Node3D (instanced chunk)
 var _pending := {}                 # file -> true (threaded load in flight)
@@ -63,6 +64,8 @@ func _init() -> void:
 		var a: Array = st["nodes"][id]
 		street_nodes[str(id)] = Vector3(float(a[0]), float(a[1]), float(a[2]))
 	street_edges = st.get("edges", [])
+	for m in d.get("no_collision", []):
+		no_collision[str(m)] = true
 	var heights := Node3D.new()   # answers height_at / prepare_spawn like the old WorldTerrain did
 	heights.name = "WorldTerrain"
 	heights.set_script(_HeightProbe)
@@ -169,7 +172,18 @@ func _add_collision(n: Variant) -> void:
 	var mi := n as MeshInstance3D
 	if mi.mesh == null:
 		return
-	var shape := mi.mesh.create_trimesh_shape()
+	var src := mi.mesh
+	var solid := ArrayMesh.new()   # only the surfaces that should block you (no grass / bushes / leaves)
+	var skipped := 0
+	for i in src.get_surface_count():
+		var mat := src.surface_get_material(i)
+		if mat != null and no_collision.has(mat.resource_name):
+			skipped += 1
+			continue
+		solid.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, src.surface_get_arrays(i))
+	if solid.get_surface_count() == 0:
+		return
+	var shape := (src if skipped == 0 else solid).create_trimesh_shape()
 	if shape == null:
 		return
 	var body := StaticBody3D.new()

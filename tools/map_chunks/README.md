@@ -29,6 +29,12 @@ everything sharing a material inside each tile (thousands of draw calls -> a few
 writes `c_<x>_<z>.gltf` + `.bin` per tile, `backdrop.gltf` (far mountains, always loaded),
 the shared textures once in `tex/`, and `chunks.json` (the index the game reads).
 
+## Grass / bushes / leaves
+
+`foliage.mjs` decides which materials you can walk through (no collision) from the object names
+(grass, bush, foliage, leaves; the rip's Japanese names kusa / ha / eda / ki). `chunk.mjs` writes the
+list into `chunks.json` -> `"no_collision"`; edit it by hand to add or remove a material.
+
 ## Spawn point
 
 `chunks.json` -> `"spawn": [x, y, z]` is where you start (ground height). Edit it by hand.

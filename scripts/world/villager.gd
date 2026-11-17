@@ -124,6 +124,14 @@ static func populate(parent: Node, count: int, seed_base := 77) -> void:
 	_clock_base = Time.get_ticks_msec() / 1000.0   # host / single player: start the clock now
 	_all.clear()
 	var edges := _edges().duplicate()
+	if not custom_nodes.is_empty():   # big map: start spread over the whole street graph, not its first streets
+		var shuffle := RandomNumberGenerator.new()
+		shuffle.seed = seed_base
+		for i in range(edges.size() - 1, 0, -1):
+			var j := shuffle.randi_range(0, i)
+			var tmp = edges[i]
+			edges[i] = edges[j]
+			edges[j] = tmp
 	for i in count:
 		var v := Villager.new()
 		v.name = "Villager%d" % i

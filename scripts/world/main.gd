@@ -314,7 +314,7 @@ func _start_world() -> void:
 		var crowd := Node3D.new()
 		crowd.name = "Villagers"
 		map.add_child(crowd)
-		Villager.populate(crowd, 60 if not Villager.custom_nodes.is_empty() else 28)
+		Villager.populate(crowd, 160 if not Villager.custom_nodes.is_empty() else 28)
 	_refresh_markers()
 	_build_uchiha_gate()
 	_spawn_sparrers.call_deferred()
