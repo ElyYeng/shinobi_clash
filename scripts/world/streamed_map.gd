@@ -7,8 +7,9 @@ extends GameMap
 ## kept out of git - see .gitignore).
 
 const DIR := "res://maps/_test_map/"
-const LOAD_RADIUS := 450.0
-const UNLOAD_RADIUS := 650.0
+const LOAD_RADIUS := 800.0     # (covers the whole village from anywhere inside it)
+const UNLOAD_RADIUS := 1000.0
+const LIGHTING_FROM := "res://maps/konoha_greybox.tscn"   # sky, sun, fog, shadows: same as Konoha
 const CHECK_EVERY := 0.25
 
 var cell := 150.0
@@ -46,6 +47,7 @@ func _init() -> void:
 
 func _ready() -> void:
 	super._ready()
+	_take_lighting()
 	var markers := Node3D.new()
 	markers.name = "Markers"
 	add_child(markers)
@@ -53,6 +55,29 @@ func _ready() -> void:
 	m.name = "PlayerSpawn"
 	markers.add_child(m)
 	m.position = spawn_point + Vector3(0, 2.0, 0)
+
+## The map has no lighting of its own: borrow Konoha's Environment group (WorldEnvironment +
+## Sun), so both maps look the same and editing Konoha's lighting changes this one too.
+func _take_lighting() -> void:
+	var ps := load(LIGHTING_FROM) as PackedScene if ResourceLoader.exists(LIGHTING_FROM) else null
+	if ps == null:
+		return
+	var konoha := ps.instantiate()
+	var env := konoha.get_node_or_null("Environment")
+	if env != null:
+		konoha.remove_child(env)
+		env.owner = null
+		for c in env.find_children("*", "", true, false):
+			c.owner = null
+		add_child(env)
+		var we := env.get_node_or_null("WorldEnvironment") as WorldEnvironment
+		if we != null and we.environment != null:   # Konoha's fog is tuned for a small map: thinner here
+			var e := we.environment.duplicate() as Environment
+			e.fog_density *= 0.3
+			e.fog_aerial_perspective = 0.2
+			e.volumetric_fog_density *= 0.4
+			we.environment = e
+	konoha.free()
 
 ## Stream around this node (the player). Without one, the spawn point is the centre.
 func set_focus(node: Node3D) -> void:
